@@ -4,8 +4,8 @@ open FStar.List.Tot
 
 type t = v:list nat{Cons? v}
 
-type ordering = 
-| Happened_before 
+type ordering =
+| Happened_before
 | Happened_after
 | Concurrent
 | Equal
@@ -31,3 +31,10 @@ let compare v1 v2 = compare' v1 v2 Equal
 
 val hb: v1:t -> v2:t{length v1 = length v2} -> bool
 let hb a b = compare a b = Happened_before
+
+val hbeq: v1:t -> v2:t{length v1 = length v2} -> bool
+let hbeq a b =
+  match compare a b with
+  | Happened_before | Equal -> true
+  | _ -> false
+  
