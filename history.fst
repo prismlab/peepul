@@ -111,22 +111,11 @@ and lca' l a b init =
   | [] -> init 
   | x::xs -> lca' xs a b (lca x a b init)
 
-val lemma5 : #n:nat
-          -> h:history n{wellformed h}
-          -> a:Vc.t n{mem a h}
-          -> b:Vc.t n{mem b h}
-          -> init:Vc.t n{init = History?.clock h}
-          -> Lemma (ensures (Vc.hbeq init a /\ Vc.hbeq init b))
-let lemma5 h a b init =
-  let History clock _ _ = h in
-  assert (clock = init);
-  admit ()
-
 val lca2 : #n:nat
        -> h:history n{wellformed h}
        -> a:Vc.t n{mem a h}
        -> b:Vc.t n{mem b h}
        -> r:Vc.t n{Vc.hbeq r a /\ Vc.hbeq r b}
 let lca2 h a b = 
-  lemma5 h a b (History?.clock h);
+  lemma4 h;
   lca h a b (History?.clock h)
