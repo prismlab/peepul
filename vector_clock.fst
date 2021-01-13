@@ -77,6 +77,13 @@ let rec lemma3 v1 v2 o =
       else lemma2 xs ys Happened_after
   | _, _, Concurrent -> ()
 
+val hbeq_precede : #n:nat -> v1:t n -> v2:t n{hbeq v1 v2}
+                 -> Lemma (ensures (forall v3. hbeq v2 v3 ==> hbeq v1 v3))
+let hbeq_precede v1 v2 =
+  match compare v1 v2 with
+  | Equal -> lemma3 v1 v2 Equal
+  | Happened_before -> admit ()
+  
 val hbeq_transitive : #n:nat -> v1:t n -> v2:t n{hbeq v1 v2} -> v3:t n{hbeq v2 v3} -> Lemma (ensures (hbeq v1 v3))
 let hbeq_transitive v1 v2 v3 =
   match compare v1 v2 with

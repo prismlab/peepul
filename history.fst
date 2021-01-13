@@ -72,15 +72,18 @@ let rec lemma3 (History c s ch) =
   | x::xs -> assert (wellformed x); lemma3 (History c s xs); lemma3 x
 
 val lemma4 : #n:nat -> h:history n{wellformed h}
-           -> Lemma (ensures (forall c. mem c h ==> Vc.hbeq (History?.clock h) c))
+           -> Lemma (ensures (forall c. mem c h ==> Vc.hbeq (History?.clock h) c)) (decreases (size h))
 let rec lemma4 h =
   let History c s ch = h in
   match ch with
   | [] -> Vc.hbeq_reflexive c
   | x::xs -> 
       lemma4 x;
-      assert (forall c. mem c x ==> Vc.hbeq (History?.clock h) c);
-      admit ()
+      lemma4 (History c s xs);
+      Vc.hbeq_precede c (History?.clock x);
+      assert (forall c. mem c x ==> Vc.hbeq (History?.clock x) c);
+      //admit ();
+      ()
     
 val lca : #n:nat 
         -> h:history n{wellformed h}
@@ -108,16 +111,15 @@ and lca' l a b init =
   | [] -> init 
   | x::xs -> lca' xs a b (lca x a b init)
 
-val lemma4 : #n:nat
+val lemma5 : #n:nat
           -> h:history n{wellformed h}
           -> a:Vc.t n{mem a h}
           -> b:Vc.t n{mem b h}
           -> init:Vc.t n{init = History?.clock h}
           -> Lemma (ensures (Vc.hbeq init a /\ Vc.hbeq init b))
-let lemma4 h a b init =
+let lemma5 h a b init =
   let History clock _ _ = h in
   assert (clock = init);
-  Vc.hbeq_reflexive 
   admit ()
 
 val lca2 : #n:nat
@@ -125,4 +127,6 @@ val lca2 : #n:nat
        -> a:Vc.t n{mem a h}
        -> b:Vc.t n{mem b h}
        -> r:Vc.t n{Vc.hbeq r a /\ Vc.hbeq r b}
-let lca2 h a b = lca h a b (History?.clock h)
+let lca2 h a b = 
+  lemma5 h a b (History?.clock h);
+  lca h a b (History?.clock h)
