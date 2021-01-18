@@ -27,7 +27,7 @@ and wellformed' children parent_clock =
      Vc.hb parent_clock clock &&
      wellformed x &&
      wellformed' xs parent_clock
-
+     
 val mem : #n:nat -> clock:Vc.t n -> h:history n -> Tot bool (decreases %[h])
 val mem' : #n:nat -> l:list (history n) -> clock:Vc.t n -> Tot bool (decreases %[l])
 let rec mem clock h = 
@@ -73,49 +73,60 @@ let rec lemma3 (History c s ch) =
 
 val lemma4 : #n:nat -> h:history n{wellformed h}
            -> Lemma (ensures (forall c. mem c h ==> Vc.hbeq (History?.clock h) c)) (decreases (size h))
+val lemma5 : #n:nat -> h:history n{wellformed h} -> c:Vc.t n{Vc.hbeq c (History?.clock h)}
+           -> Lemma (requires (forall k. mem k h ==> Vc.hbeq (History?.clock h) k))
+                   (ensures  (forall k. mem k h ==> Vc.hbeq c k)) (decreases (size h))
 let rec lemma4 h =
   let History c s ch = h in
   match ch with
   | [] -> Vc.hbeq_reflexive c
-  | x::xs -> 
+  | x::xs ->
       lemma4 x;
       lemma4 (History c s xs);
-      Vc.hbeq_precede c (History?.clock x);
-      assert (forall c. mem c x ==> Vc.hbeq (History?.clock x) c);
-      //admit ();
+      assert (Vc.hbeq c (History?.clock x));
+      assert (forall k. mem k x ==> Vc.hbeq (History?.clock x) k);
+      lemma5 x c;
+      assert (forall k. mem k x ==> Vc.hbeq c k);
       ()
-    
-val lca : #n:nat 
+and lemma5 (History c' s ch) c =
+  match ch with
+  | [] -> ()
+  | x::xs -> 
+      Vc.hbeq_transitive (length c) c c' (History?.clock x);
+      lemma4 x;
+      lemma5 x c;
+      lemma4 (History c' s xs);
+      lemma5 (History c' s xs) c;
+      ()
+
+val lca_ : #n:nat 
         -> h:history n{wellformed h}
         -> a:Vc.t n 
         -> b:Vc.t n 
         -> init:Vc.t n{Vc.hbeq init a /\ Vc.hbeq init b}
         -> Tot (r:Vc.t n{Vc.hbeq r a /\ Vc.hbeq r b}) (decreases %[h])
-val lca' : #n:nat 
+val lca_' : #n:nat 
          -> l:list (history n){forall h. L.mem h l ==> wellformed h} 
          -> a:Vc.t n 
          -> b:Vc.t n 
          -> init:Vc.t n{Vc.hbeq init a /\ Vc.hbeq init b}
          -> Tot (r:Vc.t n{Vc.hbeq r a /\ Vc.hbeq r b}) (decreases %[l])
-let rec lca h a b init =
-  lemma1 h;
+let rec lca_ h a b init =
   lemma2 h;
   let History clock _ ch = h in
-  assert (forall h. L.mem h ch ==> wellformed h);
-  assert (forall h1 h2. L.mem h1 ch /\ L.mem h2 ch ==> length (History?.clock h1) = length (History?.clock h2));
   if Vc.hbeq init clock && Vc.hbeq clock a && Vc.hbeq clock b
-  then lca' ch a b clock
+  then lca_' ch a b clock
   else init
-and lca' l a b init =
+and lca_' l a b init =
   match l with
   | [] -> init 
-  | x::xs -> lca' xs a b (lca x a b init)
+  | x::xs -> lca_' xs a b (lca_ x a b init)
 
-val lca2 : #n:nat
+val lca : #n:nat
        -> h:history n{wellformed h}
        -> a:Vc.t n{mem a h}
        -> b:Vc.t n{mem b h}
        -> r:Vc.t n{Vc.hbeq r a /\ Vc.hbeq r b}
-let lca2 h a b = 
+let lca h a b = 
   lemma4 h;
-  lca h a b (History?.clock h)
+  lca_ h a b (History?.clock h)
