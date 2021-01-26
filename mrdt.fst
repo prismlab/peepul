@@ -2,7 +2,6 @@ module Mrdt
 
 open FStar.List.Tot
 
-class mrdt t o  = {
-      apply_op : t -> o -> t;
-      apply_tr : t -> list o -> t
-  }
+class mrdt (state:eqtype) (operation:eqtype) = {
+  apply_op : state -> operation -> state;
+}

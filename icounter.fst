@@ -4,46 +4,29 @@ open FStar.List.Tot
 
 module M = Mrdt
 
-type oper =
-       | Inc : nat -> oper
-       
-type trace = list oper
+type operation =
+  | Inc : nat -> operation
 
-val app_op : s1:nat -> oper -> Tot (s2:nat {s2 >= s1}) 
-let app_op s op = 
-    match op with
-    | (Inc n) -> s + n
+type state = nat
 
-val app_tr : s1:nat -> t:trace -> Tot (s2:nat {s2 >= s1}) (decreases t)
-let rec app_tr s t =
-    match t with
-    | [] -> s
-    | op::ops -> app_tr (app_op s op) ops
+val apply_op : state -> operation -> state
+let apply_op s (Inc n) = s + n
 
+instance _ : M.mrdt state operation = {
+  M.apply_op = apply_op
+}
 
-instance icounter_mrdt : M.mrdt nat oper = {
-                                   M.apply_op = (fun (t:nat) (o:oper) -> app_op t o);
-                                   M.apply_tr = (fun (t:nat) (tr:trace) -> app_tr t tr)}
+open History
 
+let _ = assert (hbeq (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))]) 
+                     (History 3 [([Inc 1],(History 4 []))]))
 
+let _ = assert (hb (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))]) 
+                   (History 4 []))
 
+let _ = assert (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))] = 
+                History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))])
 
+let h : history nat operation = History 1 [([Inc 1;Inc 2], (History 4 [([Inc 1],(History 5 []))]))]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+let _ = assert (wellformed h)
