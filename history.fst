@@ -59,38 +59,57 @@ val concurrent_commutative : #s:eqtype -> #o:eqtype
                            -> Lemma (ensures (concurrent h2 h1))
 let concurrent_commutative h1 h2 = ()
 
-val wellformed_ : #s:eqtype -> #o:eqtype -> {|M.mrdt s o|} -> h:history s o -> ids:list nat{L.noRepeats ids} -> (bool * r:list nat{L.noRepeats r})
-let rec wellformed_ h ids =
+val trace_ok : #s:eqtype -> #o:eqtype -> {|M.mrdt s o|} -> h:history s o -> bool
+let rec trace_ok h =
   match h with
-  | HistLeaf id _ -> 
+  | HistLeaf _ _ -> true
+  | HistNode _ st tr1 ch1 tr2 ch2 ->
+      apply_trace st tr1 = state ch1 &&
+      apply_trace st tr2 = state ch2 &&
+      trace_ok ch1 && trace_ok ch2
+
+val disjoint : l1:list nat -> l2:list nat -> r:bool{r = true <==> (forall e. L.mem e l1 ==> ~(L.mem e l2))}
+let rec disjoint l1 l2 = 
+  match l1 with
+  | [] -> true 
+  | x::xs -> not (L.mem x l2) && disjoint xs l2
+
+val id_unique : #s:eqtype -> #o:eqtype -> h:history s o -> ids:list nat{L.noRepeats ids} -> bool * r:list nat{L.noRepeats r}
+let rec id_unique h ids =
+  match h with
+  | HistLeaf id _ ->
       if not (L.mem id ids) then begin
         LP.noRepeats_cons id ids;
         true, id::ids
       end else false, ids
-  | HistNode id st tr1 ch1 tr2 ch2 ->
-      if not (L.mem id ids) then begin
+  | HistNode id _ _ ch1 _ ch2 ->
+      if L.mem id ids then
+        false, ids
+      else begin
         LP.noRepeats_cons id ids;
-        let s0 = id::ids in
-        let b1, s1 = wellformed_ ch1 s0 in
-        let b2, s2 = wellformed_ ch2 s1 in
-        let b = 
-          apply_trace st tr1 = state ch1 &&
-          apply_trace st tr2 = state ch2 &&
-          b1 && b2 
-        in
-        b, s2
-      end else false, ids
+        let l0 = id::ids in
+        let b1, l1 = id_unique ch1 l0 in
+        id_unique ch2 l1
+      end
 
 val wellformed : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> h:history s o -> bool
-let wellformed h = 
-  let b, _ = wellformed_ h [] in
-  b
+let wellformed h = trace_ok h && fst (id_unique h [])
 
 val hbeq_reflexive : #s:eqtype -> #o:eqtype -> h:history s o
                    -> Lemma (ensures (hbeq h h))
 let hbeq_reflexive h = ()
 
-(*
+val lemma0 : #s:eqtype -> #o:eqtype
+           -> h:history s o{fst (id_unique h [])}
+           -> Lemma (ensures (forall h'. hbeq h h' ==> fst(id_unique h' [])))
+let rec lemma0 h = 
+  match h with
+  | HistLeaf _ _ -> ()
+  | HistNode id _ _ ch1 _ ch2 ->
+      //lemma0 ch1;
+      //lemma0 ch2
+      admit ()
+
 val lemma1 : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} 
            -> h:history s o{wellformed h}
            -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
@@ -98,9 +117,9 @@ let rec lemma1 h =
   match h with 
   | HistLeaf _ _ -> ()
   | HistNode _ _ _ ch1 _ ch2 ->
+      lemma0 h;
       lemma1 ch1;
       lemma1 ch2
-*)
 
 val lemma2 : #s:eqtype -> #o:eqtype -> h1:history s o
            -> Lemma (ensures (forall h2 h3. hb h1 h2 /\ hb h2 h3 ==> hb h1 h3))
