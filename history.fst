@@ -1,38 +1,52 @@
 module History
 
 module L = FStar.List.Tot
+module LP = FStar.List.Tot.Properties
+
+open FStar.Tactics
+module T = FStar.Tactics
+open FStar.Tactics.Typeclasses
 
 module M = Mrdt
 
-val apply_trace : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> s -> t:list o -> Tot s (decreases %[t]) 
-let rec apply_trace s t =
-  match t with
-  | [] -> s
-  | op::ops -> apply_trace (M.apply_op s op) ops
+val apply_trace : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> state:s -> trace:list o -> Tot s (decreases %[trace]) 
+let rec apply_trace state trace =
+  match trace  with
+  | [] -> state
+  | op::ops -> apply_trace (M.apply_op state op) ops
 
 type history (s:eqtype) (o:eqtype) =
- | History  : state:s
-            -> children:list (history s o)
-            -> traces:list (list o){L.length traces = L.length children}
+ | HistLeaf : id:nat -> state:s -> history s o
+ | HistNode : id:nat 
+            -> state:s
+            -> tr1:list o
+            -> ch1:history s o
+            -> tr2:list o
+            -> ch2:history s o
             -> history s o
 
-val size : #s:eqtype -> #o:eqtype -> h:history s o -> Tot nat (decreases %[h])
-val size' : #s:eqtype -> #o:eqtype -> l:list (history s o) -> Tot nat (decreases %[l])
+let state h = 
+  match h with 
+  | HistLeaf _ s -> s
+  | HistNode _ s _ _ _ _ -> s
+  
+let id h = 
+  match h with 
+  | HistLeaf id _ -> id
+  | HistNode id _ _ _ _ _ -> id
+
+val size : #s:eqtype -> #o:eqtype -> h:history s o -> nat
 let rec size h =
-    let History  _ ch _ = h in
-    1 + size' ch
-and size' l =
-    match l with
-    | [] -> 0
-    | x::xs -> size x + size' xs
+  match h with
+  | HistLeaf _ _ -> 0
+  | HistNode _ _ _ ch1 _ ch2 -> 1 + size ch1 + size ch2
 
 val hb : #s:eqtype -> #o:eqtype -> h1:history s o -> h2:history s o -> Tot bool (decreases (size h1))
-let rec hb (History s ch tr) h2 = 
-  match ch,tr with
-  | [],[] -> false
-  | x::xs,_::ys -> x = h2 || hb x h2 || hb (History s xs ys) h2
+let rec hb h1 h2 =
+  match h1 with
+  | HistLeaf _ _ -> false 
+  | HistNode _ _ _ ch1 _ ch2 -> ch1 = h2 || ch2 = h2 || hb ch1 h2 || hb ch2 h2
 
-(* h1 --hb--> h2 <==> hbeq h1 h2 = true *)
 val hbeq : #s:eqtype -> #o:eqtype -> h1:history s o -> h2:history s o -> bool
 let hbeq h1 h2 = h1 = h2 || hb h1 h2
 
@@ -45,134 +59,121 @@ val concurrent_commutative : #s:eqtype -> #o:eqtype
                            -> Lemma (ensures (concurrent h2 h1))
 let concurrent_commutative h1 h2 = ()
 
-val wellformed : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> h:history s o -> Tot bool (decreases (size h))
-let rec wellformed (History s ch tr) =
-  match ch, tr with
-  | [], [] -> true
-  | h::hs, tr::trs ->
-      apply_trace s tr = History?.state h &&
-      wellformed h &&
-      wellformed (History s hs trs)
+val wellformed_ : #s:eqtype -> #o:eqtype -> {|M.mrdt s o|} -> h:history s o -> ids:list nat{L.noRepeats ids} -> (bool * r:list nat{L.noRepeats r})
+let rec wellformed_ h ids =
+  match h with
+  | HistLeaf id _ -> 
+      if not (L.mem id ids) then begin
+        LP.noRepeats_cons id ids;
+        true, id::ids
+      end else false, ids
+  | HistNode id st tr1 ch1 tr2 ch2 ->
+      if not (L.mem id ids) then begin
+        LP.noRepeats_cons id ids;
+        let s0 = id::ids in
+        let b1, s1 = wellformed_ ch1 s0 in
+        let b2, s2 = wellformed_ ch2 s1 in
+        let b = 
+          apply_trace st tr1 = state ch1 &&
+          apply_trace st tr2 = state ch2 &&
+          b1 && b2 
+        in
+        b, s2
+      end else false, ids
+
+val wellformed : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> h:history s o -> bool
+let wellformed h = 
+  let b, _ = wellformed_ h [] in
+  b
 
 val hbeq_reflexive : #s:eqtype -> #o:eqtype -> h:history s o
                    -> Lemma (ensures (hbeq h h))
 let hbeq_reflexive h = ()
 
+(*
 val lemma1 : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} 
            -> h:history s o{wellformed h}
-           -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) (decreases (size h))
-let rec lemma1 (History s ch tr) = 
-  match ch,tr with
-  | [],[] -> ()
-  | x::xs,y::ys -> 
-     lemma1 x; 
-     lemma1 (History s xs ys)
+           -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
+let rec lemma1 h =
+  match h with 
+  | HistLeaf _ _ -> ()
+  | HistNode _ _ _ ch1 _ ch2 ->
+      lemma1 ch1;
+      lemma1 ch2
+*)
 
-val lemma2 : #s:eqtype -> #o:eqtype -> h:history s o
-           -> Lemma (ensures (forall h'. L.mem h' (History?.children h) ==> hb h h'))
-                   (decreases (size h))
-let rec lemma2 h = 
-  let History s ch tr = h in
-  match ch, tr with
-  | [],[] -> ()
-  | x::xs,y::ys -> 
-      let h' = History s xs ys in
-      lemma2 h'
-
-val lemma3 : #s:eqtype -> #o:eqtype -> h1:history s o
+val lemma2 : #s:eqtype -> #o:eqtype -> h1:history s o
            -> Lemma (ensures (forall h2 h3. hb h1 h2 /\ hb h2 h3 ==> hb h1 h3))
-                   (decreases (size h1))
-let rec lemma3 h = 
-  let History s ch tr = h in
-  match ch, tr with
-  | [], [] -> ()
-  | x::xs, y::ys ->
-      lemma3 x;
-      lemma3 (History s xs ys)
+let rec lemma2 h = 
+  match h with
+  | HistLeaf _ _ -> ()
+  | HistNode _ _ _ ch1 _ ch2 ->
+      lemma2 ch1;
+      lemma2 ch2
 
-val appendp : #s:eqtype -> #o:eqtype -> p:(history s o -> bool) 
-           -> l1:list (history s o){forall e. L.mem e l1 ==> p e}
-           -> l2:list (history s o){forall e. L.mem e l2 ==> p e}
-           -> l:list (history s o){forall e. L.mem e l ==> p e}
-let rec appendp p l1 l2 =
-  match l1 with
-  | [] -> l2
-  | x::xs -> x::(appendp p xs l2)
+val append : #s:eqtype -> #o:eqtype
+             -> h:history s o
+             -> l1:list (history s o)
+             -> l2:list (history s o)
+             -> acc:list (history s o)
+             -> Pure (list (history s o)) 
+                    (requires (forall h'. hbeq h h' <==> L.mem h' l1 \/ L.mem h' l2 \/ L.mem h' acc))
+                    (ensures (fun l -> forall h'. hbeq h h' <==> L.mem h' l))
+let rec append h l1 l2 acc = 
+  match l1, l2 with
+  | [], [] -> acc
+  | x::xs, _ -> append h xs l2 (x::acc)
+  | [], x::xs -> append h [] xs (x::acc)
 
-(* Descendents is inclusive of the given element *)
 val descendents  : #s:eqtype -> #o:eqtype -> h:history s o 
-                 -> Tot (l:list (history s o){forall h'. L.mem h' l ==> hbeq h h'}) //(decreases (size h))
-val descendents' : #s:eqtype -> #o:eqtype -> ch:list (history s o) -> h:history s o{forall h'. L.mem h' ch ==> hbeq h h'}
-                 -> Tot (l:list (history s o){forall h'. L.mem h' l ==> hbeq h h'}) //(decreases (sum (L.map size ch)))
+                 -> Tot (l:list (history s o){forall h'. L.mem h' l <==> hbeq h h'}) //(decreases (size h))
 let rec descendents h =
-  let History _ ch _ = h in
-  lemma2 h;
-  h::descendents' ch h
-and descendents' ch h =
-  match ch with
-  | [] -> []
-  | x::xs -> 
-      assert (hbeq h x);
-      let l1 = descendents x in
-      assert (forall h'. L.mem h' l1 ==> hbeq x h');
-      lemma3 h;
-      assert (forall h'. L.mem h' l1 ==> hbeq h h');
-      let l2 = descendents' xs h in
-      assert (forall h'. L.mem h' l2 ==> hbeq h h');
-      x :: (appendp (fun h' -> hbeq h h') l1 l2)
+  match h with
+  | HistLeaf _ _ -> [h] 
+  | HistNode _ _ _ ch1 _ ch2 ->
+      lemma2 h;
+      let l1 = descendents ch1 in 
+      let l2 = descendents ch2 in
+      append h l1 l2 [h]
 
-val remove_descendents2 : #s:eqtype -> #o:eqtype
-                        -> l:list (history s o)
-                        -> p:(history s o -> bool){forall h. L.mem h l ==> p h}
-                        -> a:history s o
-                        -> b:history s o
-                        -> r:list (history s o){forall h. L.mem h r ==> p h /\ hbeq h a /\ hbeq h b}
-let rec remove_descendents2 l p a b =
-  match l with
-  | [] -> []
-  | h::hs -> 
-      if hbeq h a && hbeq h b then
-        h::remove_descendents2 hs p a b
-      else remove_descendents2 hs p a b
-
-val ancestors2 : #s:eqtype -> #o:eqtype 
-              -> h:history s o -> a:history s o{hbeq h a} -> b:history s o{hbeq h b}
-              -> l:list (history s o){forall h'. L.mem h' l ==> hbeq h h' /\ hbeq h' a /\ hbeq h' b}
-let ancestors2 h a b =
-  let d = descendents h in
-  let res = remove_descendents2 d (fun h' -> hbeq h h') a b in
-  assert (forall h'. L.mem h' res ==> hbeq h h' /\ hbeq h' a /\ hbeq h' b);
-  assert (forall h'. L.mem h' res ==> hbeq h' a);
-  assert (forall h'. L.mem h' res ==> hbeq h' b);
-  res
-
-val concurrent_list : #s:eqtype -> #o:eqtype 
-                    -> h:history s o 
-                    -> l:list (history s o) 
-                    -> r:bool{(forall h'. L.mem h' l ==> concurrent h h') <==> r = true}
-let rec concurrent_list h l =
-  match l with
-  | [] -> true
-  | x::xs -> concurrent h x && concurrent_list h xs
-
-val cross_concurrent : #s:eqtype -> #o:eqtype
-                     -> l:list (history s o)
-                     -> r:list (history s o){(forall c. L.mem c r ==> L.mem c l) /\
-                                            (forall c1 c2. L.mem c1 r /\ L.mem c2 r /\ ~(c1 = c2) ==> concurrent c1 c2)}
-let rec cross_concurrent l = 
-  match l with
-  | [] -> []
-  | x::xs -> 
-      if concurrent_list x xs then 
-        x::cross_concurrent xs
-      else cross_concurrent xs
-
-val lca : #s:eqtype -> #o:eqtype -> h:history s o -> a:history s o{hbeq h a} -> b:history s o{hbeq h b}
-        -> l:list (history s o){forall h'. L.mem h' l ==> hbeq h h' /\ hbeq h' a /\ hbeq h' b /\ (forall h''. L.mem h'' l ==> h' = h'' \/ concurrent h' h'')}
-let lca h a b =
-  if h = a || h = b then [h]
-  else begin
-    assert (hb h a /\ hb h b);
-    let a = ancestors2 h a b in
-    cross_concurrent a
+val is_lca : #s:eqtype -> #o:eqtype
+           -> l:history s o
+           -> a:history s o
+           -> b:history s o
+           -> Tot bool
+let is_lca l a b =
+  hbeq l a && hbeq l b &&
+  begin match l with
+  | HistLeaf _ _ -> true 
+  | HistNode _ _ _ ch1 _ ch2 ->
+      (not (hbeq ch1 a && hbeq ch1 b)) &&
+      (not (hbeq ch2 a && hbeq ch2 b))
   end
+
+val lca_ : #s:eqtype -> #o:eqtype
+         -> h:history s o
+         -> a:history s o{hbeq h a}
+         -> b:history s o{hbeq h b}
+         -> l:list (history s o)
+         -> acc1:list (history s o){forall h'. L.mem h' acc1 ==> ~(hbeq h h' /\ is_lca h' a b)}
+         -> acc2:list (history s o){forall h'. L.mem h' acc2 ==> hbeq h h' /\ is_lca h' a b}
+         -> Pure (list (history s o))
+                (requires (forall h'. L.mem h' l \/ L.mem h' acc1 \/ L.mem h' acc2 <==> hbeq h h'))
+                (ensures (fun r -> forall h'. L.mem h' r <==> hbeq h h' /\ is_lca h' a b))
+let rec lca_ h a b l acc1 acc2 = 
+  match l with
+  | [] -> acc2
+  | x::xs ->
+      if is_lca x a b then
+        lca_ h a b xs acc1 (x::acc2)
+      else
+        lca_ h a b xs (x::acc1) acc2
+
+val lca : #s:eqtype -> #o:eqtype
+        -> h:history s o
+        -> a:history s o{hbeq h a}
+        -> b:history s o{hbeq h b}
+        -> Tot (l:list (history s o){forall h'. L.mem h' l <==> hbeq h h' /\ is_lca h' a b})
+let lca h a b =
+  let d = descendents h in
+  lca_ h a b d [] []
