@@ -11,11 +11,9 @@ class datatype (state:eqtype) (operation:eqtype) = {
   apply_op : state -> operation -> state;
 }
 
-val apply_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |} -> state:s -> trace:list o -> Tot s (decreases %[trace]) 
-let rec apply_trace state trace =
-  match trace  with
-  | [] -> state
-  | op::ops -> apply_trace (apply_op state op) ops
+val apply_trace: #s:eqtype -> #o:eqtype -> {| datatype s o |}
+               -> st:s -> tr:list o -> Tot s (decreases %[tr])
+let apply_trace st tr = L.fold_left apply_op st tr
 
 type history (s:eqtype) (o:eqtype) =
  | HistLeaf : id:nat -> state:s -> history s o
@@ -94,7 +92,7 @@ let rec lemma2 h =
       lemma2 ch1;
       lemma2 ch2
 
-val append : #s:eqtype -> #o:eqtype
+val append_des : #s:eqtype -> #o:eqtype
              -> h:history s o
              -> l1:list (history s o)
              -> l2:list (history s o)
@@ -102,14 +100,14 @@ val append : #s:eqtype -> #o:eqtype
              -> Pure (list (history s o)) 
                     (requires (forall h'. hbeq h h' <==> L.mem h' l1 \/ L.mem h' l2 \/ L.mem h' acc))
                     (ensures (fun l -> forall h'. hbeq h h' <==> L.mem h' l))
-let rec append h l1 l2 acc = 
+let rec append_des h l1 l2 acc = 
   match l1, l2 with
   | [], [] -> acc
-  | x::xs, _ -> append h xs l2 (x::acc)
-  | [], x::xs -> append h [] xs (x::acc)
+  | x::xs, _ -> append_des h xs l2 (x::acc)
+  | [], x::xs -> append_des h [] xs (x::acc)
 
 val descendents  : #s:eqtype -> #o:eqtype -> h:history s o 
-                 -> Tot (l:list (history s o){forall h'. L.mem h' l <==> hbeq h h'}) //(decreases (size h))
+                 -> Tot (l:list (history s o){(forall h'. L.mem h' l <==> hbeq h h') /\ Cons? l}) 
 let rec descendents h =
   match h with
   | HistLeaf _ _ -> [h] 
@@ -117,7 +115,7 @@ let rec descendents h =
       lemma2 h;
       let l1 = descendents ch1 in 
       let l2 = descendents ch2 in
-      append h l1 l2 [h]
+      append_des h l1 l2 [h]
 
 val is_lca : #s:eqtype -> #o:eqtype
            -> l:history s o
@@ -152,26 +150,88 @@ let rec lca_ h a b l acc1 acc2 =
       else
         lca_ h a b xs (x::acc1) acc2
 
+val remove_duplicates : #s:eqtype -> #o:eqtype
+                      -> l:list (history s o)
+                      -> acc1:list (history s o){L.noRepeats acc1}
+                      -> orig:list (history s o)
+                      -> Pure (list (history s o))
+                             (requires (forall h'. L.mem h' l \/ L.mem h' acc1 <==> L.mem h' orig))
+                             (ensures (fun r -> L.noRepeats r /\ (forall h'. L.mem h' r <==> L.mem h' orig)))
+let rec remove_duplicates l acc1 orig =
+  match l with
+  | [] -> acc1
+  | x::xs ->
+      if not (L.mem x acc1) then begin
+        LP.noRepeats_cons x acc1;
+        remove_duplicates xs (x::acc1) orig
+      end else remove_duplicates xs acc1 orig
+
 val lca : #s:eqtype -> #o:eqtype
         -> h:history s o
         -> a:history s o{hbeq h a}
         -> b:history s o{hbeq h b}
-        -> Tot (l:list (history s o){forall h'. L.mem h' l <==> hbeq h h' /\ is_lca h' a b})
+        -> Tot (l:list (history s o){(forall h'. L.mem h' l <==> hbeq h h' /\ is_lca h' a b) /\ L.noRepeats l})
 let lca h a b =
   let d = descendents h in
-  lca_ h a b d [] []
+  let lca_with_duplicates = lca_ h a b d [] [] in
+  remove_duplicates lca_with_duplicates [] lca_with_duplicates
 
-class mrdt (s:eqtype) (o:eqtype) = {
-  merge : {| datatype s o |}
-        -> h:history s o{wellformed h}
+val lemma_lca_commutative:
+    #s:eqtype -> #o:eqtype
+  -> h:history s o
+  -> a:history s o{hbeq h a}
+  -> b:history s o{hbeq h b}
+  -> Lemma (ensures (forall h'. L.mem h' (lca h a b) <==> L.mem h' (lca h b a)))
+let lemma_lca_commutative h a b = ()
+
+val lemma_lca_idempotence:
+    #s:eqtype -> #o:eqtype
+  -> h:history s o
+  -> a:history s o{hbeq h a}
+  -> Lemma (ensures ((forall h'. L.mem h' (lca h a a) ==> h' = a)))
+let lemma_lca_idempotence h a = ()
+
+val append_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+                 -> s1:s -> tr1:list o -> s2:s -> tr2:list o -> s3:s
+                 -> Pure (list o) (requires (apply_trace s1 tr1 = s2 /\ apply_trace s2 tr2 = s3))
+                                 (ensures (fun tr -> apply_trace s1 tr = s3))
+                                 (decreases %[tr1])
+let rec append_trace s1 tr1 s2 tr2 s3 =
+  match tr1 with
+  | [] -> tr2
+  | op::ops ->
+      let tr = append_trace (apply_op s1 op) ops s2 tr2 s3 in
+      op::tr
+
+val get_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+              -> a:history s o{wellformed a}
+              -> b:history s o{hbeq a b}
+              -> tr:list o{L.fold_left apply_op (get_state a) tr = get_state b}
+let rec get_trace a b =
+  lemma1 a;
+  if a = b then []
+  else begin
+    match a with
+    | HistLeaf _ _ -> []
+    | HistNode _ _ tr1 ch1 tr2 ch2 ->
+        assert (wellformed ch1);
+        assert (wellformed ch2);
+        if hbeq ch1 b then
+          append_trace (get_state a) tr1 (get_state ch1) (get_trace ch1 b) (get_state b)
+        else 
+          append_trace (get_state a) tr2 (get_state ch2) (get_trace ch2 b) (get_state b)
+  end
+
+class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
+  merge : h:history s o{wellformed h}
         -> a:history s o{hbeq h a}
         -> b:history s o{hbeq h b}
-        -> l:history s o{forall h'. L.mem h' (lca h a b) ==> h' = l}
+        -> l:history s o{lca h a b = [l]}
         -> s;
-  commutativity : {|datatype s o |} 
-                -> h:history s o{wellformed h} 
+
+  commutativity : h:history s o{wellformed h} 
                 -> a:history s o{hbeq h a} 
                 -> b:history s o{hbeq h b} 
-                -> l:history s o{forall h'. L.mem h' (lca h a b) ==> h' = l}
+                -> l:history s o{lca h a b = [l] /\ lca h b a = [l]}
                 -> Lemma (ensures (merge h a b l = merge h b a l))
 }
