@@ -7,13 +7,15 @@ open FStar.Tactics
 module T = FStar.Tactics
 open FStar.Tactics.Typeclasses
 
-module M = Mrdt
+class datatype (state:eqtype) (operation:eqtype) = {
+  apply_op : state -> operation -> state;
+}
 
-val apply_trace : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} -> state:s -> trace:list o -> Tot s (decreases %[trace]) 
+val apply_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |} -> state:s -> trace:list o -> Tot s (decreases %[trace]) 
 let rec apply_trace state trace =
   match trace  with
   | [] -> state
-  | op::ops -> apply_trace (M.apply_op state op) ops
+  | op::ops -> apply_trace (apply_op state op) ops
 
 type history (s:eqtype) (o:eqtype) =
  | HistLeaf : id:nat -> state:s -> history s o
@@ -25,7 +27,8 @@ type history (s:eqtype) (o:eqtype) =
             -> ch2:history s o
             -> history s o
 
-let state h = 
+val get_state : #s:eqtype -> #o:eqtype -> history s o -> s
+let get_state h = 
   match h with 
   | HistLeaf _ s -> s
   | HistNode _ s _ _ _ _ -> s
@@ -41,7 +44,7 @@ let rec size h =
   | HistLeaf _ _ -> 0
   | HistNode _ _ _ ch1 _ ch2 -> 1 + size ch1 + size ch2
 
-val hb : #s:eqtype -> #o:eqtype -> h1:history s o -> h2:history s o -> Tot bool (decreases (size h1))
+val hb : #s:eqtype -> #o:eqtype -> h1:history s o -> h2:history s o -> bool 
 let rec hb h1 h2 =
   match h1 with
   | HistLeaf _ _ -> false 
@@ -59,20 +62,20 @@ val concurrent_commutative : #s:eqtype -> #o:eqtype
                            -> Lemma (ensures (concurrent h2 h1))
 let concurrent_commutative h1 h2 = ()
 
-val wellformed : #s:eqtype -> #o:eqtype -> {|M.mrdt s o|} -> h:history s o -> bool
+val wellformed : #s:eqtype -> #o:eqtype -> {|datatype s o|} -> h:history s o -> bool
 let rec wellformed h =
   match h with
   | HistLeaf _ _ -> true
   | HistNode _ st tr1 ch1 tr2 ch2 ->
-      apply_trace st tr1 = state ch1 &&
-      apply_trace st tr2 = state ch2 &&
+      apply_trace st tr1 = get_state ch1 &&
+      apply_trace st tr2 = get_state ch2 &&
       wellformed ch1 && wellformed ch2
 
 val hbeq_reflexive : #s:eqtype -> #o:eqtype -> h:history s o
                    -> Lemma (ensures (hbeq h h))
 let hbeq_reflexive h = ()
 
-val lemma1 : #s:eqtype -> #o:eqtype -> {| M.mrdt s o |} 
+val lemma1 : #s:eqtype -> #o:eqtype -> {| datatype s o |} 
            -> h:history s o{wellformed h}
            -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
 let rec lemma1 h =
@@ -157,3 +160,18 @@ val lca : #s:eqtype -> #o:eqtype
 let lca h a b =
   let d = descendents h in
   lca_ h a b d [] []
+
+class mrdt (s:eqtype) (o:eqtype) = {
+  merge : {| datatype s o |}
+        -> h:history s o{wellformed h}
+        -> a:history s o{hbeq h a}
+        -> b:history s o{hbeq h b}
+        -> l:history s o{forall h'. L.mem h' (lca h a b) ==> h' = l}
+        -> s;
+  commutativity : {|datatype s o |} 
+                -> h:history s o{wellformed h} 
+                -> a:history s o{hbeq h a} 
+                -> b:history s o{hbeq h b} 
+                -> l:history s o{forall h'. L.mem h' (lca h a b) ==> h' = l}
+                -> Lemma (ensures (merge h a b l = merge h b a l))
+}

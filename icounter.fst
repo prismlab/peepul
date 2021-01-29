@@ -1,32 +1,38 @@
 module Icounter
 
 open FStar.List.Tot
-
-module M = Mrdt
-
-type operation =
-  | Inc : nat -> operation
-
-type state = nat
-
-val apply_op : state -> operation -> state
-let apply_op s (Inc n) = s + n
-
-instance _ : M.mrdt state operation = {
-  M.apply_op = apply_op
-}
-
 open History
 
-let _ = assert (hbeq (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))]) 
-                     (History 3 [([Inc 1],(History 4 []))]))
+type o =
+  | Inc : nat -> o
 
-let _ = assert (hb (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))]) 
-                   (History 4 []))
+type s = nat
 
-let _ = assert (History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))] = 
-                History 1 [([Inc 1;Inc 1], (History 3 [([Inc 1],(History 4 []))]))])
+val apply_op : s -> o -> s
+let apply_op s (Inc n) = s + n
 
-let h : history nat operation = History 1 [([Inc 1;Inc 2], (History 4 [([Inc 1],(History 5 []))]))]
+instance _ : datatype s o = {
+  History.apply_op = apply_op
+}
 
-let _ = assert (wellformed h)
+val merge : {| datatype s o |}
+          -> h:history s o{wellformed h}
+          -> a:history s o{hbeq h a}
+          -> b:history s o{hbeq h b}
+          -> l:history s o{forall h'. mem h' (lca h a b) ==> h' = l}
+          -> s
+let merge h a b l = admit ()
+  // get_state a + get_state b - get_state l
+
+val commutativity : {| datatype s o |}
+                  -> h:history s o{wellformed h}
+                  -> a:history s o{hbeq h a}
+                  -> b:history s o{hbeq h b}
+                  -> l:history s o{forall h'. mem h' (lca h a b) ==> h' = l}
+                  -> Lemma (ensures (merge h a b l = merge h b a l))
+let commutativity h a b l = admit ()
+
+instance _ : mrdt s o = {
+  History.merge = merge;
+  History.commutativity = commutativity
+}
