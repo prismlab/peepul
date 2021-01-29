@@ -233,5 +233,10 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
                 -> a:history s o{hbeq h a} 
                 -> b:history s o{hbeq h b} 
                 -> l:history s o{lca h a b = [l] /\ lca h b a = [l]}
-                -> Lemma (ensures (merge h a b l = merge h b a l))
+                -> Lemma (ensures (merge h a b l = merge h b a l));
+
+  idempotence : h:history s o{wellformed h}
+              -> a:history s o{hbeq h a}
+              -> Lemma (requires (lca h a a = [a]))
+                      (ensures (merge h a a a = get_state a))
 }

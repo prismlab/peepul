@@ -52,7 +52,14 @@ val commutativity : h:history s o{wellformed h}
                   -> Lemma (ensures (merge h a b l = merge h b a l))
 let commutativity h a b l = ()
 
+val idempotence : h:history s o{wellformed h}
+                -> a:history s o{hbeq h a}
+                -> Lemma (requires (lca h a a = [a]))
+                        (ensures (merge h a a a = get_state a))
+let idempotence h a = ()
+
 instance _ : mrdt s o icounter = {
   History.merge = merge;
-  History.commutativity = commutativity
+  History.commutativity = commutativity;
+  History.idempotence = idempotence
 }
