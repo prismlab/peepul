@@ -227,16 +227,25 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
         -> a:history s o{hbeq h a}
         -> b:history s o{hbeq h b}
         -> l:history s o{lca h a b = [l]}
-        -> s;
+        -> m:history s o;
 
   commutativity : h:history s o{wellformed h} 
                 -> a:history s o{hbeq h a} 
                 -> b:history s o{hbeq h b} 
                 -> l:history s o{lca h a b = [l] /\ lca h b a = [l]}
-                -> Lemma (ensures (merge h a b l = merge h b a l));
+                -> Lemma (ensures (get_state (merge h a b l) = get_state (merge h b a l)));
 
   idempotence : h:history s o{wellformed h}
               -> a:history s o{hbeq h a}
               -> Lemma (requires (lca h a a = [a]))
-                      (ensures (merge h a a a = get_state a))
+                      (ensures  (get_state (merge h a a a) = get_state a));
+
+  associativity : h:history s o{wellformed h} 
+                -> a:history s o{hbeq h a} 
+                -> b:history s o{hbeq h b} 
+                -> c:history s o{hbeq h c}
+                -> l:history s o{lca h a b = [l] /\ lca h b c = [l]}
+                -> Lemma (requires (hbeq h (merge h a b l)) /\ (hbeq h (merge h b c l)) /\ 
+                                  (lca h (merge h a b l) c = [l]) /\ (lca h a (merge h b c l) = [l]))
+                        (ensures  (get_state (merge h (merge h a b l) c l) = get_state (merge h a (merge h b c l) l)))
 }
