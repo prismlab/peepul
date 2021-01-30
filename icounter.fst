@@ -69,7 +69,7 @@ val associativity : h:history s o{wellformed h}
                   -> l:history s o{lca h a b = [l] /\ lca h b c = [l] }
                   -> Lemma (requires (hbeq h (merge h a b l)) /\ (hbeq h (merge h b c l)) /\ 
                                     (lca h (merge h a b l) c = [l]) /\ (lca h a (merge h b c l) = [l])) 
-                          (ensures  (merge h (merge h a b l) c l) = (merge h a (merge h b c l) l))
+                          (ensures  (get_state (merge h (merge h a b l) c l) = get_state (merge h a (merge h b c l) l)))
 
 let associativity h a b c l = 
     History.lemma1 h;
