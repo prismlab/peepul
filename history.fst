@@ -136,11 +136,12 @@ val lca_ : #s:eqtype -> #o:eqtype
          -> a:history s o{hbeq h a}
          -> b:history s o{hbeq h b}
          -> l:list (history s o)
-         -> acc1:list (history s o){forall h'. L.mem h' acc1 ==> ~(hbeq h h' /\ is_lca h' a b)}
-         -> acc2:list (history s o){forall h'. L.mem h' acc2 ==> hbeq h h' /\ is_lca h' a b}
+         -> acc1:list (history s o){forall h'. L.mem h' acc1 ==> ~(is_lca h' a b)}
+         -> acc2:list (history s o){forall h'. L.mem h' acc2 ==> is_lca h' a b}
          -> Pure (list (history s o))
-                (requires (forall h'. L.mem h' l \/ L.mem h' acc1 \/ L.mem h' acc2 <==> hbeq h h'))
-                (ensures (fun r -> forall h'. L.mem h' r <==> hbeq h h' /\ is_lca h' a b))
+                (requires (//(L.length l + L.length acc1 + L.length acc2 > 0) /\
+                           (forall h'. L.mem h' l \/ L.mem h' acc1 \/ L.mem h' acc2 <==> hbeq h h')))
+                (ensures (fun r -> forall h'. L.mem h' r <==> hbeq h h' /\ is_lca h' a b)) //TODO: Prove Cons? r
 let rec lca_ h a b l acc1 acc2 = 
   match l with
   | [] -> acc2
@@ -188,7 +189,7 @@ val lemma_lca_idempotence:
     #s:eqtype -> #o:eqtype
   -> h:history s o
   -> a:history s o{hbeq h a}
-  -> Lemma (ensures ((forall h'. L.mem h' (lca h a a) ==> h' = a)))
+  -> Lemma (ensures ((forall h'. L.mem h' (lca h a a) ==> h' = a))) //TODO: Prove lca h a a = [a]
 let lemma_lca_idempotence h a = ()
 
 val append_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |}
