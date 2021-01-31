@@ -131,6 +131,34 @@ let is_lca l a b =
       (not (hbeq ch2 a && hbeq ch2 b))
   end
 
+val lemma_is_lca_commutative : 
+    #s:eqtype -> #o:eqtype
+  -> l:history s o
+  -> a:history s o
+  -> b:history s o
+  -> Lemma (ensures (is_lca l a b = is_lca l b a))
+let lemma_is_lca_commutative l a b = ()
+
+val lemma3 : #s:eqtype -> #o:eqtype 
+           -> a:history s o -> b:history s o{hb a b}
+           -> Lemma (ensures (~(hb b a)))
+let rec lemma3 a b =
+  match a with
+  | HistLeaf _ _ -> ()
+  | HistNode _ _ _ ch1 _ ch2 ->
+     admit ()
+      
+val lemma_is_lca_reflexive :
+    #s:eqtype -> #o:eqtype
+  -> a:history s o
+  -> Lemma (ensures (is_lca a a a))
+let rec lemma_is_lca_reflexive a = 
+  match a with
+  | HistLeaf _ _ -> ()
+  | HistNode _ _ _ ch1 _ ch2 -> 
+      lemma3 a ch1;
+      lemma3 a ch2
+
 val lca_ : #s:eqtype -> #o:eqtype
          -> h:history s o
          -> a:history s o{hbeq h a}
@@ -223,21 +251,52 @@ let rec get_trace a b =
           append_trace (get_state a) tr2 (get_state ch2) (get_trace ch2 b) (get_state b)
   end
 
+val children : #s:eqtype -> #o:eqtype -> h:history s o -> list (history s o)
+let children h = 
+  match h with
+  | HistLeaf _ _ -> []
+  | HistNode _ _ _ ch1 _ ch2 -> [ch1; ch2]
+
+val merge_node : #s:eqtype -> #o:eqtype -> a:history s o
+               -> b:history s o
+               -> m:history s o
+               -> r:bool{L.mem m (children a) /\ L.mem m (children b) <==> r = true}
+let merge_node a b m =
+  L.mem m (children a) && L.mem m (children b)
+
+val lemma_merge_node_is_descendent : 
+    #s:eqtype -> #o:eqtype 
+  -> a:history s o
+  -> b:history s o
+  -> m:history s o{merge_node a b m}
+  -> Lemma (ensures (hb a m /\ hb b m))
+let lemma_merge_node_is_descendent a b m = ()
+
 class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
-  merge : h:history s o{wellformed h}
-        -> a:history s o{hbeq h a}
-        -> b:history s o{hbeq h b}
-        -> l:history s o{lca h a b = [l]}
+  merge : a:history s o
+        -> b:history s o
+        -> l:history s o{wellformed l /\ is_lca l a b}
         -> s;
 
-  commutativity : h:history s o{wellformed h} 
-                -> a:history s o{hbeq h a} 
-                -> b:history s o{hbeq h b} 
-                -> l:history s o{lca h a b = [l] /\ lca h b a = [l]}
-                -> Lemma (ensures (merge h a b l = merge h b a l));
+  commutativity : a:history s o
+                -> b:history s o
+                -> l:history s o{wellformed l /\ is_lca l a b}
+                -> Lemma (ensures (merge a b l = merge b a l));
 
-  idempotence : h:history s o{wellformed h}
-              -> a:history s o{hbeq h a}
-              -> Lemma (requires (lca h a a = [a]))
-                      (ensures (merge h a a a = get_state a))
+  idempotence : a:history s o{wellformed a /\ is_lca a a a}
+              -> Lemma (ensures (merge a a a = get_state a));
+
+  associativity : a:history s o
+                -> b:history s o
+                -> c:history s o
+                -> l_ab:history s o{wellformed l_ab /\ is_lca l_ab a b}
+                -> l_bc:history s o{wellformed l_bc /\ is_lca l_bc b c}
+                -> m_ab:history s o{merge_node a b m_ab /\ get_state m_ab = merge a b l_ab}
+                -> m_bc:history s o{merge_node b c m_bc /\ get_state m_bc = merge b c l_bc}
+                -> m_ab_c:history s o{merge_node m_ab c m_ab_c}
+                -> m_a_bc:history s o{merge_node a m_bc m_a_bc}
+                -> Lemma (requires (is_lca l_bc m_ab c /\ is_lca l_ab a m_bc /\
+                                   get_state m_ab_c = merge m_ab c l_bc /\
+                                   get_state m_a_bc = merge a m_bc l_ab))
+                        (ensures (get_state m_ab_c = get_state m_a_bc))
 }

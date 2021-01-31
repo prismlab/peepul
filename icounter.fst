@@ -27,15 +27,13 @@ let rec lemma1 tr s1 =
      let s2 = app_op s1 op in
      lemma1 ops s2
 
-val merge : h:history s o{wellformed h}
-          -> a:history s o{hbeq h a}
-          -> b:history s o{hbeq h b}
-          -> l:history s o{lca h a b = [l]}
+val merge : a:history s o
+          -> b:history s o
+          -> l:history s o{wellformed l /\ is_lca l a b}
           -> s
-let merge h a b l = 
-  History.lemma1 h;
+let merge a b l = 
+  History.lemma1 l;
   assert (wellformed a);
-  assert (wellformed l);
 
   let tr = get_trace l a in
   assert (fold_left apply_op (get_state l) tr = get_state a);
@@ -45,21 +43,34 @@ let merge h a b l =
 
   get_state a + get_state b - get_state l
 
-val commutativity : h:history s o{wellformed h}
-                  -> a:history s o{hbeq h a}
-                  -> b:history s o{hbeq h b}
-                  -> l:history s o{lca h a b = [l] /\ lca h b a = [l]}
-                  -> Lemma (ensures (merge h a b l = merge h b a l))
-let commutativity h a b l = ()
+val commutativity : a:history s o
+                  -> b:history s o
+                  -> l:history s o{wellformed l /\ is_lca l a b}
+                  -> Lemma (ensures (merge a b l = merge b a l))
+let commutativity a b l = ()
 
-val idempotence : h:history s o{wellformed h}
-                -> a:history s o{hbeq h a}
-                -> Lemma (requires (lca h a a = [a]))
-                        (ensures (merge h a a a = get_state a))
-let idempotence h a = ()
+val idempotence : a:history s o{wellformed a /\ is_lca a a a}
+                -> Lemma (ensures (merge a a a = get_state a))
+let idempotence a = ()
+
+val associativity : a:history s o
+                  -> b:history s o
+                  -> c:history s o
+                  -> l_ab:history s o{wellformed l_ab /\ is_lca l_ab a b}
+                  -> l_bc:history s o{wellformed l_bc /\ is_lca l_bc b c}
+                  -> m_ab:history s o{merge_node a b m_ab /\ get_state m_ab = merge a b l_ab}
+                  -> m_bc:history s o{merge_node b c m_bc /\ get_state m_bc = merge b c l_bc}
+                  -> m_ab_c:history s o{merge_node m_ab c m_ab_c}
+                  -> m_a_bc:history s o{merge_node a m_bc m_a_bc}
+                  -> Lemma (requires (is_lca l_bc m_ab c /\ is_lca l_ab a m_bc /\
+                                     get_state m_ab_c = merge m_ab c l_bc /\
+                                     get_state m_a_bc = merge a m_bc l_ab))
+                          (ensures (get_state m_ab_c = get_state m_a_bc))
+let associativity a b c l_ab l_bc m_ab m_bc m_ab_c m_a_bc = ()
 
 instance _ : mrdt s o icounter = {
   History.merge = merge;
   History.commutativity = commutativity;
-  History.idempotence = idempotence
+  History.idempotence = idempotence;
+  History.associativity = associativity
 }
