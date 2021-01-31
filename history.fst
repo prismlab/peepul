@@ -244,8 +244,9 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
                 -> a:history s o{hbeq h a} 
                 -> b:history s o{hbeq h b} 
                 -> c:history s o{hbeq h c}
-                -> l:history s o{lca h a b = [l] /\ lca h b c = [l]}
-                -> Lemma (requires (hbeq h (merge h a b l)) /\ (hbeq h (merge h b c l)) /\ 
-                                  (lca h (merge h a b l) c = [l]) /\ (lca h a (merge h b c l) = [l]))
-                        (ensures  (get_state (merge h (merge h a b l) c l) = get_state (merge h a (merge h b c l) l)))
+                -> l1:history s o{lca h a b = [l1]}
+                -> l2:history s o{lca h b c = [l2]}
+                -> Lemma (requires (hbeq h (merge h a b l1)) /\ (hbeq h (merge h b c l2)) /\ 
+                                  (lca h (merge h a b l1) c = [l2]) /\ (lca h a (merge h b c l2) = [l1]))
+                        (ensures  (get_state (merge h (merge h a b l1) c l2) = get_state (merge h a (merge h b c l2) l1)))
 }

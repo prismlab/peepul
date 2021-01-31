@@ -31,6 +31,10 @@ val lemma2 : l:s -> a:s{a >= l} -> b:s{b >= l} -> c:s{c >= l}
            -> Lemma (ensures ((a + b - l) + c - l) = (a + (b + c - l) - l))
 let lemma2 l a b c = ()
 
+val lemma3 : l1:s -> l2:s -> a:s{a >= l1} -> b:s{b >= l1 /\ b >= l2} -> c:s{c >= l2}
+           -> Lemma (ensures ((a + b - l1) + c - l2) = (a + (b + c - l2) - l1))
+let lemma3 l1 l2 a b c = ()
+
 val merge : h:history s o{wellformed h}
           -> a:history s o{hbeq h a}
           -> b:history s o{hbeq h b}
@@ -66,20 +70,23 @@ val associativity : h:history s o{wellformed h}
                   -> a:history s o{hbeq h a} 
                   -> b:history s o{hbeq h b} 
                   -> c:history s o{hbeq h c}
-                  -> l:history s o{lca h a b = [l] /\ lca h b c = [l] }
-                  -> Lemma (requires (hbeq h (merge h a b l)) /\ (hbeq h (merge h b c l)) /\ 
-                                    (lca h (merge h a b l) c = [l]) /\ (lca h a (merge h b c l) = [l])) 
-                          (ensures  (get_state (merge h (merge h a b l) c l) = get_state (merge h a (merge h b c l) l)))
+                  -> l1:history s o{lca h a b = [l1]}
+                  -> l2:history s o{lca h b c = [l2] }
+                  -> Lemma (requires (hbeq h (merge h a b l1)) /\ (hbeq h (merge h b c l2)) /\ 
+                                    (lca h (merge h a b l1) c = [l2]) /\ (lca h a (merge h b c l2) = [l1])) 
+                          (ensures  (get_state (merge h (merge h a b l1) c l2) = get_state (merge h a (merge h b c l2) l1)))
 
-let associativity h a b c l = 
+let associativity h a b c l1 l2 = 
     History.lemma1 h;
-    let tr_a = get_trace l a in
-    let tr_b = get_trace l b in
-    let tr_c = get_trace l c in
-    lemma1 tr_a (get_state l);
-    lemma1 tr_b (get_state l);
-    lemma1 tr_c (get_state l);
-    lemma2 (get_state l) (get_state a) (get_state b) (get_state c); ()
+    let tr1_a = get_trace l1 a in
+    let tr1_b = get_trace l1 b in
+    let tr2_b = get_trace l2 b in
+    let tr2_c = get_trace l2 c in
+    lemma1 tr1_a (get_state l1);
+    lemma1 tr1_b (get_state l1);
+    lemma1 tr2_b (get_state l2);
+    lemma1 tr2_c (get_state l2);
+    lemma3 (get_state l1) (get_state l2) (get_state a) (get_state b) (get_state c); ()
 
 instance _ : mrdt s o icounter = {
   History.merge = merge;
