@@ -60,22 +60,22 @@ val concurrent_commutative : #s:eqtype -> #o:eqtype
                            -> Lemma (ensures (concurrent h2 h1))
 let concurrent_commutative h1 h2 = ()
 
-val wellformed : #s:eqtype -> #o:eqtype -> {|datatype s o|} -> h:history s o -> bool
-let rec wellformed h =
+val trace_ok : #s:eqtype -> #o:eqtype -> {|datatype s o|} -> h:history s o -> bool
+let rec trace_ok h =
   match h with
   | HistLeaf _ _ -> true
   | HistNode _ st tr1 ch1 tr2 ch2 ->
       apply_trace st tr1 = get_state ch1 &&
       apply_trace st tr2 = get_state ch2 &&
-      wellformed ch1 && wellformed ch2
+      trace_ok ch1 && trace_ok ch2
 
 val hbeq_reflexive : #s:eqtype -> #o:eqtype -> h:history s o
                    -> Lemma (ensures (hbeq h h))
 let hbeq_reflexive h = ()
 
 val lemma1 : #s:eqtype -> #o:eqtype -> {| datatype s o |} 
-           -> h:history s o{wellformed h}
-           -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
+           -> h:history s o{trace_ok h}
+           -> Lemma (ensures (forall h'. hbeq h h' ==> trace_ok h')) //(decreases (size h))
 let rec lemma1 h =
   match h with 
   | HistLeaf _ _ -> ()
@@ -233,7 +233,7 @@ let rec append_trace s1 tr1 s2 tr2 s3 =
       op::tr
 
 val get_trace : #s:eqtype -> #o:eqtype -> {| datatype s o |}
-              -> a:history s o{wellformed a}
+              -> a:history s o{trace_ok a}
               -> b:history s o{hbeq a b}
               -> tr:list o{L.fold_left apply_op (get_state a) tr = get_state b}
 let rec get_trace a b =
@@ -243,8 +243,8 @@ let rec get_trace a b =
     match a with
     | HistLeaf _ _ -> []
     | HistNode _ _ tr1 ch1 tr2 ch2 ->
-        assert (wellformed ch1);
-        assert (wellformed ch2);
+        assert (trace_ok ch1);
+        assert (trace_ok ch2);
         if hbeq ch1 b then
           append_trace (get_state a) tr1 (get_state ch1) (get_trace ch1 b) (get_state b)
         else 
@@ -257,7 +257,8 @@ let children h =
   | HistLeaf _ _ -> []
   | HistNode _ _ _ ch1 _ ch2 -> [ch1; ch2]
 
-val merge_node : #s:eqtype -> #o:eqtype -> a:history s o
+val merge_node : #s:eqtype -> #o:eqtype 
+               -> a:history s o
                -> b:history s o
                -> m:history s o
                -> r:bool{L.mem m (children a) /\ L.mem m (children b) <==> r = true}
@@ -272,6 +273,45 @@ val lemma_merge_node_is_descendent :
   -> Lemma (ensures (hb a m /\ hb b m))
 let lemma_merge_node_is_descendent a b m = ()
 
+val unique_lca : #s:eqtype -> #o:eqtype
+               -> h:history s o
+               -> a:history s o{hbeq h a}
+               -> b:history s o{hbeq h b}
+               -> Tot (r:bool{r = true <==> (exists l. lca h a b = [l])})
+let unique_lca h a b =
+  match lca h a b with
+  | [_] -> true
+  | _ -> false
+
+val wellformed : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+               -> h:history s o
+               -> Tot (r:bool {r = true <==> (trace_ok h /\ (forall h1 h2. hbeq h h1 /\ hbeq h h2 ==> unique_lca h h1 h2))})
+let wellformed h = admit ()
+
+val lemma4 : #s:eqtype -> #o:eqtype -> {| datatype s o |} 
+           -> h:history s o{wellformed h}
+           -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
+let rec lemma4 h = admit ()
+
+val lcau : #s:eqtype -> #o:eqtype 
+         -> h:history s o
+         -> a:history s o{hbeq h a}
+         -> b:history s o{hbeq h b}
+         -> Pure (history s o) (requires (unique_lca h a b))
+                              (ensures (fun l -> is_lca l a b))
+let lcau h a b =
+  let [l] = lca h a b in
+  l
+
+val lcau_associative : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+                     -> h:history s o{wellformed h}
+                     -> a:history s o{hbeq h a}
+                     -> b:history s o{hbeq h b}
+                     -> c:history s o{hbeq h c}
+                     -> Lemma (ensures (lcau h a (lcau h b c) = lcau h (lcau h a b) c))
+let lcau_associative h a b c = 
+  admit ()
+
 class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
   merge : a:history s o
         -> b:history s o
@@ -285,18 +325,4 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
 
   idempotence : a:history s o{wellformed a /\ is_lca a a a}
               -> Lemma (ensures (merge a a a = get_state a));
-
-  associativity : a:history s o
-                -> b:history s o
-                -> c:history s o
-                -> l_ab:history s o{wellformed l_ab /\ is_lca l_ab a b}
-                -> l_bc:history s o{wellformed l_bc /\ is_lca l_bc b c}
-                -> m_ab:history s o{merge_node a b m_ab /\ get_state m_ab = merge a b l_ab}
-                -> m_bc:history s o{merge_node b c m_bc /\ get_state m_bc = merge b c l_bc}
-                -> m_ab_c:history s o{merge_node m_ab c m_ab_c}
-                -> m_a_bc:history s o{merge_node a m_bc m_a_bc}
-                -> Lemma (requires (is_lca l_bc m_ab c /\ is_lca l_ab a m_bc /\
-                                   get_state m_ab_c = merge m_ab c l_bc /\
-                                   get_state m_a_bc = merge a m_bc l_ab))
-                        (ensures (get_state m_ab_c = get_state m_a_bc))
 }
