@@ -142,18 +142,20 @@ let lemma_is_lca_commutative l a b = ()
 
 val lemma3 : #s:eqtype -> #o:eqtype 
            -> a:history s o -> b:history s o{hb a b}
-           -> Lemma (ensures (~(hb b a)))
+           -> Lemma (requires (forall h. hbeq b h ==> hb a h))
+           (ensures (~(hb b a)))
 let rec lemma3 a b =
-  match a with
+  match b with
   | HistLeaf _ _ -> ()
   | HistNode _ _ _ ch1 _ ch2 ->
-     admit ()
+               lemma3 a ch1;
+               lemma3 a ch2
       
 val lemma_is_lca_reflexive :
     #s:eqtype -> #o:eqtype
   -> a:history s o
   -> Lemma (ensures (is_lca a a a))
-let rec lemma_is_lca_reflexive a = 
+let lemma_is_lca_reflexive a = 
   match a with
   | HistLeaf _ _ -> ()
   | HistNode _ _ _ ch1 _ ch2 -> 

@@ -27,6 +27,11 @@ let rec lemma1 tr s1 =
      let s2 = app_op s1 op in
      lemma1 ops s2
 
+val lemma2 : l1:nat -> l2:nat -> lab:nat  -> lbc:nat -> lac:nat  -> a:nat  -> b:nat -> c:nat 
+             -> Lemma (requires l1 = l2)
+                     (ensures (a + (b + c - lbc) - (lab + lac - l2)) = ((a + b - lab) + c - (lbc + lac - l1)))
+let lemma2 l1 l2 lab lbc lac a b c = ()
+
 val merge : a:history s o
           -> b:history s o
           -> l:history s o{wellformed l /\ is_lca l a b}
@@ -67,23 +72,14 @@ val associativity : h:history s o{wellformed h}
                 -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = merge a mbc m1}
                 -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = merge mab c m2}
                 -> Lemma (get_state mabc1 = get_state mabc2)
+                
 let associativity h a b c lab lbc lac mab mbc m1 m2 mabc1 mabc2 = 
   lcau_associative h a b c lab lbc lac;
   let l2 = lcau h lab lac in
   let l1 = lcau h lbc lac in
-  assert (l1 = l2);
-  let g = get_state in
-  assert (g mab = g a + g b - g lab);
-  assert (g mbc = g b + g c - g lbc);
-  assert (g mabc1 = g a + g mbc - g m1);
-  assert (g a + g b + g c - g lbc - g m1 >= 0);
-  assert (g a + (g b + g c - g lbc) - g m1 = g mabc1);
-  assert (g m1 = g lab + g lac - g l2);
-  assert (g a + (g b + g c - g lbc) - (g lab + g lac - g l2) = g mabc1);
+  lemma2 (get_state l1) (get_state l2) (get_state lab) (get_state lbc) (get_state lac) (get_state a) (get_state b) 
+         (get_state c); ()
   
-  assert (g a + (g b + g c - g lbc) - (g lab + g lac - g l1) = g mabc1);
-  assert ((g a + g b - g lab) + g c - (g lbc + g lac - g l1) = g mabc2);
-  admit ()
 
 instance _ : mrdt s o icounter = {
   History.merge = merge;
