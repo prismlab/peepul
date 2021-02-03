@@ -137,6 +137,7 @@ val lemma_is_lca_commutative :
   -> a:history s o
   -> b:history s o
   -> Lemma (ensures (is_lca l a b = is_lca l b a))
+    [SMTPat (is_lca l a b)]
 let lemma_is_lca_commutative l a b = ()
 
 val lemma3 : #s:eqtype -> #o:eqtype 
@@ -265,14 +266,6 @@ val merge_node : #s:eqtype -> #o:eqtype
 let merge_node a b m =
   L.mem m (children a) && L.mem m (children b)
 
-val lemma_merge_node_is_descendent : 
-    #s:eqtype -> #o:eqtype 
-  -> a:history s o
-  -> b:history s o
-  -> m:history s o{merge_node a b m}
-  -> Lemma (ensures (hb a m /\ hb b m))
-let lemma_merge_node_is_descendent a b m = ()
-
 val unique_lca : #s:eqtype -> #o:eqtype
                -> h:history s o
                -> a:history s o{hbeq h a}
@@ -291,26 +284,41 @@ let wellformed h = admit ()
 val lemma4 : #s:eqtype -> #o:eqtype -> {| datatype s o |} 
            -> h:history s o{wellformed h}
            -> Lemma (ensures (forall h'. hbeq h h' ==> wellformed h')) //(decreases (size h))
+             [SMTPat (wellformed h)]
 let rec lemma4 h = admit ()
 
-val lcau : #s:eqtype -> #o:eqtype 
-         -> h:history s o
+val lemma_merge_node_is_descendent : 
+    #s:eqtype -> #o:eqtype -> {| datatype s o |}
+  -> a:history s o{wellformed a}
+  -> b:history s o{wellformed b}
+  -> m:history s o{merge_node a b m}
+  -> Lemma (ensures (hb a m /\ hb b m /\ wellformed m))
+let lemma_merge_node_is_descendent a b m =
+  lemma4 a
+
+val lcau : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+         -> h:history s o{wellformed h}
          -> a:history s o{hbeq h a}
          -> b:history s o{hbeq h b}
-         -> Pure (history s o) (requires (unique_lca h a b))
-                              (ensures (fun l -> is_lca l a b))
+         -> Tot (l:history s o{wellformed l /\ is_lca l a b /\ hbeq h l})
 let lcau h a b =
+  lemma1 h;
+  assert (hbeq h a);
+  assert (hbeq h b);
+  assert (unique_lca h a b);
   let [l] = lca h a b in
   l
 
 val lcau_associative : #s:eqtype -> #o:eqtype -> {| datatype s o |}
                      -> h:history s o{wellformed h}
-                     -> a:history s o{hbeq h a}
-                     -> b:history s o{hbeq h b}
-                     -> c:history s o{hbeq h c}
-                     -> Lemma (ensures (lcau h a (lcau h b c) = lcau h (lcau h a b) c))
-let lcau_associative h a b c = 
-  admit ()
+                     -> a:history s o{wellformed a /\ hbeq h a}
+                     -> b:history s o{wellformed b /\ hbeq h b}
+                     -> c:history s o{wellformed c /\ hbeq h c}
+                     -> lab:history s o{lcau h a b = lab}
+                     -> lbc:history s o{lcau h b c = lbc}
+                     -> lac:history s o{lcau h c a = lac}
+                     -> Lemma (ensures (lcau h lab lac = lcau h lbc lac))
+let lcau_associative h a b c lab lbc lca = admit ()
 
 class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
   merge : a:history s o
@@ -325,4 +333,19 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
 
   idempotence : a:history s o{wellformed a /\ is_lca a a a}
               -> Lemma (ensures (merge a a a = get_state a));
+
+  associativity : h:history s o{wellformed h}
+                -> a:history s o{wellformed a /\ hbeq h a}
+                -> b:history s o{wellformed b /\ hbeq h b}
+                -> c:history s o{wellformed c /\ hbeq h c}
+                -> lab:history s o{lcau h a b = lab}
+                -> lbc:history s o{lcau h b c = lbc}
+                -> lac:history s o{lcau h c a = lac}
+                -> mab:history s o{hbeq h mab /\ merge_node a b mab /\ get_state mab = merge a b lab}
+                -> mbc:history s o{hbeq h mbc /\ merge_node b c mbc /\ get_state mbc = merge b c lbc}
+                -> m1:history s o{hbeq h m1 /\ merge_node lab lac m1 /\ get_state m1 = merge lab lac (lcau h lab lac) /\ lcau h a mbc = m1}
+                -> m2:history s o{hbeq h m2 /\ merge_node lbc lac m2 /\ get_state m2 = merge lbc lac (lcau h lbc lac) /\ lcau h mab c = m2}
+                -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = merge a mbc m1}
+                -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = merge mab c m2}
+                -> Lemma (get_state mabc1 = get_state mabc2)
 }

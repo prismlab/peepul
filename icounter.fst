@@ -53,20 +53,37 @@ val idempotence : a:history s o{wellformed a /\ is_lca a a a}
                 -> Lemma (ensures (merge a a a = get_state a))
 let idempotence a = ()
 
-val associativity : a:history s o
-                  -> b:history s o
-                  -> c:history s o
-                  -> l_ab:history s o{wellformed l_ab /\ is_lca l_ab a b}
-                  -> l_bc:history s o{wellformed l_bc /\ is_lca l_bc b c}
-                  -> m_ab:history s o{merge_node a b m_ab /\ get_state m_ab = merge a b l_ab}
-                  -> m_bc:history s o{merge_node b c m_bc /\ get_state m_bc = merge b c l_bc}
-                  -> m_ab_c:history s o{merge_node m_ab c m_ab_c}
-                  -> m_a_bc:history s o{merge_node a m_bc m_a_bc}
-                  -> Lemma (requires (is_lca l_bc m_ab c /\ is_lca l_ab a m_bc /\
-                                     get_state m_ab_c = merge m_ab c l_bc /\
-                                     get_state m_a_bc = merge a m_bc l_ab))
-                          (ensures (get_state m_ab_c = get_state m_a_bc))
-let associativity a b c l_ab l_bc m_ab m_bc m_ab_c m_a_bc = ()
+val associativity : h:history s o{wellformed h}
+                -> a:history s o{wellformed a /\ hbeq h a}
+                -> b:history s o{wellformed b /\ hbeq h b}
+                -> c:history s o{wellformed c /\ hbeq h c}
+                -> lab:history s o{lcau h a b = lab}
+                -> lbc:history s o{lcau h b c = lbc}
+                -> lac:history s o{lcau h c a = lac}
+                -> mab:history s o{hbeq h mab /\ merge_node a b mab /\ get_state mab = merge a b lab}
+                -> mbc:history s o{hbeq h mbc /\ merge_node b c mbc /\ get_state mbc = merge b c lbc}
+                -> m1:history s o{hbeq h m1 /\ merge_node lab lac m1 /\ get_state m1 = merge lab lac (lcau h lab lac) /\ lcau h a mbc = m1}
+                -> m2:history s o{hbeq h m2 /\ merge_node lbc lac m2 /\ get_state m2 = merge lbc lac (lcau h lbc lac) /\ lcau h mab c = m2}
+                -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = merge a mbc m1}
+                -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = merge mab c m2}
+                -> Lemma (get_state mabc1 = get_state mabc2)
+let associativity h a b c lab lbc lac mab mbc m1 m2 mabc1 mabc2 = 
+  lcau_associative h a b c lab lbc lac;
+  let l2 = lcau h lab lac in
+  let l1 = lcau h lbc lac in
+  assert (l1 = l2);
+  let g = get_state in
+  assert (g mab = g a + g b - g lab);
+  assert (g mbc = g b + g c - g lbc);
+  assert (g mabc1 = g a + g mbc - g m1);
+  assert (g a + g b + g c - g lbc - g m1 >= 0);
+  assert (g a + (g b + g c - g lbc) - g m1 = g mabc1);
+  assert (g m1 = g lab + g lac - g l2);
+  assert (g a + (g b + g c - g lbc) - (g lab + g lac - g l2) = g mabc1);
+  
+  assert (g a + (g b + g c - g lbc) - (g lab + g lac - g l1) = g mabc1);
+  assert ((g a + g b - g lab) + g c - (g lbc + g lac - g l1) = g mabc2);
+  admit ()
 
 instance _ : mrdt s o icounter = {
   History.merge = merge;
