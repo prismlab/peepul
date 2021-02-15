@@ -1,6 +1,8 @@
 module Enable_wins
 
+open FStar.Tactics
 open FStar.List.Tot
+
 open History
 
 type o =
@@ -52,13 +54,15 @@ let merge_flag l a b =
   let bf = snd (get_state b) in
   if af && bf then true
   else if not af && not bf then false
-  else if af then ac - lc > 0
-  else bc - lc > 0
+  else if af then ac > lc
+  else bc > lc
   
 val merge : a:history s o
           -> b:history s o
           -> l:history s o{wellformed l /\ is_lca l a b}
-          -> s
+          -> r:s{fst r >= fst (get_state a) /\ 
+                fst r >= fst (get_state b) /\ 
+                fst r >= fst (get_state l)}
 let merge a b l = 
   History.lemma1 l;
   assert (wellformed a);
@@ -101,12 +105,12 @@ let assoc1 h a b c l mab mbc mabc1 mabc2 =
   assert (cn mab = cn a + cn b - cn l);
   assert (cn mbc = cn b + cn c - cn l);
   
-  let tra = get_trace l a in
-  lemma1 tra (get_state l);
-  let trb = get_trace l b in
-  lemma1 trb (get_state l);
-  let trc = get_trace l c in
-  lemma1 trc (get_state l);
+  //let tra = get_trace l a in
+  //lemma1 tra (get_state l);
+  //let trb = get_trace l b in
+  //lemma1 trb (get_state l);
+  //let trc = get_trace l c in
+  //lemma1 trc (get_state l);
   //assert (f mab = merge_flag l a b);
   //assert (f mbc = merge_flag l b c);
 
@@ -120,7 +124,11 @@ let assoc1 h a b c l mab mbc mabc1 mabc2 =
   //assert (f mabc1 = merge_flag l a mbc);
   ()
 
+let tau () =
+  Tactics.simpl ();
+  dump "Todo"
 
+[@"substitute"]
 val associativity : h:history s o{wellformed h}
                 -> a:history s o{wellformed a /\ hbeq h a}
                 -> b:history s o{wellformed b /\ hbeq h b}
@@ -139,51 +147,63 @@ let associativity h a b c lab lbc lac mab mbc m1 m2 mabc1 mabc2 =
   lcau_associative h a b c lab lbc lac;
   let l = lcau h lab lac in
   let cn h = fst (get_state h) in
-  //let f h = snd (get_state h) in
+  let f h = snd (get_state h) in
   let l2 = lcau h lab lac in
   let l1 = lcau h lbc lac in
   assert (l1 = l2);
   lemma2 (cn l1) (cn l2) (cn lab) (cn lbc) (cn lac) (cn a) (cn b) (cn c);
   assert (cn mabc1 = cn mabc2);
+  
+  //assert (f mabc1 = merge_flag m1 a mbc);
+  //assert (cn a >= cn m1);
+  //assert (cn mbc >= cn m1);
+  assert (f mabc1 = 
+          begin if f a && f mbc then true
+                else if not (f a) && not (f mbc) then false
+                else if f a then cn a > cn m1
+                else cn mbc > cn m1
+          end);
+  assert (f mabc2 = 
+          begin if f mab && f c then true
+                else if not (f mab) && not (f c) then false
+                else if f mab then cn mab > cn m2
+                else cn c > cn m2
+          end);
+  let f_mab = 
+    if f a && f b then true 
+    else if not (f a) && not (f b) then false
+    else if f a then cn a > cn lab
+    else cn b > cn lab
+  in
+  assert (f mab = f_mab);
+  assert_norm (f mabc2 = 
+          begin if f_mab && f c then true
+                else if not (f_mab) && not (f c) then false
+                else if f_mab then cn mab > cn m2
+                else cn c > cn m2
+          end);
 
-  let trab = get_trace l1 lab in
-  lemma1 trab (get_state l1);
-  let trbc = get_trace l1 lbc in
-  lemma1 trbc (get_state l1);
-  let trac = get_trace l1 lac in
-  lemma1 trac (get_state l1);
+  (*
+  let f_mbc = 
+    if f b && f c then true 
+    else if not (f b) && not (f c) then false
+    else if f b then cn b > cn lbc
+    else cn c > cn lbc
+  in
+  assert (f mbc = f_mbc);
 
-  let tra = get_trace lab a in
-  lemma1 tra (get_state lab);
-  let tra' = append_trace (get_state l1) trab (get_state lab) tra (get_state a) in
-  lemma1 tra' (get_state l);
-  let tra = get_trace lac a in
-  lemma1 tra (get_state lac);
-  let tra' = append_trace (get_state l1) trac (get_state lac) tra (get_state a) in
-  lemma1 tra' (get_state l);
+  assert (f mabc1 = 
+          begin if f a && f_mbc then true
+                else if not (f a) && not (f_mbc) then false
+                else if f a then cn a > cn m1
+                else cn mbc > cn m1
+          end);
+  *)
 
-  let trb = get_trace lab b in
-  lemma1 trb (get_state lab);
-  let trb' = append_trace (get_state l1) trab (get_state lab) trb (get_state b) in
-  lemma1 trb' (get_state l);
-  let trb = get_trace lbc b in
-  lemma1 trb (get_state lbc);
-  let trb' = append_trace (get_state l1) trbc (get_state lbc) trb (get_state b) in
-  lemma1 trb' (get_state l);
-
-  let trc = get_trace lac c in
-  lemma1 trc (get_state lac);
-  let trc' = append_trace (get_state l1) trac (get_state lac) trc (get_state c) in
-  lemma1 trc' (get_state l)
-
-(*
-  let trc = get_trace lbc c in
-  lemma1 trc (get_state lbc);
-  let trc' = append_trace (get_state l1) trbc (get_state lbc) trc (get_state c) in
-  lemma1 trc' (get_state l)
-*)
-
-
+  //assert_by_tactic (f mabc1 = f mabc2) tau;
+   
+  ()
+  
 instance _ : mrdt s o icounter = {
   History.merge = merge;
   History.commutativity = commutativity;
