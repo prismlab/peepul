@@ -326,15 +326,15 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
   merge : a:history s o
         -> b:history s o
         -> l:history s o{wellformed l /\ is_lca l a b}
-        -> s;
+        -> history s o;
 
   commutativity : a:history s o
                 -> b:history s o
                 -> l:history s o{wellformed l /\ is_lca l a b}
-                -> Lemma (ensures (merge a b l = merge b a l));
+                -> Lemma (ensures (get_state (merge a b l) = get_state(merge b a l)));
 
   idempotence : a:history s o{wellformed a /\ is_lca a a a}
-              -> Lemma (ensures (merge a a a = get_state a));
+              -> Lemma (ensures (get_state (merge a a a) = get_state a));
 
   associativity : h:history s o{wellformed h}
                 -> a:history s o{wellformed a /\ hbeq h a}
@@ -343,11 +343,11 @@ class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
                 -> lab:history s o{lcau h a b = lab}
                 -> lbc:history s o{lcau h b c = lbc}
                 -> lac:history s o{lcau h c a = lac}
-                -> mab:history s o{hbeq h mab /\ merge_node a b mab /\ get_state mab = merge a b lab}
-                -> mbc:history s o{hbeq h mbc /\ merge_node b c mbc /\ get_state mbc = merge b c lbc}
-                -> m1:history s o{hbeq h m1 /\ merge_node lab lac m1 /\ get_state m1 = merge lab lac (lcau h lab lac) /\ lcau h a mbc = m1}
-                -> m2:history s o{hbeq h m2 /\ merge_node lbc lac m2 /\ get_state m2 = merge lbc lac (lcau h lbc lac) /\ lcau h mab c = m2}
-                -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = merge a mbc m1}
-                -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = merge mab c m2}
-                -> Lemma (get_state mabc1 = get_state mabc2)
+                -> mab:history s o{hbeq h mab /\ merge_node a b mab /\ get_state mab = get_state (merge a b lab)}
+                -> mbc:history s o{hbeq h mbc /\ merge_node b c mbc /\ get_state mbc = get_state (merge b c lbc)}
+                -> m1:history s o{hbeq h m1 /\ merge_node lab lac m1 /\ get_state m1 = get_state (merge lab lac (lcau h lab lac)) /\ lcau h a mbc = m1}
+                -> m2:history s o{hbeq h m2 /\ merge_node lbc lac m2 /\ get_state m2 = get_state (merge lbc lac (lcau h lbc lac)) /\ lcau h mab c = m2}
+                -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = get_state (merge a mbc m1)}
+                -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = get_state (merge mab c m2)}
+                -> Lemma (get_state mabc1 = get_state mabc2) 
 }
