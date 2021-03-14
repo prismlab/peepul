@@ -322,6 +322,42 @@ val lcau_associative : #s:eqtype -> #o:eqtype -> {| datatype s o |}
                      -> Lemma (ensures (lcau h lab lac = lcau h lbc lac))
 let lcau_associative h a b c lab lbc lca = admit ()
 
+val isLeaf : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+           -> h:history s o
+           -> a:history s o
+           -> Tot bool
+let isLeaf h a = 
+hbeq h a &&
+    begin match a with
+    | HistLeaf _ _ -> true
+    | _ -> false
+end
+
+val append_leaf : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+                -> h:history s o
+                -> l1:list (history s o)
+                -> l2:list (history s o)
+                -> acc:list (history s o)
+                -> Pure (list (history s o))
+                       (requires (forall h'. isLeaf h h' <==> L.mem h' l1 \/ L.mem h' l2 \/ L.mem h' acc))
+                       (ensures (fun l -> forall h'. isLeaf h h' <==> L.mem h' l))
+let rec append_leaf h l1 l2 acc =
+  match l1, l2 with
+  |[], [] -> acc
+  |x::xs, _ -> append_leaf h xs l2 (x::acc)
+  |[], x::xs -> append_leaf h [] xs (x::acc)
+
+val findleaf : #s:eqtype -> #o:eqtype -> {| datatype s o |}
+             -> h:history s o
+             -> Tot (l:list (history s o){(forall h'. L.mem h' l <==> isLeaf h h')})
+let rec findleaf h = 
+  match h with
+  |HistLeaf _ _ -> [h]
+  |HistNode _ _ _ ch1 _ ch2 -> 
+           let l1 = (findleaf ch1) in
+           let l2 = (findleaf ch2) in
+           append_leaf h l1 l2 []
+
 class mrdt (s:eqtype) (o:eqtype) (m : datatype s o) = {
   merge : a:history s o
         -> b:history s o

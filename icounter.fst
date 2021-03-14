@@ -49,42 +49,9 @@ let merge a b l =
   (HistLeaf 0 (get_state a + get_state b - get_state l))
 
 assume val axiom1 : a:history s o
-                    -> b:history s o
-                    -> l:history s o{wellformed l /\ is_lca l a b}
-                    -> Lemma (ensures hbeq l (merge a b l))
-
-val isLeaf : h:history s o
-           -> a:history s o
-           -> Tot bool
-let isLeaf h a = 
-hbeq h a &&
-    begin match a with
-    | HistLeaf _ _ -> true
-    | _ -> false
-end
-
-val append_leaf : h:history s o
-                -> l1:list (history s o)
-                -> l2:list (history s o)
-                -> acc:list (history s o)
-                -> Pure (list (history s o))
-                       (requires (forall h'. isLeaf h h' <==> mem h' l1 \/ mem h' l2 \/ mem h' acc))
-                       (ensures (fun l -> forall h'. isLeaf h h' <==> mem h' l))
-let rec append_leaf h l1 l2 acc =
-  match l1, l2 with
-  |[], [] -> acc
-  |x::xs, _ -> append_leaf h xs l2 (x::acc)
-  |[], x::xs -> append_leaf h [] xs (x::acc)
-
-val findleaf : h:history s o
-               -> Tot (l:list (history s o){(forall h'. mem h' l <==> isLeaf h h')})
-let rec findleaf h = 
-  match h with
-  |HistLeaf _ _ -> [h]
-  |HistNode _ _ _ ch1 _ ch2 -> 
-           let l1 = (findleaf ch1) in
-           let l2 = (findleaf ch2) in
-           append_leaf h l1 l2 []
+                  -> b:history s o
+                  -> l:history s o{wellformed l /\ is_lca l a b}
+                  -> Lemma (ensures hbeq l (merge a b l))
 
 val sum : list (history s o) -> nat
 let rec sum l =
