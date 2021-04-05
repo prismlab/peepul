@@ -1,89 +1,111 @@
 module Icounter
 
 open FStar.List.Tot
-open History
+open Library
 
 type o =
-  | Inc : nat -> o
+    | Inc : nat -> o
 
 type s = nat
-
+       
 val app_op : s -> o -> s
 let app_op s (Inc n) = s + n
 
 instance icounter : datatype s o = {
-  History.apply_op = app_op
+   Library.apply_op = app_op
 }
 
-val le : nat -> nat -> bool
-let le a b = a <= b
+val vis : o -> o -> Tot bool
+let vis a b = admit()
 
-val lemma1 : tr:list o -> s1:s
-           -> Lemma (ensures (le s1 (fold_left apply_op s1 tr)))
-let rec lemma1 tr s1 =
-  match tr with
-  | [] -> ()
-  | op::ops ->
-     let s2 = app_op s1 op in
-     lemma1 ops s2
+val visib : l:list o -> o1:o -> o2:o -> bool
+let visib l o1 o2 = mem o1 l && mem o2 l && vis o1 o2
 
-val lemma2 : l1:nat -> l2:nat -> lab:nat  -> lbc:nat -> lac:nat  -> a:nat  -> b:nat -> c:nat 
-             -> Lemma (requires l1 = l2)
-                     (ensures (a + (b + c - lbc) - (lab + lac - l2)) = ((a + b - lab) + c - (lbc + lac - l1)))
-let lemma2 l1 l2 lab lbc lac a b c = ()
+val sum : list o -> nat
+let rec sum l =
+    match l with
+    |[] -> 0
+    |(Inc n)::xs -> n + sum xs
+    
+val sim : s0:s
+        -> tr:list o
+        -> s1:s 
+        -> Tot bool           
+let sim s0 tr s1 = 
+        s1 = s0 + sum tr  
 
-val merge : a:history s o
-          -> b:history s o
-          -> l:history s o{wellformed l /\ is_lca l a b}
-          -> s
-let merge a b l = 
-  History.lemma1 l;
-  assert (wellformed a);
 
-  let tr = get_trace l a in
-  assert (fold_left apply_op (get_state l) tr = get_state a);
+val union : l:list o 
+          -> a:list o
+          -> b:list o
+          -> list o          
+let rec union l a b = 
+    match l,a,b with
+    |[],[],[] -> []
+    |x::xs, _, _ -> x::(union xs a b)
+    |[],x::xs,_ -> x::(union [] xs b)
+    |[],[],_ -> b
 
-  lemma1 tr (get_state l);
-  assert (get_state a >= get_state l);
+assume val axiom : l:list o -> a:list o -> b:list o
+                 -> Lemma (ensures (forall o1 o2. visib (union l a b) o1 o2 ==> visib l o1 o2 \/ visib a o1 o2 \/ visib b o1 o2)) [SMTPat (union l a b)]
 
-  get_state a + get_state b - get_state l
+val merge : init:s
+          -> ltr:list o
+          -> l:s
+          -> atr:list o 
+          -> a:s 
+          -> btr:list o 
+          -> b:s 
+          -> Pure s (requires (sim init ltr l /\ sim l atr a /\ sim l btr b) /\ 
+                   (forall o1 o2 o3. mem o1 ltr /\ mem o2 atr /\ mem o3 btr ==> 
+                      visib (union ltr atr btr) o1 o2 /\ visib (union ltr atr btr) o1 o3) /\ 
+                   (forall o1 o2. (visib ltr o1 o2 ==> visib atr o1 o2 /\ visib btr o1 o2)))
+                   (ensures (fun res -> true))
+let merge init ltr l atr a btr b = 
+    a + b - l
 
-val commutativity : a:history s o
-                  -> b:history s o
-                  -> l:history s o{wellformed l /\ is_lca l a b}
-                  -> Lemma (ensures (merge a b l = merge b a l))
-let commutativity a b l = ()
 
-val idempotence : a:history s o{wellformed a /\ is_lca a a a}
-                -> Lemma (ensures (merge a a a = get_state a))
-let idempotence a = ()
+val lemma1 : l:list o
+           -> a:list o
+           -> b:list o
+           -> Lemma (ensures (forall ele. mem ele (union l a b) <==> mem ele l \/ mem ele a \/ mem ele b) /\ (sum (union l a b) = sum l + sum a + sum b)) (decreases %[l;a;b])           
+let rec lemma1 l a b = 
+  match l,a,b with
+  |[],[],[] -> ()
+  |x::xs, _, _ -> lemma1 xs a b
+  |[],x::xs,_ -> lemma1 [] xs b
+  |[],[],x::xs -> lemma1 [] [] xs
 
-val associativity : h:history s o{wellformed h}
-                -> a:history s o{wellformed a /\ hbeq h a}
-                -> b:history s o{wellformed b /\ hbeq h b}
-                -> c:history s o{wellformed c /\ hbeq h c}
-                -> lab:history s o{lcau h a b = lab}
-                -> lbc:history s o{lcau h b c = lbc}
-                -> lac:history s o{lcau h c a = lac}
-                -> mab:history s o{hbeq h mab /\ merge_node a b mab /\ get_state mab = merge a b lab}
-                -> mbc:history s o{hbeq h mbc /\ merge_node b c mbc /\ get_state mbc = merge b c lbc}
-                -> m1:history s o{hbeq h m1 /\ merge_node lab lac m1 /\ get_state m1 = merge lab lac (lcau h lab lac) /\ lcau h a mbc = m1}
-                -> m2:history s o{hbeq h m2 /\ merge_node lbc lac m2 /\ get_state m2 = merge lbc lac (lcau h lbc lac) /\ lcau h mab c = m2}
-                -> mabc1: history s o{hbeq h mabc1 /\ merge_node a mbc mabc1 /\ get_state mabc1 = merge a mbc m1}
-                -> mabc2: history s o{hbeq h mabc2 /\ merge_node mab c mabc2 /\ get_state mabc2 = merge mab c m2}
-                -> Lemma (get_state mabc1 = get_state mabc2)
-                
-let associativity h a b c lab lbc lac mab mbc m1 m2 mabc1 mabc2 = 
-  lcau_associative h a b c lab lbc lac;
-  let l2 = lcau h lab lac in
-  let l1 = lcau h lbc lac in
-  lemma2 (get_state l1) (get_state l2) (get_state lab) (get_state lbc) (get_state lac) (get_state a) (get_state b) 
-         (get_state c); ()
-  
+
+val prop : init:s
+         -> ltr: list o
+         -> l:s 
+         -> atr:list o 
+         -> a:s 
+         -> btr:list o
+         -> b:s 
+         -> Lemma (ensures (sim init ltr l /\ sim l atr a /\ sim l btr b) /\ 
+                 (forall o1 o2 o3. mem o1 ltr /\ mem o2 atr /\ mem o3 btr ==> 
+                     visib (union ltr atr btr) o1 o2 /\ visib (union ltr atr btr) o1 o3) /\ 
+                 (forall o1 o2. (visib ltr o1 o2 ==> visib atr o1 o2 /\ visib btr o1 o2)) ==> 
+                 (sim init (union ltr atr btr) (merge init ltr l atr a btr b)))                
+let prop init ltr l atr a btr b = 
+  lemma1 ltr atr btr; ()
+
+val convergence : init:s 
+                -> tr:list o
+                -> a:s 
+                -> b:s 
+                -> Lemma (requires (sim init tr a /\ sim init tr b))
+                        (ensures (a = b))
+let convergence inir tr a b = ()
+
 
 instance _ : mrdt s o icounter = {
-  History.merge = merge;
-  History.commutativity = commutativity;
-  History.idempotence = idempotence;
-  History.associativity = associativity
-}
+    Library.sim = sim;
+    Library.visib = visib;
+    Library.union = union;
+    Library.merge = merge;
+    Library.prop = prop;
+    Library.convergence = convergence
+  }
