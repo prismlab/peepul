@@ -75,17 +75,17 @@ let rec sum l =
 
 val flag : l:ae -> bool
 let flag tr = if ((forallb (fun e -> (existsb (fun d -> (snd d = Disable) && tr.vis e d) tr.l))
-                                  (filter (fun e -> (snd e = Enable)) tr.l))
-                  || (forallb (fun d -> (snd d = Disable)) tr.l) || (tr.l = [])) then false else true
+                                           (filter (fun e -> (snd e = Enable)) tr.l))
+                           || (forallb (fun d -> (snd d = Disable)) tr.l) || (tr.l = [])) then false else true
 
-#set-options "--query_stats"              
+#set-options "--query_stats"
 val sim : tr:ae
-        -> s1:s 
-        -> Tot (bool)           
-let sim tr s1 = 
-      let c = sum tr.l in
-      let f = flag tr in
-      s1 = (c,f)
+        -> s1:s
+        -> Tot (bool)
+let sim tr s1 =
+       let c = sum tr.l in
+       let f = flag tr in
+       s1 = (c,f)
 
 val rem1 : l:ae 
          -> op:o
@@ -201,7 +201,6 @@ val absmerge : l:ae
                                        mem e u.l /\ mem e1 u.l /\ not (u.vis e e1 || u.vis e1 e)) /\
                               (forall e e1. mem e b.l /\ mem e1 b.l /\ not (b.vis e e1 || b.vis e1 e) ==> 
                                        mem e u.l /\ mem e1 u.l /\ not (u.vis e e1 || u.vis e1 e))))
-                                       
 let absmerge l a b = 
     let la = diff a l in
     let lb = diff b l in
@@ -210,30 +209,6 @@ let absmerge l a b =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && l.vis o o1) || 
                  (mem o a.l && mem o1 a.l && a.vis o o1) || 
                  (mem o b.l && mem o1 b.l && b.vis o o1)) res.l)
-
-val help1 : tr:ae 
-          -> Lemma (ensures (not (forallb (fun e -> (existsb (fun d -> (snd d = Disable) && tr.vis e d)) tr.l)
-                                                (filter (fun e -> (snd e = Enable)) tr.l))
-                                && not (forallb (fun d -> (snd d = Disable)) tr.l) && (tr.l <> [])) <==>                          
-                           (exists e. (mem e tr.l /\ snd e = Enable /\
-                           (forall d. (mem d tr.l /\ snd d = Disable) ==> mem e tr.l /\ mem d tr.l /\ not (tr.vis e d)))) /\ tr.l <> []) (decreases tr.l)
-let rec help1 tr = 
-  match tr with
-  |(A _ []) -> ()
-  |(A _ (x::xs)) -> help1 (A tr.vis xs)
-
-val help2 : tr:ae 
-          -> Lemma (ensures (flag tr = false) <==>
-                           ((forall e. (mem e tr.l /\ snd e = Enable) ==>  
-                            (exists d. mem d tr.l /\ snd d = Disable /\ mem e tr.l /\ mem d tr.l /\ tr.vis e d)) \/ tr.l = [] \/
-                            (forall d. mem d tr.l ==> snd d = Disable)))  (decreases tr.l) 
-let help2 tr = ()
-
-val help3 : tr:ae 
-          -> Lemma (ensures (flag tr = true) <==> 
-                           (exists e. (mem e tr.l /\ snd e = Enable /\
-                           (forall d. (mem d tr.l /\ snd d = Disable) ==> mem e tr.l /\ mem d tr.l /\ not (tr.vis e d)))))
-let help3 tr = help1 tr; ()
 
 val help4 : l:ae 
           -> a:ae 
@@ -247,7 +222,7 @@ let rec help4 l a =
   |(A _ (x::xs)),_ -> help4 (A l.vis xs) a
   |(A _ []),(A _ (x::xs)) -> help4 l (A a.vis xs)
 
-val help5 : l:ae 
+val help6 : l:ae 
           -> a:ae
           -> b:ae 
           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
@@ -255,100 +230,11 @@ val help5 : l:ae
                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                            (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                     not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                  (ensures ((sum a.l = sum l.l) /\ (flag a = true) /\ (flag b = false)) ==> ((diff a l).l = []))
-let help5 l a b =  help4 l a; ()
-
-val lemma1 : l:ae 
-           -> a:ae
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures ((flag b = true) /\ (flag a = true) ==> (flag (absmerge l a b) = true)))                  
-let  lemma1 l a b = 
-  help3 a;
-  help3 b;
-  help3 (absmerge l a b); ()
-
-val lemma2 : l:ae 
-           -> a:ae
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures (flag a = false /\ flag b = false) ==> flag (absmerge l a b) = false)
-let  lemma2 l a b = 
-  help2 a;
-  help2 b;
-  help2 (absmerge l a b); ()
-
-val lemma3 : l:ae 
-           -> a:ae
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures ((sum a.l - sum l.l > 0) /\  (flag a = true) /\ (flag b = false)) ==> (flag (absmerge l a b) = true))
-let  lemma3 l a b =
-  help3 a;
-  help3 b;
-  help3 (absmerge l a b); ()
-
-val lemma4 : l:ae 
-           -> a:ae
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures ((sum a.l = sum l.l) /\ (flag a = true) /\ (flag b = false)) ==> (flag (absmerge l a b) = false))
-let lemma4 l a b = help5 l a b; ()
-
-val lemma5 : l:ae 
-           -> a:ae 
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures ((sum b.l - sum l.l > 0) /\ (flag b = true) /\ (flag a = false)) ==> (flag (absmerge l a b) = true))
-let lemma5 l a b =
-  help3 a;
-  help3 b; 
-  help3 (absmerge l a b); ()
-
-val lemma6 : l:ae
-           -> a:ae
-           -> b:ae 
-           -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
-                             (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
-                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
-                             (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
-                             (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
-                             (forall e e1. mem e (diff a l).l /\ mem e1 (diff b l).l ==>
-                                      not (member (fst e) b.l) /\ not (member (fst e1) a.l)))
-                   (ensures ((sum b.l = sum l.l) /\ (flag b = true) /\ (flag a = false)) ==> (flag (absmerge l a b) = false))
-let lemma6 l a b = help5 l b a; ()
+                            (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                            (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+                  (ensures (((sum a.l = sum l.l) /\ (flag a = true)) ==> ((diff a l).l = [])) /\
+                           (((sum b.l = sum l.l) /\ (flag b = true)) ==> ((diff b l).l = [])))
+let help6 l a b = help4 l a; help4 l b; ()
 
 val merge_flag : l:s 
                -> a:s{fst a >= fst l}
@@ -378,8 +264,8 @@ val merge : ltr:ae
                              (forall e1 e2. (mem e1 ltr.l /\ mem e2 ltr.l /\ ltr.vis e1 e2) <==> 
                                        (mem e1 atr.l /\ mem e2 atr.l /\ atr.vis e1 e2 /\ 
                                         mem e1 btr.l /\ mem e2 btr.l /\ btr.vis e1 e2)) /\
-                             (forall e e1. mem e (diff atr ltr).l /\ mem e1 (diff btr ltr).l ==> 
-                                      not (member (fst e) btr.l) /\ not (member (fst e1) atr.l)))                
+                             (forall e. mem e (diff atr ltr).l ==> not (member (fst e) btr.l)) /\
+                             (forall e. mem e (diff btr ltr).l ==> not (member (fst e) atr.l)))                  
                    (ensures (fun res -> true))                  
 let merge ltr l atr a btr b = 
     let c = fst a + fst b - fst l in
@@ -409,18 +295,19 @@ val prop_merge : ltr: ae
                                  (forall e1 e2. (mem e1 ltr.l /\ mem e2 ltr.l /\ ltr.vis e1 e2) <==> 
                                            (mem e1 atr.l /\ mem e2 atr.l /\ atr.vis e1 e2 /\ 
                                            mem e1 btr.l /\ mem e2 btr.l /\ btr.vis e1 e2)) /\
-                                 (forall e e1. mem e (diff atr ltr).l /\ mem e1 (diff btr ltr).l ==> 
-                                          not (member (fst e) btr.l) /\ not (member (fst e1) atr.l)))                        
+                                 (forall e. mem e (diff atr ltr).l ==> not (member (fst e) btr.l)) /\
+                                 (forall e. mem e (diff btr ltr).l ==> not (member (fst e) atr.l)))                        
                        (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b))) 
 
-#set-options "--z3rlimit 100"                                          
+#set-options "--z3rlimit 300"                                          
 let prop_merge ltr l atr a btr b = 
-lemma1 ltr atr btr;
+help6 ltr atr btr;
+(*)lemma1 ltr atr btr;
 lemma2 ltr atr btr;
 lemma3 ltr atr btr;
 lemma4 ltr atr btr;
 lemma5 ltr atr btr;
-lemma6 ltr atr btr; ()
+lemma6 ltr atr btr;*) ()
 
 val prop_oper : tr:ae
               -> st:s
@@ -430,10 +317,171 @@ val prop_oper : tr:ae
                                 (forall e. mem e tr.l ==> (append tr op).vis e op))
                       (ensures (sim (append tr op) (app_op st op))) (decreases %[tr.l])
 let prop_oper tr st op = ()
-          
+           
 val convergence : tr:ae
                 -> a:s 
                 -> b:s 
                 -> Lemma (ensures (sim tr a /\ sim tr b) ==> a = b)                      
 let convergence tr a b = ()
 
+
+(* Statistics: 
+
+prop_merge : lemma1 ltr atr btr;
+             lemma2 ltr atr btr;
+             lemma3 ltr atr btr;
+             lemma4 ltr atr btr;
+             lemma5 ltr atr btr;
+             lemma6 ltr atr btr;    60933 ms or 1 min (--z3rlimit 100)
+
+prop_merge : help6 ltr atr btr      235439 ms or 3.92 min (--z3rlimit 300)
+
+prop_merge : help1 (absmerge ltr atr btr);
+             help4 ltr atr;
+             help4 ltr btr;         518891 ms or 8.64 min
+
+
+prop_merge : help4 ltr atr;
+             help4 ltr btr;         318169 ms or 5.3 min
+
+*)
+
+
+
+(*
+val help1 : tr:ae 
+          -> Lemma (ensures (not (forallb (fun e -> (existsb (fun d -> (snd d = Disable) && tr.vis e d)) tr.l)
+                                                (filter (fun e -> (snd e = Enable)) tr.l))
+                                && not (forallb (fun d -> (snd d = Disable)) tr.l) && (tr.l <> [])) <==>                          
+                           (exists e. (mem e tr.l /\ snd e = Enable /\
+                           (forall d. (mem d tr.l /\ snd d = Disable) ==> mem e tr.l /\ mem d tr.l /\ not (tr.vis e d)))) /\ tr.l <> []) (decreases tr.l)
+let rec help1 tr = 
+  match tr with
+  |(A _ []) -> ()
+  |(A _ (x::xs)) -> help1 (A tr.vis xs)
+
+val help2 : tr:ae 
+          -> Lemma (ensures (flag tr = false) <==>
+                           ((forall e. (mem e tr.l /\ snd e = Enable) ==>  
+                            (exists d. mem d tr.l /\ snd d = Disable /\ mem e tr.l /\ mem d tr.l /\ tr.vis e d)) \/ tr.l = [] \/
+                            (forall d. mem d tr.l ==> snd d = Disable)))  (decreases tr.l) 
+let help2 tr = ()
+
+val help3 : tr:ae 
+          -> Lemma (ensures (flag tr = true) <==> 
+                           (exists e. (mem e tr.l /\ snd e = Enable /\
+                           (forall d. (mem d tr.l /\ snd d = Disable) ==> mem e tr.l /\ mem d tr.l /\ not (tr.vis e d)))))
+let help3 tr = help1 tr; ()
+
+  val help5 : l:ae 
+            -> a:ae
+            -> b:ae 
+            -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                 (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                       mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                 (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                 (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                 (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                 (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                    (ensures ((sum a.l = sum l.l) /\ (flag a = true) /\ (flag b = false)) ==> ((diff a l).l = []))
+  let help5 l a b = help4 l a; ()
+
+val lemma1 : l:ae 
+           -> a:ae
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures ((flag b = true) /\ (flag a = true) ==> (flag (absmerge l a b) = true)))                  
+let  lemma1 l a b = 
+  help3 a;
+  help3 b;
+  help3 (absmerge l a b); ()
+
+val lemma2 : l:ae 
+           -> a:ae
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures (flag a = false /\ flag b = false) ==> flag (absmerge l a b) = false)
+let  lemma2 l a b = 
+  help2 a;
+  help2 b;
+  help2 (absmerge l a b); ()
+
+val lemma3 : l:ae 
+           -> a:ae
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures ((sum a.l - sum l.l > 0) /\  (flag a = true) /\ (flag b = false)) ==> (flag (absmerge l a b) = true))
+let  lemma3 l a b =
+  help3 a;
+  help3 b;
+  help3 (absmerge l a b); ()
+
+val lemma4 : l:ae 
+           -> a:ae
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures ((sum a.l = sum l.l) /\ (flag a = true) /\ (flag b = false)) ==> (flag (absmerge l a b) = false))
+let lemma4 l a b = help5 l a b; ()
+
+val lemma5 : l:ae 
+           -> a:ae 
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures ((sum b.l - sum l.l > 0) /\ (flag b = true) /\ (flag a = false)) ==> (flag (absmerge l a b) = true))
+let lemma5 l a b =
+  help3 a;
+  help3 b; 
+  help3 (absmerge l a b); ()
+
+val lemma6 : l:ae
+           -> a:ae
+           -> b:ae 
+             -> Lemma (requires (forall e. mem e l.l <==> mem e a.l /\ mem e b.l) /\ 
+                                (forall e1 e2. mem e1 l.l /\ mem e2 l.l /\ l.vis e1 e2 <==> mem e1 a.l /\ mem e2 a.l /\ a.vis e1 e2 /\
+                                          mem e1 b.l /\ mem e2 b.l /\ b.vis e1 e2) /\
+                                (forall e e1. mem e l.l /\ mem e1 a.l ==> a.vis e e1) /\
+                                (forall e e1. mem e l.l /\ mem e1 b.l ==> b.vis e e1) /\
+                                (forall e. mem e (diff a l).l ==> not (member (fst e) b.l) ) /\
+                                (forall e. mem e (diff b l).l ==> not (member (fst e) a.l)))
+
+                   (ensures ((sum b.l = sum l.l) /\ (flag b = true) /\ (flag a = false)) ==> (flag (absmerge l a b) = false))
+let lemma6 l a b = help5 l b a; ()
+
+
+*)
