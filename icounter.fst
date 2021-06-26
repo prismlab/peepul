@@ -5,31 +5,30 @@ open FStar.List.Tot
 type op =
   |Inc 
 
-type o = (nat (*unique id*) * op * nat (*element*))
+type o = (nat (*unique id*) * op)
 
-let get_id (id,_,_) = id
-let get_op (_,op,_) = op
-let get_ele (_,_,ele) = ele
+let get_id (id,_) = id
+let get_op (_,op) = op
 
 type s = nat
 
 val app_op : s -> o -> s
-let app_op c (_,Inc,n) = c + n
+let app_op c (_,Inc) = c + 1
 
 val member : id:nat 
            -> l:list o
-           -> Tot (b:bool{(exists op ele. mem (id,op,ele) l) <==> b=true})
+           -> Tot (b:bool{(exists op. mem (id,op) l) <==> b=true})
 let rec member n l =
   match l with
   |[] -> false
-  |(id,_,_)::xs -> (n = id) || member n xs
+  |(id,_)::xs -> (n = id) || member n xs
 
 val unique : l:list o
            -> Tot bool
 let rec unique l =
   match l with
   |[] -> true
-  |(id,_,_)::xs -> not (member id xs) && unique xs
+  |(id,_)::xs -> not (member id xs) && unique xs
 
 noeq type ae  =
      |A : vis : (o -> o -> Tot bool)
@@ -43,20 +42,19 @@ val sum : a:(list o) -> Tot nat (decreases a)
 let rec sum l =
      match l with
      |[] -> 0
-     |((_,Inc, n)::xs) -> n + sum xs
+     |((_,Inc)::xs) -> 1 + sum xs
      
 #set-options "--query_stats"              
 val sim : tr:ae
         -> s1:s 
         -> Tot (bool) 
-let rec sim tr s1 = (s1 = sum tr.l)
+let sim tr s1 = (s1 = sum tr.l)
 
 val rem1 : l:ae 
          -> op:o
          -> Pure (list o)
            (requires true)
-           (ensures (fun r -> (forall n. ((get_op op = Inc /\ get_ele op = n /\ mem op l.l /\ l.l <> []) ==>
-                           (sum r = sum l.l - n))) /\ 
+           (ensures (fun r -> ((mem op l.l /\ l.l <> []) ==> (sum r = sum l.l - 1)) /\ 
                            ((forall e. mem e r ==> mem e l.l) /\ (unique r)))) (decreases %[l.l])
 let rec rem1 l op =
     match l with 
@@ -67,8 +65,7 @@ val rem : l:ae
         -> op:o
         -> Pure ae
           (requires true)
-          (ensures (fun r -> (forall n. ((get_op op = Inc /\ get_ele op = n /\ mem op l.l /\ l.l <> [])
-                                ==> (sum r.l = sum l.l - n))) /\  
+          (ensures (fun r -> ((mem op l.l /\ l.l <> []) ==> (sum r.l = sum l.l - 1)) /\  
                           ((forall e. mem e r.l ==> mem e l.l) /\
                           (forall e e1. mem e r.l /\ mem e1 r.l /\ r.vis e e1 ==> mem e l.l /\ mem e1 l.l /\ l.vis e e1) /\
                           (forall e e1. (mem e r.l /\ mem e1 r.l /\ not (r.vis e e1)) ==> (mem e l.l /\ mem e1 l.l /\ not (l.vis e e1))) /\
@@ -257,8 +254,3 @@ val convergence : tr:ae
                 -> Lemma (requires (sim tr a /\ sim tr b))
                         (ensures (a = b))
 let convergence tr a b = ()
-
-
-(* Statistics: 
-
-*)
