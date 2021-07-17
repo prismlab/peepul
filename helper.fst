@@ -55,14 +55,14 @@ let abs_merge_type (op:eqtype) = l:ae op
                                           (mem e1 l.l /\ mem e2 b.l /\ get_id e1 <> get_id e2))))
 
 let merge_type (op:eqtype) (s:eqtype) (sim_prop: s -> (ae op) -> s -> bool -> prop) 
-               (sim: (s0:s) -> (tr:ae op)  -> (s1:s) -> Tot (b:bool{ sim_prop s0 tr s1 b })) = s0:s
+               (sim: (s0:s) -> (tr:ae op)  -> (s1:s) -> Tot (b:bool{ sim_prop s0 tr s1 b })) =  s0:s
           -> ltr:ae op
           -> l:s
-          -> a:s
           -> atr:ae op
+          -> a:s 
           -> btr:ae op
-          -> b:s
-          -> Pure s (requires (sim s0 ltr l /\ sim l atr a /\ sim l btr b) /\
+          -> b:s 
+          -> Pure s (requires (sim s0 ltr l /\ sim l atr a /\ sim l btr b) /\ 
                              (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                              (forall e. mem e btr.l ==> not (member (get_id e) ltr.l)))
