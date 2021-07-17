@@ -30,9 +30,9 @@ noeq type ae (op:eqtype) =
 
 assume val axiom : op: eqtype -> l:ae op
                  -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\
-                         get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'') ==> l.vis e e'') (*transitive*)/\
-                         (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') ==> not (l.vis e' e)) (*asymmetric*) /\
-                         (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)))
+                   get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'') ==> l.vis e e'') (*transitive*)/\
+                     (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') ==> not (l.vis e' e)) (*asymmetric*) /\
+                     (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)))
                          [SMTPat (unique l.l)]
 
 let sim_type (op:eqtype) (s:eqtype) (sim_prop:s -> (ae op) ->s -> bool -> prop) =  s0:s
@@ -54,11 +54,12 @@ let abs_merge_type (op:eqtype) = l:ae op
                                           (mem e1 l.l /\ mem e2 a.l /\ get_id e1 <> get_id e2) \/
                                           (mem e1 l.l /\ mem e2 b.l /\ get_id e1 <> get_id e2))))
 
-let merge_type (op:eqtype) (s:eqtype) (sim_prop: s -> (ae op) -> s -> bool -> prop) (sim: (s0:s) -> (tr:ae op)  -> (s1:s) -> Tot (b:bool{ sim_prop s0 tr s1 b })) = s0:s
+let merge_type (op:eqtype) (s:eqtype) (sim_prop: s -> (ae op) -> s -> bool -> prop) 
+               (sim: (s0:s) -> (tr:ae op)  -> (s1:s) -> Tot (b:bool{ sim_prop s0 tr s1 b })) = s0:s
           -> ltr:ae op
           -> l:s
-          -> atr:ae op
           -> a:s
+          -> atr:ae op
           -> btr:ae op
           -> b:s
           -> Pure s (requires (sim s0 ltr l /\ sim l atr a /\ sim l btr b) /\
