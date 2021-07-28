@@ -110,10 +110,10 @@ val union : l:ae
           -> a:ae
           -> Pure ae
             (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))))
-            (ensures (fun u -> (forall e e1. mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1 <==>
-                                     mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1 \/
-                                     mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ a.vis e e1 \/
-                                     mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1))) 
+            (ensures (fun u -> (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1) <==>
+                                     (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1) \/
+                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ a.vis e e1) \/
+                                     (mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1)))) 
 let union l a =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
