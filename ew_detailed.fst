@@ -299,9 +299,13 @@ let lemma5 ltr l atr a btr b =
     lem_sum atr.l;
     assert (sum atr.l > 0 <==> (exists e. mem e atr.l /\ get_op e = Enable));
     assert (((exists e. mem e atr.l /\ get_op e = Enable) /\ flag (union ltr atr) = true) ==> flag atr = true); 
-    assert (flag atr = true /\ flag (union ltr btr) = false ==> flag (absmerge ltr atr btr) = true);
+    assert (flag atr = true ==> ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d))))));
+    assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==>
+          (exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))));
+    assert ((exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))) ==>
+           flag (absmerge ltr atr btr) = true);
     ()
-(*8206 ms*)
+(*23421 ms*)
 
 val prop_merge : ltr: ae
                -> l:s 
