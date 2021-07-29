@@ -272,8 +272,7 @@ let lemma4 ltr l atr a btr b =
     (absmerge ltr atr btr).vis e e1 <==>  mem e (union ltr btr).l /\ mem e1 (union ltr btr).l /\ get_id e <> get_id e1 /\ (union ltr btr).vis e e1));
 
     assert ((flag (union ltr atr) = true /\ flag (union ltr btr) = false /\ sum (union ltr atr).l = sum ltr.l /\
-             (forall e e1. mem e (absmerge ltr atr btr).l /\ mem e1 (absmerge ltr atr btr).l /\ get_id e <> get_id e1 /\ 
-      (absmerge ltr atr btr).vis e e1 <==>  mem e (union ltr btr).l /\ mem e1 (union ltr btr).l /\ get_id e <> get_id e1 /\ (union ltr btr).vis e e1)) ==> flag (absmerge ltr atr btr) = false);
+             (forall e e1. mem e (absmerge ltr atr btr).l /\ mem e1 (absmerge ltr atr btr).l /\ get_id e <> get_id e1 /\ (absmerge ltr atr btr).vis e e1 <==>  mem e (union ltr btr).l /\ mem e1 (union ltr btr).l /\ get_id e <> get_id e1 /\ (union ltr btr).vis e e1)) ==> flag (absmerge ltr atr btr) = false);
     ()
 (*42627 ms*)
 
@@ -298,9 +297,15 @@ let lemma5 ltr l atr a btr b =
     assert ((sum (union ltr atr).l > sum ltr.l) ==> sum atr.l > 0);
     lem_sum atr.l;
     assert (sum atr.l > 0 <==> (exists e. mem e atr.l /\ get_op e = Enable));
+<<<<<<< HEAD
     assert (((exists e. mem e atr.l /\ get_op e = Enable) /\ flag (union ltr atr) = true) ==> flag atr = true); 
     assert (flag atr = true ==> ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d))))));
     assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==>
+=======
+    assert (((exists e. mem e atr.l /\ get_op e = Enable) /\ flag (union ltr atr) = true) ==> flag atr = true);
+    assert (flag atr = true ==> ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d))))));
+    assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==> 
+>>>>>>> 5ff2ca2 (More asserts to lemma5)
           (exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))));
     assert ((exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))) ==>
            flag (absmerge ltr atr btr) = true);
