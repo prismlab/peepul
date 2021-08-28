@@ -102,11 +102,6 @@ let rev l = rev_acc l []
 
 #set-options "--z3rlimit 1000000"
 
-val rev0 : l:list (nat * nat) -> xs:list (nat * nat) -> x:(nat * nat) -> Lemma (ensures ((rev_acc xs [x]) @ l = rev_acc xs (x::l))) (decreases xs)
-let rec rev0 l xs x = match xs with
-  | [] -> ()
-  | y::ys -> rev0 (x::l) ys y; assert(true); admit()
-
 val ax0 : l1:list (nat * nat) -> l2:list (nat * nat) -> l3:list (nat * nat) -> Lemma (ensures ((l1 @ l2) @ l3 = l1 @ l2 @ l3))
 let rec ax0 l1 l2 l3 = match l1 with
   | [] -> ()
@@ -177,7 +172,8 @@ let mem_sl l x = match l with
 
 val ax4 : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> Lemma (ensures (unique_id (x::l)))
 
-val ax5 : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> y:(nat * nat){(not (mem_id (fst y) l) /\ fst y <> fst x)} -> Lemma (ensures (not (mem_id (fst y) (l @ [x]))))
+val ax5 : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> 
+          y:(nat * nat){(not (mem_id (fst y) l) /\ fst y <> fst x)} -> Lemma (ensures (not (mem_id (fst y) (l @ [x]))))
 let rec ax5 l x y = match l with
   | [] -> ()
   | z::zs -> ax5 zs x y
@@ -410,19 +406,10 @@ val sim1 : tr:ae
          -> Tot s (decreases (tr.l))
 let rec sim1 tr s = match tr with
   | (A _ []) -> s
-  | (A v ((_, Dequeue)::xs)) -> sim1 (A v xs) (snd (dequeue s))
-  | (A v ((id, (Enqueue x))::xs)) ->  admit(); sim1 (A v xs) (enqueue (id, x) s)
+  | (A v ((_, Dequeue x)::xs)) -> sim1 (A v xs) (snd (dequeue s))
+  | (A v ((id, (Enqueue x))::xs)) ->  if (not (mem_id id s.ls)) then () else  // assert(unique_id ((enqueue (id, x) s).ls)); 
+                                 admit(); sim1 (A v xs) (enqueue (id, x) s)
 
-
-// val sub_list1 : e:o{is_enqueue e} -> d:o{is_dequeue d /\ ((fst e) <> (fst d))} -> l:(list o){mem e l /\ mem d l /\ unique l /\ ord e d l /\ ob e d l} ->
-//               l1:(list o){not(mem e l1) /\ not(mem d l1) /\ (length l1 < length l) /\ (forall n. mem n l1 ==> mem n l) /\ (unique l1) /\
-//                        (forall a1 a2. (mem a1 l /\ mem a2 l /\ mem a1 l1 /\ mem a2 l1 /\ ord a1 a2 l) <==> (mem a1 l1 /\ mem a2 l1 /\ ord a1 a2 l1))}
-// let rec sub_list1 e d l = match l with
-//     | x::xs -> if x = e then sub_list d (List.Tot.rev xs) else sub_list1 e d xs
-
-// val matched : e:o{is_enqueue e} -> d:o{is_dequeue d} -> l:list o{mem e l /\ mem d l /\ unique l} -> Tot bool
-// let matched e d l = match l with
-//   | 
 
 
 
