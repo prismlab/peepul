@@ -35,13 +35,23 @@ let rec unique l =
   |[] -> true
   |(id,_)::xs -> not (member id xs) && unique xs
 
-noeq type ae =
+(*)noeq type ae =
   |A : vis : (o -> o -> Tot bool)
      -> l:(list o) {(unique l) /\
                    (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ get_id e' <> get_id e'' /\ get_id e <> get_id e''  /\ vis e e' /\ vis e' e'') ==> vis e e'') (*transitive*)/\ 
                    (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> not (vis e' e)) (*asymmetric*) /\
                    (forall e. mem e l ==> not (vis e e) (*irreflexive*))}  
-     -> ae
+     -> ae*)
+
+noeq type ae = 
+  |A : vis:(o -> o -> Tot bool) -> l:list o {unique l} -> ae
+
+assume val axiom : l:ae
+                 -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
+                          get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'') ==> l.vis e e'') (*transitive*)/\ 
+                          (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') ==> not (l.vis e' e)) (*asymmetric*) /\
+                          (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)))
+                          [SMTPat (unique l.l)]
 
 val forallb : #a:eqtype
             -> f:(a -> bool)
@@ -92,7 +102,7 @@ let flag tr = if ((forallb (fun e -> (existsb (fun d -> (get_op d = Disable) && 
 #set-options "--query_stats"
 val sim : tr:ae
         -> s1:s
-        -> Tot (b:bool {b = true <==> ((fst s1 = sum tr.l) /\ (snd s1 = flag tr))})                  
+        -> Tot (b:bool {b = true <==> ((fst s1 = sum tr.l) /\ (snd s1 = flag tr))})
 let sim tr s1 = (s1 = (sum tr.l, flag tr))
 
 val union1 : l:ae 
@@ -297,27 +307,22 @@ let lemma5 ltr l atr a btr b =
     assert ((sum (union ltr atr).l > sum ltr.l) ==> sum atr.l > 0);
     lem_sum atr.l;
     assert (sum atr.l > 0 <==> (exists e. mem e atr.l /\ get_op e = Enable));
-<<<<<<< HEAD
     assert (((exists e. mem e atr.l /\ get_op e = Enable) /\ flag (union ltr atr) = true) ==> flag atr = true); 
     assert (flag atr = true ==> ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d))))));
-    assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==>
-=======
-    assert (((exists e. mem e atr.l /\ get_op e = Enable) /\ flag (union ltr atr) = true) ==> flag atr = true);
-    assert (flag atr = true ==> ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d))))));
+    assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==> (exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))));
     assert ((exists e. (mem e atr.l /\ get_op e = Enable /\ (forall d. (mem d atr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (atr.vis e d)))) ==> 
->>>>>>> 5ff2ca2 (More asserts to lemma5)
           (exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))));
     assert ((exists e. (mem e (absmerge ltr atr btr).l /\ get_op e = Enable /\ (forall d. (mem d (absmerge ltr atr btr).l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not ((absmerge ltr atr btr).vis e d)))) ==>
            flag (absmerge ltr atr btr) = true);
     ()
 (*23421 ms*)
 
-val prop_merge : ltr: ae
-               -> l:s 
+val prop_merge : ltr:ae
+               -> l:s
                -> atr:ae
-               -> a:s 
+               -> a:s
                -> btr:ae
-               -> b:s 
+               -> b:s
                -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                                  (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
