@@ -14,3 +14,4 @@ List of verified MRDTs:
 3. Observed-Remove set (state : list (unique id, element))
 4. Observed-Remove set (state : list (unique id, unique element))
 5. Observed-Remove set (state : Binary Search Tree with each node being (unique id, unique element))
+6. Last-Writer-Wins register (state : (timestamp, value))
