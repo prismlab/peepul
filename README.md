@@ -11,7 +11,7 @@ List of verified MRDTs:
 
 1. Increment-only counter
 2. Enable-wins flag (state : (icounter, flag))
-3. Enable-wins flag (state : timestamp)
+3. Enable-wins flag (state : unique id)
 4. Observed-Remove set (state : list (unique ids, elements))
 5. Observed-Remove set (state : list (unique ids, unique elements))
 6. Observed-Remove set (state : Binary Search Tree with each node being (unique ids, unique elements))
