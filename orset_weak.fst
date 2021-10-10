@@ -1,4 +1,4 @@
-module Orset_opt1
+module Orset_weak
 
 open FStar.List.Tot
 
