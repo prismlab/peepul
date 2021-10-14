@@ -214,8 +214,8 @@ val enqueue : x:(nat * nat)
             -> Pure s
              (requires not (mem_id (fst x) (s1.ls)))
              (ensures (fun r -> true  /\ (forall e. (memq e s1 \/ e = x) <==> memq e r) /\ (rear r = Some x) /\
-                         (forall e. memq e s1 ==> order e x (tolist r)) /\
-                        (forall e e1. mem e s1.ls /\ mem e1 s1.ls /\ fst e <> fst e1 /\ order e e1 s1.ls ==> order e e1 (tolist r))
+                         (forall e. memq e s1 ==> order e x r.ls) /\
+                        (forall e e1. mem e s1.ls /\ mem e1 s1.ls /\ fst e <> fst e1 /\ order e e1 s1.ls ==> order e e1 r.ls)
                       ))
 let enqueue x s1 =
   ax3 s1.ls x;
@@ -225,8 +225,6 @@ let enqueue x s1 =
   ax10 s1.ls x;
   (S ((s1.ls) @ [x]))
 
-#set-options "--z3rlimit 1000"
-
 val dequeue : s1:s
             -> Pure ((option (nat * nat)) * s)
               (requires true)
@@ -235,7 +233,6 @@ val dequeue : s1:s
                               (s1.ls = [] ==> length (snd r).ls = length s1.ls) /\
                    (forall e e1. mem e (snd r).ls /\ mem e1 (snd r).ls /\ fst e <> fst e1 /\ order e e1 (snd r).ls ==> order e e1 (tolist s1))
                    ))
-
 let dequeue q =
   match q with
   |(S []) -> (None, q)
@@ -249,13 +246,18 @@ let get_val a = match a with
 val app_op : s1:s
            -> op:o
            -> Pure s
-              (requires (not (mem_id (get_id op) s1.ls)))
+             (requires (not (mem_id (get_id op) s1.ls)))
              (ensures (fun r ->
+                         (is_enqueue op ==> ((forall e. (memq e s1 \/ e = (get_id op, get_ele op)) <==> memq e r) /\ (rear r = Some (get_id op, get_ele op)) /\
+                         (forall e. memq e s1 ==> order e (get_id op, get_ele op) r.ls) /\
+                         (forall e e1. mem e s1.ls /\ mem e1 s1.ls /\ fst e <> fst e1 /\ order e e1 s1.ls ==> order e e1 r.ls))) /\
+                         (is_dequeue op ==> ((forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
+                         (s1.ls <> [] ==> length r.ls = length s1.ls - 1) /\ (s1.ls = [] ==> length r.ls = length s1.ls) /\
+                         (forall e e1. mem e r.ls /\ mem e1 r.ls /\ fst e <> fst e1 /\ order e e1 r.ls ==> order e e1 s1.ls))) /\
                          (exists n. get_op op = (Enqueue n) ==> (exists id. rear r = (Some (id,n)))) /\
                          (s1.ls <> [] /\ is_dequeue op ==> not (mem_id (get_val (peek s1)) r.ls)) /\
                          (s1.ls = [] /\ is_dequeue op ==> r.ls = [])
                       ))
-
 let app_op s e =
   match e with
   | (id, Enqueue n) -> enqueue (id,n) s
@@ -452,16 +454,16 @@ let append tr op =
     |(A _ (x::xs)) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                                 (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::(x::xs)))
 
-val union_list : l:ae
+val union_list_ae : l:ae
            -> a:ae
            -> Pure (list o)
              (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))))
              (ensures (fun u -> (forall e. mem e u <==> mem e l.l \/ mem e a.l) /\ (unique u))) (decreases %[l.l;a.l])
-let rec union_list l a =
+let rec union_list_ae l a =
   match l,a with
   |(A _ []), (A _ []) -> []
-  |(A _ (x::xs)), _ -> x::(union_list (A l.vis xs) a)
-  |(A _ []), (A _ (x::xs)) -> x::(union_list l (A a.vis xs))
+  |(A _ (x::xs)), _ -> x::(union_list_ae (A l.vis xs) a)
+  |(A _ []), (A _ (x::xs)) -> x::(union_list_ae l (A a.vis xs))
 
 val union : l:ae
           -> a:ae
@@ -474,9 +476,9 @@ val union : l:ae
 let union l a =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
-                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1)) (union_list l a))
+                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1)) (union_list_ae l a))
 
-val absmerge_list : l:ae
+val absmerge_list_ae : l:ae
               -> a:ae
               -> b:ae
               -> Pure (list o)
@@ -484,12 +486,12 @@ val absmerge_list : l:ae
                           (forall e. mem e a.l ==> not (member (get_id e) b.l)) /\
                           (forall e. mem e l.l ==> not (member (get_id e) b.l)))
                 (ensures (fun u -> (forall e. mem e u <==> mem e a.l \/ mem e b.l \/ mem e l.l) /\ (unique u))) (decreases %[l.l;a.l;b.l])
-let rec absmerge_list l a b =
+let rec absmerge_list_ae l a b =
   match l,a,b with
   |(A _ []), (A _ []), (A _ []) -> []
-  |(A _ (x::xs)), _, _ -> x::(absmerge_list (A l.vis xs) a b)
-  |(A _ []), (A _ (x::xs)), _ -> x::(absmerge_list l (A a.vis xs) b)
-  |(A _ []), (A _ []), (A _ (x::xs)) -> x::(absmerge_list l a (A b.vis xs))
+  |(A _ (x::xs)), _, _ -> x::(absmerge_list_ae (A l.vis xs) a b)
+  |(A _ []), (A _ (x::xs)), _ -> x::(absmerge_list_ae l (A a.vis xs) b)
+  |(A _ []), (A _ []), (A _ (x::xs)) -> x::(absmerge_list_ae l a (A b.vis xs))
 
 val absmerge : l:ae
              -> a:ae
@@ -505,13 +507,12 @@ val absmerge : l:ae
                                          (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) \/
                                          (mem e1 l.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ (union l a).vis e1 e2) \/
                                          (mem e1 l.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ (union l b).vis e1 e2))))
-#set-options "--z3rlimit 10000"
 let absmerge l a b =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
-                 (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list l a b))
+                 (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
 
 val diff_s : a:list (nat * nat)
            -> l:list (nat * nat)
@@ -534,6 +535,21 @@ val intersection : l:list (nat * nat)
 let intersection l a b =
           filter (fun e -> mem e a && mem e b) l
 
+
+val union_s : a:list (nat * nat)
+            -> b:list (nat * nat)
+            -> Pure (list (nat * nat))
+              (requires unique_id a /\ unique_id b /\ (forall e. mem e a ==> not (mem_id (fst e) b)))
+              (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b) /\ unique_id u /\
+                              (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ order e e1 a ==> order e e1 u) /\
+                              (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ order e e1 b ==> order e e1 u) /\
+                              (forall e e1. mem e a /\ mem e1 b /\ fst e <> fst e1 ==> order e e1 u)))
+let rec union_s a b =
+match a,b with
+  |[],[] -> []
+  |x::xs,_ -> x::(union_s xs b)
+  |[], x::xs -> x::(union_s [] xs)
+
 val merge_state : l:list (nat * nat)
                 -> a:list (nat * nat)
                 -> b:list (nat * nat)
@@ -545,9 +561,12 @@ val merge_state : l:list (nat * nat)
                                     (mem e a /\ not (mem e l)) \/ (mem e b /\ not (mem e l))) /\
                                     (forall e. mem e l /\ not (mem e a) ==> not (mem e res)) /\
                                     (forall e. mem e l /\ not (mem e b) ==> not (mem e res)) /\
-                                    (forall e e1. mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\ mem e res /\ mem e1 res ==>
-                                            order e e1 res)))
-
-
+                                    (forall e e1. mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\ mem e res /\ mem e1 res ==> order e e1 res)))
+let merge_state l a b =
+  let ixn = intersection l a b in
+  let diff_a = diff_s a l in
+  let diff_b = diff_s b l in
+  let union_ab = union_s diff_a diff_b in
+  union_s ixn union_ab
 
 
