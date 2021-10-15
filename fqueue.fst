@@ -569,4 +569,23 @@ let merge_state l a b =
   let union_ab = union_s diff_a diff_b in
   union_s ixn union_ab
 
+#push-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
+
+val prop_oper : tr:ae
+                -> st:s
+                -> op:o
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                         (ensures (sim (append tr op) (app_op st op)))
+let prop_oper tr st op = match op with
+  | (id, Enqueue x) -> let ax = append tr op in let a = app_op st op in
+                      let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+                                     (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l in
+                      let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ax.l && not
+                                      (exists_mem ax.l (fun d -> is_dequeue d && mem d ax.l && mem x ax.l && matched x d ax))) ax.l in
+                      assert(forall_mem enq_list1 (fun x -> mem x ax.l && is_enqueue x && mem ((get_id x), (get_ele x)) (a.ls)));
+                      assert(forall_mem (a.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list1));
+                      admit()
+  | (id, Dequeue x) -> admit()
+
+
 
