@@ -1,7 +1,7 @@
-module Orset_bst1
+module Orset_bst_weak
 
 open FStar.List.Tot
-open Orset_opt1
+open Orset_weak
 
 type tree = 
     |Leaf : tree
