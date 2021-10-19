@@ -4,7 +4,7 @@ open Irmin.Merge.Infix
 
 module Store = Irmin_mem.KV(Orset_opt_detailed)
 
-let config = Irmin_git.config ~bare:true "/tmp/irmin/test"
+let config = Irmin_mem.config ()
 let author = "Adharsh <adharsh@abc.com>"
 let info fmt = Irmin_unix.info ~author fmt
 

@@ -8,7 +8,7 @@ type id = nat
 
 type op =
   | Enqueue : nat -> op
-  | Dequeue : (option (nat)) -> op
+  | Dequeue : (option (nat * nat)) -> op
 
 type o = (id * op)
 
@@ -28,7 +28,7 @@ let is_dequeue v = match v with
 val get_ele : e:o{is_enqueue e} -> Tot (n:nat{e = (get_id e, (Enqueue n))})
 let get_ele (id, Enqueue x) = x
 
-val return : d:o{is_dequeue d} -> Tot (v:option (nat){d = (get_id d, (Dequeue v))})
+val return : d:o{is_dequeue d} -> Tot (v:option (nat * nat){d = (get_id d, (Dequeue v))})
 let return (id, Dequeue x) = x
 
 val mem_id : x:nat -> l:list (nat * nat) -> Tot (b:bool{(exists n. mem (x, n) l) <==> (b = true)})
@@ -292,8 +292,22 @@ val pos : e1:o -> l:list o{unique l /\ mem e1 l} -> Tot nat
 let rec pos e1 l = match l with
 | x::xs -> if x = e1 then 0 else 1 + (pos e1 xs)
 
-val matched : e:o{is_enqueue e} -> d:o{is_dequeue d} -> tr:ae{mem e tr.l /\ mem d tr.l} -> Tot (b:bool{(return d = Some (get_ele e) /\ (tr.vis e d)) <==> (b = true)})
-let matched e d tr = (return d = Some (get_ele e)) && (tr.vis e d)
+val matched : e:o{is_enqueue e} -> d:o{is_dequeue d} -> tr:ae{mem e tr.l /\ mem d tr.l /\ get_id e <> get_id d}
+            -> Tot (b:bool{(return d = Some (get_id e, get_ele e) /\ (tr.vis e d)) <==> (b = true)})
+let matched e d tr = (return d = Some (get_id e, get_ele e)) && (tr.vis e d)
+
+assume val axiom_queue_ae : tr:ae
+                          -> Lemma (ensures ((forall d. mem d tr.l /\ is_dequeue d /\ return d <> None ==>
+                                      (exists e. mem e tr.l /\ get_id e <> get_id d /\ matched e d tr)) /\
+                               (forall e d1 d2. mem e tr.l /\ mem d1 tr.l /\ mem d2 tr.l /\  get_id e <> get_id d1 /\ matched e d1 tr /\
+                                        get_id e <> get_id d2 /\ matched e d2 tr ==> d1 = d2) /\
+                               (forall e d1. mem e tr.l /\ mem d1 tr.l /\ is_dequeue d1 /\ return d1 = None /\
+                                       is_enqueue e /\ tr.vis e d1 ==> (exists d2. mem d2 tr.l /\ get_id e <> get_id d2 /\  matched e d2 tr)) /\
+                               (forall e1 e2 d. mem e1 tr.l /\ mem e2 tr.l /\ mem d tr.l /\ is_enqueue e1 /\  get_id e2 <> get_id d /\ matched e2 d tr
+                                     /\ tr.vis e1 e2 ==> (exists d1. mem d1 tr.l /\  get_id e1 <> get_id d1 /\ matched e1 d1 tr)) /\
+                               (forall e1 e2 d1 d2. mem e1 tr.l /\ mem e2 tr.l /\ mem d1 tr.l /\ mem d2 tr.l /\  get_id e1 <> get_id d2 /\  get_id e2 <> get_id d1
+                                      ==> not (matched e1 d2 tr && matched e2 d1 tr && tr.vis e1 e2 && tr.vis d1 d2))))
+              [SMTPat (unique tr.l)]
 
 val sub_list : e:o -> l:list o{mem e l /\ unique l} -> l1:list o{not (mem e l1) /\ unique l1 /\ (forall e. mem e l1 ==> mem e l) /\ length l1 <= length l}
 let rec sub_list e l = match l with
@@ -314,9 +328,9 @@ let ord e1 e2 s1 = (position_o e1 s1 < position_o e2 s1)
 
 val ob : e:o -> d:o{fst e <> fst d} -> l:list o{mem e l /\ mem d l /\ unique l} -> Tot (b:bool{ord e d l <==> b = true})
 let rec ob e d l = match l with
-  | x::xs -> if x = e then mem d xs else 
+  | x::xs -> if x = e then mem d xs else
            (if x <> d then ob e d xs else false)
- 
+
 val max : x:int -> y:int -> Tot (z:int{z >= x /\ z >= y})
 let max x y = if x > y then x else y
 
@@ -391,18 +405,22 @@ let rec exists_mem l f =
   | [] -> false
   | hd::tl -> if f hd then true else exists_mem tl f
 
+#push-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
+
 val sim0 : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==>
                        ((forall e. memq e s0 <==> (exists e1. mem e1 tr.l /\ is_enqueue e1 /\ e = (get_id e1, get_ele e1) /\
-                                   (forall e2. mem e2 tr.l /\ is_dequeue e2 ==> (not (matched e1 e2 tr))))
+                                   (forall d. mem d tr.l /\  get_id e1 <> get_id d /\ is_dequeue d ==> (not (matched e1 d tr))))
                         )
                       )})
+
 let sim0 tr s0 =
-    axiom_ae tr;
-    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l in
+    axiom_ae tr; axiom_queue_ae tr;
+    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+                             (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
     if forall_mem enq_list (fun x -> mem x tr.l && is_enqueue x && mem ((get_id x), (get_ele x)) (s0.ls)) &&
-    forall_mem (s0.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list)
+       forall_mem (s0.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list)
                             then true else false
 
 val sim1 : tr:ae
@@ -576,8 +594,6 @@ val eff_enq : tr:ae
                                      (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr)))))
 let eff_enq tr = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                      (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l
-
-#push-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
 
 val eff_enq0 : tr:ae
              -> op:o{(not (member (get_id op) tr.l))}
