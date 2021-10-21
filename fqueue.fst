@@ -426,25 +426,34 @@ let sim0 tr s0 =
 val sim1 : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==> (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 s0.ls) <==>
-                          (exists (e e0:o). mem e tr.l /\ mem e0 tr.l /\ is_enqueue e /\ is_enqueue e0 /\ (get_id e <> get_id e0) /\
-                                 (forall e3. mem e3 tr.l /\ is_dequeue e3 ==> (not (matched e e3 tr)) /\ (not (matched e0 e3 tr))) /\
-                                (e1 = (get_id e, get_ele e)) /\ (e2 = (get_id e0, get_ele e0)) /\ tr.vis e e0)
+                          (exists (e e0:o). (mem e tr.l /\ mem e0 tr.l /\ is_enqueue e /\ is_enqueue e0 /\ (get_id e <> get_id e0) /\
+                                 (forall d. mem d tr.l /\ get_id e <> get_id d /\ get_id e0 <> get_id d /\ is_dequeue d ==>
+                                 (not (matched e d tr)) /\ (not (matched e0 d tr))) /\
+                                (e1 = (get_id e, get_ele e)) /\ (e2 = (get_id e0, get_ele e0))) ==>
+                                (tr.vis e e0 \/ (not(tr.vis e e0) /\ not(tr.vis e0 e) /\ (get_ele e < get_ele e0 \/
+                                        (get_ele e = get_ele e0 /\ get_id e < get_id e0)))))
                       )})
+
 let sim1 tr s0 =
-    axiom_ae tr;
+    axiom_ae tr; axiom_queue_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l &&
-                                    not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l in
+                                    not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
     if forall_mem s0.ls (fun x -> memq x s0 &&
-       (forall_mem (filter_s (fun z -> fst x <> fst z && mem x s0.ls && mem z s0.ls && order x z s0.ls) s0.ls)
-                     (fun y -> (fst y <> fst x && mem ((fst x), Enqueue (snd x)) enq_list) &&
-                       (mem ((fst y), Enqueue (snd y)) enq_list) && (tr.vis ((fst x), Enqueue (snd x)) ((fst y), Enqueue (snd y))))
-                         )) &&
+                  (forall_mem (filter_s (fun z -> fst x <> fst z && mem x s0.ls && mem z s0.ls && order x z s0.ls) s0.ls)
+                     (fun y -> (not(fst y <> fst x && mem ((fst x), Enqueue (snd x)) enq_list) &&
+                       (mem ((fst y), Enqueue (snd y)) enq_list)) || (tr.vis ((fst x), Enqueue (snd x)) ((fst y), Enqueue (snd y)) ||
+                         (not(tr.vis ((fst x), Enqueue (snd x)) ((fst y), Enqueue (snd y))) && not(tr.vis ((fst y), Enqueue (snd y)) ((fst x), Enqueue (snd x))) &&
+                         (snd x < snd y || (snd x = snd y && fst x < fst y)))))
+                         ))
+                         &&
        forall_mem enq_list (fun e1 -> mem e1 enq_list &&
-              (forall_mem (filter_op (fun p -> mem p enq_list && get_id p <> get_id e1) enq_list)
-                            (fun e2 -> mem e2 enq_list &&
-                             (if tr.vis e1 e2 then
-                                 (if (get_id e1 <> get_id e2 && mem ((get_id e1), (get_ele e1)) (s0.ls) && mem ((get_id e2), (get_ele e2)) (s0.ls)
-                                   && order ((get_id e1), (get_ele e1)) ((get_id e2), (get_ele e2)) (s0.ls)) then true else false) else true))
+                  (forall_mem (filter_op (fun e0 -> mem e0 enq_list && is_enqueue e0 && get_id e0 <> get_id e1) enq_list)
+                              (fun e2 -> mem e2 enq_list && (if (tr.vis e1 e2 || (not (tr.vis e1 e2) && not (tr.vis e2 e1) &&
+                                         (get_ele e1 < get_ele e2 || (get_ele e1 = get_ele e2 && get_id e1 < get_id e2)))) then
+                                    (if (is_enqueue e1 && is_enqueue e2 && mem ((get_id e1), (get_ele e1)) (s0.ls) && mem ((get_id e2), (get_ele e2)) (s0.ls) &&
+                                        get_id e1 <> get_id e2 && (order ((get_id e1), (get_ele e1)) ((get_id e2), (get_ele e2)) (s0.ls))
+                                        )
+                                     then true else false) else true))
                                     ))
                             then true else false
 
