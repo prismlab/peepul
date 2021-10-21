@@ -410,9 +410,8 @@ let rec exists_mem l f =
 val sim0 : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==>
-                       ((forall e. memq e s0 <==> (exists e1. mem e1 tr.l /\ is_enqueue e1 /\ e = (get_id e1, get_ele e1) /\
+                       (forall e. memq e s0 <==> (exists e1. mem e1 tr.l /\ is_enqueue e1 /\ e = (get_id e1, get_ele e1) /\
                                    (forall d. mem d tr.l /\  get_id e1 <> get_id d /\ is_dequeue d ==> (not (matched e1 d tr))))
-                        )
                       )})
 
 let sim0 tr s0 =
@@ -426,15 +425,16 @@ let sim0 tr s0 =
 val sim1 : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==> (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 s0.ls) <==>
-                          (exists (e e0:o). (mem e tr.l /\ mem e0 tr.l /\ is_enqueue e /\ is_enqueue e0 /\ (get_id e <> get_id e0) /\
-                                 (forall d. mem d tr.l /\ get_id e <> get_id d /\ get_id e0 <> get_id d /\ is_dequeue d ==>
-                                 (not (matched e d tr)) /\ (not (matched e0 d tr))) /\
-                                (e1 = (get_id e, get_ele e)) /\ (e2 = (get_id e0, get_ele e0))) ==>
-                                (tr.vis e e0 \/ (not(tr.vis e e0) /\ not(tr.vis e0 e) /\ (get_ele e < get_ele e0 \/
-                                        (get_ele e = get_ele e0 /\ get_id e < get_id e0)))))
-                      )})
+                          (mem (fst e1, Enqueue (snd e1)) tr.l /\ mem (fst e2, Enqueue (snd e2)) tr.l /\ (fst e1 <> fst e2) /\
+                                 (forall d. mem d tr.l /\ fst e1 <> get_id d /\ fst e2 <> get_id d /\ is_dequeue d ==>
+                                 (not (matched (fst e1, Enqueue (snd e1)) d tr)) /\ (not (matched (fst e2, Enqueue (snd e2)) d tr))) /\
+                                (tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2)) \/
+                                (not(tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2))) /\
+                                 not(tr.vis (fst e2, Enqueue (snd e2)) (fst e1, Enqueue (snd e1))) /\ (snd e1 < snd e2 \/
+                                        (snd e1 = snd e2 /\ fst e1 < fst e2))))))
+                       })
 
-let sim1 tr s0 =
+let sim1 tr s0 = admit();
     axiom_ae tr; axiom_queue_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l &&
                                     not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
@@ -461,11 +461,15 @@ val sim : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==>
                        ((forall e. memq e s0 <==> (exists e1. mem e1 tr.l /\ is_enqueue e1 /\ e = (get_id e1, get_ele e1) /\
-                                   (forall e2. mem e2 tr.l /\ is_dequeue e2 ==> (not (matched e1 e2 tr))))
-                        ) /\ (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 s0.ls) <==>
-                          (exists (e e0:o). mem e tr.l /\ mem e0 tr.l /\ is_enqueue e /\ is_enqueue e0 /\ (get_id e <> get_id e0) /\
-                                 (forall e3. mem e3 tr.l /\ is_dequeue e3 ==> (not (matched e e3 tr)) /\ (not (matched e0 e3 tr))) /\
-                                (e1 = (get_id e, get_ele e)) /\ (e2 = (get_id e0, get_ele e0)) /\ tr.vis e e0))
+                                   (forall d. mem d tr.l /\  get_id e1 <> get_id d /\ is_dequeue d ==> (not (matched e1 d tr))))
+                           ) /\ (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 s0.ls) <==>
+                          (mem (fst e1, Enqueue (snd e1)) tr.l /\ mem (fst e2, Enqueue (snd e2)) tr.l /\ (fst e1 <> fst e2) /\
+                                 (forall d. mem d tr.l /\ fst e1 <> get_id d /\ fst e2 <> get_id d /\ is_dequeue d ==>
+                                 (not (matched (fst e1, Enqueue (snd e1)) d tr)) /\ (not (matched (fst e2, Enqueue (snd e2)) d tr))) /\
+                                (tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2)) \/
+                                (not(tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2))) /\
+                                 not(tr.vis (fst e2, Enqueue (snd e2)) (fst e1, Enqueue (snd e1))) /\ (snd e1 < snd e2 \/
+                                        (snd e1 = snd e2 /\ fst e1 < fst e2))))))
                       )})
 let sim tr s0 = sim0 tr s0 && sim1 tr s0
 
@@ -600,9 +604,9 @@ val eff_enq : tr:ae
             -> Pure (list o)
             (requires true)
             (ensures (fun r -> forall_mem r (fun x -> is_enqueue x && mem x tr.l && not
-                                     (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr)))))
+                                     (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr)))))
 let eff_enq tr = filter_op (fun x -> is_enqueue x && mem x tr.l && not
-                                     (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l
+                                     (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l
 
 val eff_enq0 : tr:ae
              -> op:o{(not (member (get_id op) tr.l))}
@@ -621,50 +625,68 @@ let rec eff_enq0 tr op = match tr with
 val prop_oper0: tr:ae
                 -> st:s
                 -> op:o
-                -> Lemma (requires (sim0 tr st) /\ (not (member (get_id op) tr.l)))
-                         (ensures (sim0 (append tr op) (app_op st op)))
-
-let prop_oper0 tr st op = match tr with
-  | A _ [] -> ()
-  | A _ (x::xs) -> match op with
-    | (id, Enqueue x) -> let ax = append tr op in let a = app_op st op in
-                        let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
-                                       (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l in
-                        let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ax.l && not
-                                        (exists_mem ax.l (fun d -> is_dequeue d && mem d ax.l && mem x ax.l && matched x d ax))) ax.l in
-                        let enq_list2 = filter_op (fun x -> is_enqueue x && mem x ax.l && not
-                                        (exists_mem ax.l (fun d -> is_dequeue d && mem d ax.l && mem x ax.l && matched x d ax))) tr.l in
-                        eff_enq0 tr op;
-                        assert(forall_mem enq_list1 (fun x -> mem x ax.l && is_enqueue x && mem ((get_id x), (get_ele x)) (a.ls)));
-                        assert(forall_mem (a.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list1)); ()
-    | (id, Dequeue x) -> let ax = append tr op in let a = app_op st op in
-                        let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
-                                       (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && matched x d tr))) tr.l in
-                        let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ax.l && not
-                                        (exists_mem ax.l (fun d -> is_dequeue d && mem d ax.l && mem x ax.l && matched x d ax))) ax.l in
-                        let enq_list2 = filter_op (fun x -> is_enqueue x && mem x ax.l && not
-                                        (exists_mem ax.l (fun d -> is_dequeue d && mem d ax.l && mem x ax.l && matched x d ax))) tr.l in
-                        eff_enq0 tr op;
-                        // assert(forall_mem enq_list1 (fun x -> mem x ax.l && is_enqueue x && mem ((get_id x), (get_ele x)) (a.ls)));
-                        // assert(forall_mem [op] (fun x -> mem x ax.l && is_enqueue x && mem ((get_id x), (get_ele x)) (a.ls)));
-                        // assert(op::enq_list = enq_list1);
-                        // assert(forall_mem (op::enq_list) (fun x -> mem x ax.l && is_enqueue x && mem ((get_id x), (get_ele x)) (a.ls)));
-                        // assert(op::tr.l = ax.l);
-                        // assert(forall e. mem e (op::enq_list) ==> mem e enq_list1);
-                        // assert(mem op enq_list1);
-                        // assert(sim0 ax a);
-                        // assert(forall e. (mem e tr.l /\ (exists (d:o{ mem d tr.l }). matched e d tr)) ==> (mem e ax.l /\ (exists (d:o{ mem d ax.l }). matched e d ax)));
-                        // assert(exists x. (mem x enq_list1 /\ not (mem (get_id x, get_ele x) a.ls)));
-                        // assert(forall e. mem e enq_list1 ==> mem e enq_list \/ e = op);
-                        // assert(forall_mem (a.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list));
-                        // assert(forall_mem (a.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list1));
-                         admit()
-
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                        (ensures (st.ls = [] ==> (sim (append tr op) (app_op st op))))
+let prop_oper0 tr st op = ()
 
 val prop_oper1: tr:ae
+                  -> st:s
+                  -> op:o
+                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                          (ensures (st.ls <> [] /\ is_enqueue op ==> (sim0 (append tr op) (app_op st op))))
+let prop_oper1 tr st op =  ()
+
+val prop_oper2: tr:ae
                 -> st:s
                 -> op:o
-                -> Lemma (requires (sim1 tr st) /\ (not (member (get_id op) tr.l)))
-                         (ensures (sim1 (append tr op) (app_op st op)))
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                        (ensures (st.ls <> [] /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
 
+let prop_oper2 tr st op = ()
+
+val prop_oper3: tr:ae
+                -> st:s
+                -> op:o
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                                  (is_dequeue op ==> return op = peek st))
+                        (ensures (st.ls <> [] /\ is_dequeue op ==> (sim0 (append tr op) (app_op st op))))
+
+let prop_oper3 tr st op = ()
+
+val prop_oper4: tr:ae
+                  -> st:s
+                  -> op:o
+                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                                    (is_dequeue op ==> return op = peek st))
+                          (ensures (st.ls <> [] /\ is_dequeue op ==> (sim1 (append tr op) (app_op st op))))
+#pop-options
+
+#set-options "--z3rlimit 100000000"
+
+let prop_oper4 tr st op = admit()
+
+val prop_oper: tr:ae
+                -> st:s
+                -> op:o
+                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                                    (is_dequeue op ==> return op = peek st))
+                         (ensures (sim (append tr op) (app_op st op)))
+let prop_oper tr st op =
+  prop_oper0 tr st op;
+  prop_oper1 tr st op;
+  prop_oper2 tr st op;
+  prop_oper3 tr st op;
+  prop_oper4 tr st op;
+  ()
+
+
+val convergence : tr:ae
+                -> a:s
+                -> b:s
+                -> Lemma (requires (sim tr a) /\ (sim tr b))
+                        (ensures (forall e. memq e a <==> memq e b) /\
+                                 (forall e e1. memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 a.ls <==>
+                                          memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 b.ls))
+#set-options "--z3rlimit 10000000"
+let convergence tr a b = ()
 
