@@ -1,6 +1,7 @@
 module Ew_detailed
 
 open FStar.List.Tot
+module I = Icounter1
 
 type op =
   |Enable

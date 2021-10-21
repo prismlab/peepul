@@ -1,4 +1,4 @@
-module Fqueue
+module Fqueue1
 
 open FStar.List.Tot
 
@@ -429,9 +429,32 @@ let sim0 tr s0 =
     forall_mem enq_list (fun x -> mem x tr.l && is_enqueue x && mem ((get_id x), (get_ele x)) (s0.ls)) &&
     forall_mem (s0.ls) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list)
 
+val sim2 : tr:ae
+        -> s0:s
+        -> Tot (b:bool {b = true <==> (forall e e1. ((mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\ 
+             (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
+             (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
+
+                ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
+
+                  (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) || 
+                        tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\ 
+                       ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))) ==>
+                       memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls ))})
+
+#set-options "--z3rlimit 1000000"
+let sim2 tr s0 = 
+    axiom_ae tr; axiom_queue_ae tr;
+    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+         (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
+
+        (forall_mem (enq_list) (fun e -> is_enqueue e && (forall_mem (filter_op (fun e1 -> is_enqueue e1 && get_id e <> get_id e1 && ((tr.vis e e1) ||
+       (not (tr.vis e e1 || tr.vis e1 e) &&
+            ((get_ele e < get_ele e1) || (get_ele e = get_ele e1 && get_id e < get_id e1)))) ) (enq_list)) (fun e1 -> is_enqueue e1 && memq ((get_id e), (get_ele e)) s0 && memq ((get_id e1), (get_ele e1)) s0 && get_id e <> get_id e1 && order ((get_id e), (get_ele e)) ((get_id e1), (get_ele e1)) s0.ls))))
+
 val sim1 : tr:ae
         -> s0:s
-        -> Tot (b:bool {b = true <==> (forall e e1. memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls <==>
+        -> Tot (b:bool {b = true <==> (forall e e1. (memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls <==>
         (mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\ 
              (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
              (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
@@ -440,25 +463,35 @@ val sim1 : tr:ae
 
                   (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) || 
                         tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\ 
-                  ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))))})
+                  ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1)))))))})
 
 #set-options "--z3rlimit 1000000"
-let sim1 tr s0 = admit()
+let sim1 tr s0 = 
+    axiom_ae tr; axiom_queue_ae tr;
+    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+                               (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
+
+    (forall_mem (s0.ls) (fun e -> (forall_mem (filter_s (fun e1 -> memq e s0 && memq e1 s0 && fst e <> fst e1 && order e e1 s0.ls) (s0.ls)) (fun e1 -> (mem (fst e, Enqueue (snd e)) (enq_list) && mem (fst e1, Enqueue (snd e1)) (enq_list) && fst e <> fst e1 &&  ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) ||
+                        (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) || 
+                                tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) &&
+                   ((snd e < snd e1) || (snd e = snd e1 && fst e < fst e1))))))))) &&
+
+    sim2 tr s0
+(*186339 ms*)
 
 val sim : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==> ((forall e. memq e s0 <==> (mem ((fst e), Enqueue (snd e)) tr.l /\ 
         (forall d. mem d tr.l /\ fst e <> get_id d /\ is_dequeue d ==> (not (matched ((fst e), Enqueue (snd e)) d tr)))))) /\
+
                   (forall e e1. memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls <==>
                   (mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\ 
           (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
           (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
-
-                  ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
-
-                    (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) || 
+          ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
+            (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) || 
                          tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\ 
-                    ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))))                       })
+                    ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))))})
 let sim tr s0 = sim0 tr s0 && sim1 tr s0
 
 val append : tr:ae
@@ -627,13 +660,23 @@ let prop_oper1 tr st op =
   assert (not (mem_id (get_id op) st.ls));
   ()
 
-val prop_oper2: tr:ae
+val prop_oper21: tr:ae
                 -> st:s
                 -> op:o
                 -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                        (ensures (st.ls <> [] /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
+                        (ensures (st.ls <> [] /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
 #set-options "--z3rlimit 10000000"
-let prop_oper2 tr st op = ()
+let prop_oper21 tr st op = ()
+
+val prop_oper2: tr:ae
+                  -> st:s
+                  -> op:o
+                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                          (ensures (st.ls <> [] /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
+#set-options "--z3rlimit 10000000"
+let prop_oper2 tr st op = 
+  prop_oper21 tr st op;
+  ()
 
 val prop_oper3: tr:ae
                 -> st:s
@@ -645,14 +688,25 @@ val prop_oper3: tr:ae
 #set-options "--z3rlimit 10000000"
 let prop_oper3 tr st op = ()
 
-val prop_oper4: tr:ae
+val prop_oper41: tr:ae
                   -> st:s
                   -> op:o
                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
                                     (is_dequeue op ==> return op = peek st))
-                          (ensures (st.ls <> [] /\ is_dequeue op ==> (sim1 (append tr op) (app_op st op))))
+                          (ensures (st.ls <> [] /\ is_dequeue op ==> (sim2 (append tr op) (app_op st op))))
 #set-options "--z3rlimit 10000000"
-let prop_oper4 tr st op = ()
+let prop_oper41 tr st op = ()
+
+val prop_oper4: tr:ae
+                   -> st:s
+                   -> op:o
+                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                                     (is_dequeue op ==> return op = peek st))
+                           (ensures (st.ls <> [] /\ is_dequeue op ==> (sim1 (append tr op) (app_op st op))))
+#set-options "--z3rlimit 10000000"
+let prop_oper4 tr st op = 
+  prop_oper41 tr st op;
+  ()
 
 val prop_oper: tr:ae
                 -> st:s
