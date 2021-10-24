@@ -497,53 +497,48 @@ let sim0 tr s0 =
        forall_mem (tolist s0) (fun x -> mem ((fst x), Enqueue (snd x)) enq_list)
                             then true else false
 
-val sim01 : tr:ae
-         -> s0:s
-         -> Tot (b:bool{b = true <==> (forall (e e1:(nat * nat)). ((mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\
-                                     (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
-                                     (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
-                                     ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
-                                            (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
-                                                     tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                            ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))) ==>
-                                  memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
+val sim2 : tr:ae
+        -> s0:s
+        -> Tot (b:bool {b = true <==> (forall e e1. ((mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\
+                                       (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
+                                       (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
+                                    ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
+                                             (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
+                                                  tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
+                                             ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1))))) ==>
+                       memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls))})
 
-let sim01 tr s0 =
+let sim2 tr s0 =
     axiom_ae tr; axiom_queue_ae tr;
-    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l &&
-                                    not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
-    forall_mem enq_list (fun e1 -> mem e1 enq_list &&
-                  (forall_mem (filter_op (fun e0 -> mem e0 enq_list && is_enqueue e0 && get_id e0 <> get_id e1 &&
-                                            (tr.vis e1 e0 || (not (tr.vis e1 e0 || tr.vis e0 e1) &&
-                                         (get_ele e1 < get_ele e0 || (get_ele e1 = get_ele e0 && get_id e1 < get_id e0))))) enq_list)
-                              (fun e2 -> mem e2 enq_list && mem ((get_id e1), (get_ele e1)) (tolist s0) && mem ((get_id e2), (get_ele e2)) (tolist s0) &&
-                                        get_id e1 <> get_id e2 && (order ((get_id e1), (get_ele e1)) ((get_id e2), (get_ele e2)) (tolist s0)))
-                                    ))
+    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+         (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
+
+        (forall_mem (enq_list) (fun e -> is_enqueue e && (forall_mem (filter_op (fun e1 -> is_enqueue e1 && get_id e <> get_id e1 && ((tr.vis e e1) ||
+       (not (tr.vis e e1 || tr.vis e1 e) &&
+            ((get_ele e < get_ele e1) || (get_ele e = get_ele e1 && get_id e < get_id e1)))) ) (enq_list)) (fun e1 -> is_enqueue e1 && memq ((get_id e), (get_ele e)) s0 && memq ((get_id e1), (get_ele e1)) s0 && get_id e <> get_id e1 && order ((get_id e), (get_ele e)) ((get_id e1), (get_ele e1)) s0.ls))))
 
 val sim1 : tr:ae
-        -> s0:s
-        -> Tot(b:bool{b = true <==> (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 (tolist s0)) <==>
-                          (mem (fst e1, Enqueue (snd e1)) tr.l /\ mem (fst e2, Enqueue (snd e2)) tr.l /\ (fst e1 <> fst e2) /\
-                                 (forall d. mem d tr.l /\ fst e1 <> get_id d /\ fst e2 <> get_id d /\ is_dequeue d ==>
-                                 (not (matched (fst e1, Enqueue (snd e1)) d tr)) /\ (not (matched (fst e2, Enqueue (snd e2)) d tr))) /\
-                                (tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2)) \/
-                                (not(tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2))) /\
-                                 not(tr.vis (fst e2, Enqueue (snd e2)) (fst e1, Enqueue (snd e1))) /\ (snd e1 < snd e2 \/
-                                        (snd e1 = snd e2 /\ fst e1 < fst e2))))))
-                       })
+         -> s0:s
+         -> Tot (b:bool {b = true <==> (forall e e1. (memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls <==>
+                                      (mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\
+                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
+                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
+                                      ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
+                                               (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
+                                                    tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
+                                 ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1)))))))})
 
 let sim1 tr s0 =
     axiom_ae tr; axiom_queue_ae tr;
-    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l &&
-                                    not (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
-    (forall_mem (tolist s0) (fun x -> memq x s0 &&
-                  (forall_mem (filter_s (fun z -> fst x <> fst z && memq x s0 && memq z s0 && order x z (tolist s0)) (tolist s0))
-                     (fun y -> (fst y <> fst x && mem ((fst x), Enqueue (snd x)) enq_list &&
-                       (mem ((fst y), Enqueue (snd y)) enq_list)) && (tr.vis ((fst x), Enqueue (snd x)) ((fst y), Enqueue (snd y)) ||
-                         (not(tr.vis ((fst x), Enqueue (snd x)) ((fst y), Enqueue (snd y))) && not(tr.vis ((fst y), Enqueue (snd y)) ((fst x), Enqueue (snd x))) &&
-                         (snd x < snd y || (snd x = snd y && fst x < fst y)))))
-                         )))
-                         && sim01 tr s0
+    let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+                               (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
+        (forall_mem (s0.ls) (fun e -> (forall_mem (filter_s (fun e1 -> memq e s0 && memq e1 s0 && fst e <> fst e1 && order e e1 s0.ls) (s0.ls))
+                    (fun e1 -> (mem (fst e, Enqueue (snd e)) (enq_list) && mem (fst e1, Enqueue (snd e1)) (enq_list) && fst e <> fst e1 &&
+                       ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) ||
+                         (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
+                                tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) &&
+                   ((snd e < snd e1) || (snd e = snd e1 && fst e < fst e1))))))))) &&
+                   sim2 tr s0
 
 val sim : tr:ae
         -> s0:s
