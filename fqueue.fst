@@ -473,17 +473,18 @@ let sim1 tr s0 =
 val sim : tr:ae
         -> s0:s
         -> Tot(b:bool{b = true <==>
-                       ((forall e. memq e s0 <==> (exists e1. mem e1 tr.l /\ is_enqueue e1 /\ e = (get_id e1, get_ele e1) /\
-                                   (forall d. mem d tr.l /\  get_id e1 <> get_id d /\ is_dequeue d ==> (not (matched e1 d tr))))
-                           ) /\ (forall (e1 e2:(nat * nat)). (memq e1 s0 /\ memq e2 s0 /\ get_id e1 <> get_id e2 /\ order e1 e2 s0.ls) <==>
-                          (mem (fst e1, Enqueue (snd e1)) tr.l /\ mem (fst e2, Enqueue (snd e2)) tr.l /\ (fst e1 <> fst e2) /\
-                                 (forall d. mem d tr.l /\ fst e1 <> get_id d /\ fst e2 <> get_id d /\ is_dequeue d ==>
-                                 (not (matched (fst e1, Enqueue (snd e1)) d tr)) /\ (not (matched (fst e2, Enqueue (snd e2)) d tr))) /\
-                                (tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2)) \/
-                                (not(tr.vis (fst e1, Enqueue (snd e1)) (fst e2, Enqueue (snd e2))) /\
-                                 not(tr.vis (fst e2, Enqueue (snd e2)) (fst e1, Enqueue (snd e1))) /\ (snd e1 < snd e2 \/
-                                        (snd e1 = snd e2 /\ fst e1 < fst e2))))))
+                       ((forall e. memq e s0 <==> (mem (fst e, Enqueue (snd e)) tr.l /\
+                                (forall d. mem d tr.l /\ fst e <> get_id d /\ is_dequeue d ==> (not (matched (fst e, Enqueue (snd e)) d tr))))) /\
+                                   (forall e e1. (memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 s0.ls <==>
+                                      (mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\
+                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
+                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
+                                      ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
+                                               (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
+                                                    tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
+                                 ((snd e < snd e1) \/ (snd e = snd e1 /\ fst e < fst e1)))))))
                       )})
+
 let sim tr s0 = sim0 tr s0 && sim1 tr s0
 
 val append : tr:ae
