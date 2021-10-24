@@ -1,4 +1,4 @@
-module Fqueue2
+module Fqueue2 
 
 open FStar.List.Tot
 
@@ -51,22 +51,10 @@ let rec position e s1 =
 
 (* Check if e1, different than e2, occurs before e2 in the list s1  *)
 val order : e1:(nat * nat)
-          -> e2:(nat * nat) {(fst e1) <> (fst e2)}
-          -> s1:(list (nat * nat)) {mem e1 s1 /\ mem e2 s1 /\ unique_id s1}
+          -> e2:(nat * nat) {fst e1 <> fst e2}
+          -> s1:list (nat * nat) {mem e1 s1 /\ mem e2 s1 /\ unique_id s1}
           -> Tot (r:bool {(position e1 s1 < position e2 s1) <==> r = true})
 let order e1 e2 s1 = (position e1 s1 < position e2 s1)
-
-(* Represents the state of the MRDT. The UID is required to maintain the order of elements *)
-type s =
-    |S : front : list (nat (* UID *) * nat (* element *)) {unique_id front}
-       -> back  : list (nat (* UID *) * nat (* element *)) {unique_id back /\
-                                                                (forall e. mem e front ==> not (mem_id (fst e) back)) /\
-                                                                (forall e. mem e back ==> not (mem_id (fst e) front))}
-       -> s
-
-
-val memq : (nat * nat) -> s -> bool
-let memq n q = (mem n q.front || mem n q.back)
 
 val rev_acc : l: list (nat * nat) -> acc: list (nat * nat) -> Tot (ls:list (nat * nat){(forall e. mem e l \/ mem e acc <==> mem e ls)})
 let rec rev_acc l acc =
@@ -76,8 +64,6 @@ let rec rev_acc l acc =
 
 val rev : l:list (nat * nat) -> Tot (rl:list (nat * nat){forall e. mem e l <==> mem e rl})
 let rev l = rev_acc l []
-
-#set-options "--z3rlimit 1000000"
 
 val ax0 : l1:list (nat * nat) -> l2:list (nat * nat) -> l3:list (nat * nat) -> Lemma (ensures ((l1 @ l2) @ l3 = l1 @ l2 @ l3))
 let rec ax0 l1 l2 l3 = match l1 with
@@ -111,7 +97,7 @@ let rec ax1 l1 l2 x = match l1 with
   | [] -> ()
   | y::ys -> ax1 ys l2 x
 
-val app_uni : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> Lemma (ensures (unique_id (l @ [x])))
+val app_uni : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> Lemma (ensures (unique_id (l @ [x])))  [SMTPat (unique_id (l @ [x]))]
 let rec app_uni l x = match l with
   | [] -> ()
   | y::ys -> app_uni ys x; ax1 ys [x] y
@@ -132,6 +118,60 @@ val rev_unique1 : l:list (nat * nat){unique_id l} -> Lemma (ensures (unique_id l
 let rev_unique1 l = match l with
   | [] -> ()
   | x::xs -> rev_unique l
+
+val app_length : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> Lemma (ensures (length l + 1 = length (l @ [x])))
+let rec app_length l x = match l with
+  | [] -> ()
+  | y::ys -> app_length ys x
+
+val rev_length0 : l:list (nat * nat){unique_id l} -> Lemma (ensures (length l = length (rev l))) [SMTPat (rev l)]
+let rec rev_length0 l = match l with
+  | [] -> ()
+  | x::xs -> rev_length0 xs; rev_cor xs; rev_cor l; app_length xs x; rev2 l
+
+val mem_app : l:list (nat * nat){unique_id l}
+                -> e: (nat * nat){not(mem_id (fst e) l)}
+                -> Lemma (ensures (forall x. mem x l \/ x = e <==> mem x (l @ [e]))) (decreases (l)) [SMTPat (mem e (l @ [e]))]
+let rec mem_app l e = match l with
+  | [] -> ()
+  | y::ys -> mem_app ys e
+
+val rev_length2 : l:list (nat * nat){unique_id l}
+                -> e: (nat * nat){not(mem_id (fst e) l)}
+                -> Lemma (ensures (forall x. mem x l ==> mem x (l @ [e]) /\ position x l = position x (l @ [e]))) (decreases (l))
+let rec rev_length2 l e = match l with
+  | [] -> ()
+  | x::xs -> rev_length2 xs e
+
+val rev_length4 : l:list (nat * nat){unique_id l}
+                -> e: (nat * nat){not(mem_id (fst e) l)}
+                -> Lemma (ensures ((length l = (position e (l @ [e])))))
+let rec rev_length4 l e = match l with
+  | [] -> ()
+  | x::xs -> rev_length4 xs e
+
+val rev_length3 : l:list (nat * nat){unique_id l} -> Lemma (ensures (l <> [] ==> (length l - 1 = (position (hd l) (rev l)))))
+let rec rev_length3 l = match l with
+  | [] -> ()
+  | x::[] -> ()
+  | x::xs -> rev_length3 xs; rev2 l; rev_length4 (rev xs) x
+
+val rev_length1 : l:list (nat * nat){unique_id l} -> Lemma (ensures (forall e. mem e l ==> (length l - position e l - 1 = (position e (rev l)))))
+let rec rev_length1 l = match l with
+  | [] -> ()
+  | x::xs -> rev_length1 xs; rev_length0 xs; rev_length0 l; rev2 l; mem_app (rev xs) x; rev_length2 (rev xs) x; rev_length3 l
+
+val rev_ord : l:list (nat * nat){unique_id l} -> Lemma (ensures (forall e e1. mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l ==> order e1 e (rev l))) [SMTPat (rev l)]
+let rev_ord l = match l with
+  | [] -> ()
+  | x::xs -> rev_length1 l
+
+type s =
+    |S : front : list (nat (* UID *) * nat (* value of the element *)) {unique_id front}
+       -> back  : list (nat (* UID *) * nat (* value of the element *)) {unique_id back /\
+                                                              (forall e. mem e front ==> not (mem_id (fst e) back)) /\
+                                                              (forall e. mem e back ==> not (mem_id (fst e) front))}
+       -> s
 
 val norm : s -> s
 let norm q =
@@ -181,8 +221,6 @@ let mem_sl l x = match l with
   | [] -> empty_mem l
   | l -> mem_sublist l x
 
-val ax4 : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} -> Lemma (ensures (unique_id (x::l)))
-
 val ax5 : l:list (nat * nat){unique_id l} -> x:(nat * nat){not (mem_id (fst x) l)} ->
           y:(nat * nat){(not (mem_id (fst y) l) /\ fst y <> fst x)} -> Lemma (ensures (not (mem_id (fst y) (l @ [x]))))
 let rec ax5 l x y = match l with
@@ -218,6 +256,11 @@ let rec ax10 l x = match l with
   | [] -> ()
   | y::ys -> ax10 ys x; ax3 l x; ax6 l x
 
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
+
+val memq : (nat * nat) -> s -> bool
+let memq n q = (mem n q.front || mem n q.back)
+
 val app : l1:(list (nat * nat))
         -> l2:(list (nat * nat))
         -> Pure (list (nat * nat))
@@ -227,7 +270,6 @@ val app : l1:(list (nat * nat))
                                (forall e e1. mem e l2 /\ mem e1 l2 /\ fst e <> fst e1 /\ order e e1 l2 ==> order e e1 r) /\
                                (forall e e1. mem e l1 /\ mem e1 l2 /\ fst e <> fst e1 ==> order e e1 r)))
                  (decreases %[l1;l2])
-
 let rec app l1 l2 =
       match l1,l2 with
       |[],[] ->  []
@@ -241,8 +283,7 @@ val tolist : s1:s
                            (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 r) /\
                            (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 (rev s1.back) ==> order e e1 r) /\
                            (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 r)))
-let tolist (S f b) = rev_unique b; app f (rev b)
-
+let tolist (S f b) = app f (rev b)
 
 val enqueue : x:(nat * nat)
             -> s1:s
@@ -253,8 +294,7 @@ val enqueue : x:(nat * nat)
                       (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 s1.back ==> order e e1 (rev (tolist r))) /\
                       (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
                       (forall e. memq e s1 ==> order e x (tolist r))))
-
-let enqueue x s1 = admit();
+let enqueue x s1 =
   (S s1.front (x::s1.back))
 
 val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
@@ -267,11 +307,10 @@ val dequeue : s1:s
               (ensures (fun r -> (forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
                               (s1.front <> [] ==> length r.front = length s1.front - 1) /\
                               (s1.front = [] ==> length r.front = length r.front) /\
-                   (forall e e1. mem e r.front /\ mem e1 r.front /\ fst e <> fst e1 /\ order e e1 r.front ==> order e e1 (tolist s1)) /\
-                   (forall e e1. mem e r.back /\ mem e1 r.back /\ fst e <> fst e1 /\ order e e1 r.back ==> order e e1 (rev (tolist s1))) /\
-                       (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1))))
-
-let dequeue q = admit();
+                          (forall e e1. mem e r.front /\ mem e1 r.front /\ fst e <> fst e1 /\ order e e1 r.front ==> order e e1 (tolist s1)) /\
+                          (forall e e1. mem e r.back /\ mem e1 r.back /\ fst e <> fst e1 /\ order e e1 r.back ==> order e e1 (rev (tolist s1))) /\
+                          (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1))))
+let dequeue q =
   match q with
   |(S [] []) -> q
   |(S (x::xs) _) -> (S xs q.back)
@@ -298,6 +337,7 @@ val app_op : s1:s
                          (s1.ls <> [] /\ is_dequeue op ==> not (mem_id (get_id (get_val (peek s1))) r.ls)) /\
                          (s1.ls = [] /\ is_dequeue op ==> r.ls = [])
                       ))
+
 
 let app_op s e =
   match e with
