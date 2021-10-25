@@ -827,7 +827,7 @@ val prop_oper5: tr:ae
                   -> st:s
                   -> op:o
                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                          (ensures (not (is_empty st) <> [] /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
+                          (ensures (not (is_empty st) /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
 
 let prop_oper5 tr st op =  ()
 
