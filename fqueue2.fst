@@ -173,10 +173,40 @@ type s =
                                                               (forall e. mem e back ==> not (mem_id (fst e) front))}
        -> s
 
-val norm : s -> s
+val memq : n:(nat * nat) -> q:s -> Tot (b:bool{b = true <==> (mem n q.front \/ mem n q.back)})
+let memq n q = (mem n q.front || mem n q.back)
+
+
+val app : l1:(list (nat * nat))
+        -> l2:(list (nat * nat))
+        -> Pure (list (nat * nat))
+               (requires (unique_id l1 /\ unique_id l2) /\ (forall e. mem e l1 ==> not (mem_id (fst e) l2)))
+               (ensures (fun r -> (forall e. mem e r <==> mem e l1 \/ mem e l2) /\ unique_id r /\
+                               (forall e e1. mem e l1 /\ mem e1 l1 /\ fst e <> fst e1 /\ order e e1 l1 ==> order e e1 r) /\
+                               (forall e e1. mem e l2 /\ mem e1 l2 /\ fst e <> fst e1 /\ order e e1 l2 ==> order e e1 r) /\
+                               (forall e e1. mem e l1 /\ mem e1 l2 /\ fst e <> fst e1 ==> order e e1 r)))
+                 (decreases %[l1;l2])
+let rec app l1 l2 =
+      match l1,l2 with
+      |[], [] -> []
+      |x::xs, [] -> x::xs
+      |x::xs, _ -> x::(app xs l2)
+      |[], x::xs -> x::xs
+
+val tolist : s1:s
+           -> Pure (list (nat * nat))
+                  (requires true)
+                  (ensures (fun r -> (forall e. mem e r <==> memq e s1) /\ unique_id r /\
+                           (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 r) /\
+                           (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 (rev s1.back) ==> order e e1 r) /\
+                           (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 r)))
+let tolist (S f b) = app f (rev b)
+
+val norm : s0:s -> Tot (s1:s{forall e e1. (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\ order e e1 (tolist s1)) ==>
+                              (memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0))})
 let norm q =
   match q with
-  |(S [] _) -> (S (rev q.back) [])
+  |(S [] back) -> (S (rev back) [])
   |_ -> q
 
 val peek : s1:s
@@ -258,33 +288,6 @@ let rec ax10 l x = match l with
 
 #set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
 
-val memq : (nat * nat) -> s -> bool
-let memq n q = (mem n q.front || mem n q.back)
-
-val app : l1:(list (nat * nat))
-        -> l2:(list (nat * nat))
-        -> Pure (list (nat * nat))
-               (requires (unique_id l1 /\ unique_id l2) /\ (forall e. mem e l1 ==> not (mem_id (fst e) l2)))
-               (ensures (fun r -> (forall e. mem e r <==> mem e l1 \/ mem e l2) /\ unique_id r /\
-                               (forall e e1. mem e l1 /\ mem e1 l1 /\ fst e <> fst e1 /\ order e e1 l1 ==> order e e1 r) /\
-                               (forall e e1. mem e l2 /\ mem e1 l2 /\ fst e <> fst e1 /\ order e e1 l2 ==> order e e1 r) /\
-                               (forall e e1. mem e l1 /\ mem e1 l2 /\ fst e <> fst e1 ==> order e e1 r)))
-                 (decreases %[l1;l2])
-let rec app l1 l2 =
-      match l1,l2 with
-      |[],[] ->  []
-      |x::xs,_ -> x::(app xs l2)
-      |[],x::xs ->  x::(app [] xs)
-
-val tolist : s1:s
-           -> Pure (list (nat * nat))
-                  (requires true)
-                  (ensures (fun r -> (forall e. mem e r <==> memq e s1) /\ unique_id r /\
-                           (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 r) /\
-                           (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 (rev s1.back) ==> order e e1 r) /\
-                           (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 r)))
-let tolist (S f b) = app f (rev b)
-
 val enqueue : x:(nat * nat)
             -> s1:s
             -> Pure s
@@ -301,24 +304,30 @@ val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
 let get_val a = match a with
     | Some (x, y) -> (x, y)
 
+
+val is_empty : s1:s -> Tot (b:bool{(s1.front = [] /\ s1.back = []) <==> b = true})
+let is_empty s = (s.front = [] && s.back = [])
+
 val dequeue : s1:s
             -> Pure ((option (nat * nat)) * s)
               (requires true)
-              (ensures (fun (_, r) -> (forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
-                              (s1.front <> [] ==> length r.front = length s1.front - 1) /\
-                              (s1.front = [] ==> length r.front = length r.front) /\
+              (ensures (fun (v, r) -> (forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
                           (forall e e1. mem e r.front /\ mem e1 r.front /\ fst e <> fst e1 /\ order e e1 r.front ==> order e e1 (tolist s1)) /\
                           (forall e e1. mem e r.back /\ mem e1 r.back /\ fst e <> fst e1 /\ order e e1 r.back ==> order e e1 (rev (tolist s1))) /\
-                          (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1))))
+                          (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1)) /\
+                              (not (is_empty s1) ==> ((v <> None) /\ (forall e e1. (memq e r /\ memq e1 r /\ fst e <> fst e1 /\ order e e1 (tolist r)) <==>
+                                   (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\ e <> get_val v /\ e1 <> get_val v /\ order e e1 (tolist s1))))) /\
+                              ((is_empty s1) ==> ((forall e e1. (memq e r /\ memq e1 r /\ fst e <> fst e1 /\ order e e1 (tolist r)) <==>
+                                         (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\  order e e1 (tolist s1))))) /\
+                              ((is_empty s1) <==> (is_empty r /\ v = None))
+                          ))
+
 let dequeue q =
   match q with
   |(S [] []) -> (None, q)
   |(S (x::xs) _) -> (Some x, (S xs q.back))
-  |(S [] (x::xs)) -> let (S (x::xs) []) = norm q in
-                 (Some x, (S xs []))
-
-val is_empty : s1:s -> Tot (b:bool{(s1.front = [] /\ s1.back = []) <==> b = true})
-let is_empty s = (s.front = [] && s.back = [])
+  |(S [] (x::xs)) -> let (S (y::ys) []) = norm q in
+                   (Some y, (S ys []))
 
 val app_op : s1:s
            -> op:o
@@ -331,11 +340,14 @@ val app_op : s1:s
                                      (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
                                      (forall e. memq e s1 ==> order e (get_id op, get_ele op) (tolist r)))) /\
                          (is_dequeue op ==> ((forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
-                                     (s1.front <> [] ==> length r.front = length s1.front - 1) /\
-                                     (s1.front = [] ==> length r.front = length r.front) /\
                                      (forall e e1. mem e r.front /\ mem e1 r.front /\ fst e <> fst e1 /\ order e e1 r.front ==> order e e1 (tolist s1)) /\
                                      (forall e e1. mem e r.back /\ mem e1 r.back /\ fst e <> fst e1 /\ order e e1 r.back ==> order e e1 (rev (tolist s1))) /\
-                                     (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1)))) /\
+                                     (forall e e1. mem e r.front /\ mem e1 (rev r.back) /\ fst e <> fst e1 ==> order e e1 (tolist s1)) /\
+                                     (not (is_empty s1) ==> (((peek s1) <> None) /\ (forall e e1. (memq e r /\ memq e1 r /\ fst e <> fst e1 /\ order e e1 (tolist r)) <==>
+                                          (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\ e <> get_val (peek s1) /\ e1 <> get_val (peek s1) /\ order e e1 (tolist s1))))) /\
+                                     ((is_empty s1) ==> ((forall e e1. (memq e r /\ memq e1 r /\ fst e <> fst e1 /\ order e e1 (tolist r)) <==>
+                                                (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\  order e e1 (tolist s1))))) /\
+                                     ((is_empty s1) <==> (is_empty r /\ (peek s1) = None)))) /\
                          (exists n. get_op op = (Enqueue n) ==> (exists id. rear r = (Some (id,n)))) /\
                          (not (is_empty s1) /\ is_dequeue op ==> not (mem_id (get_id (get_val (peek s1))) (tolist r))) /\
                          ((is_empty s1) /\ is_dequeue op ==> (is_empty r))
@@ -793,14 +805,6 @@ val prop_oper1: tr:ae
 
 let prop_oper1 tr st op =  ()
 
-val prop_oper2: tr:ae
-                -> st:s
-                -> op:o
-                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                        (ensures (not (is_empty st) /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
-
-let prop_oper2 tr st op = ()
-
 val prop_oper3: tr:ae
                 -> st:s
                 -> op:o
@@ -810,23 +814,20 @@ val prop_oper3: tr:ae
 
 let prop_oper3 tr st op = ()
 
-val prop_oper4: tr:ae
-                  -> st:s
-                  -> op:o
-                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
-                                    (is_dequeue op ==> return op = peek st))
-                          (ensures (not (is_empty st) /\ is_dequeue op ==> (sim1 (append tr op) (app_op st op))))
-#pop-options
+val prop_oper2: tr:ae
+                -> st:s
+                -> op:o
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
+                        (ensures (not (is_empty st) /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
 
-#set-options "--z3rlimit 100000000"
+let prop_oper2 tr st op = ()
 
-let prop_oper4 tr st op = ()
 
 val prop_oper5: tr:ae
                   -> st:s
                   -> op:o
                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                          (ensures (st.ls <> [] /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
+                          (ensures (not (is_empty st) <> [] /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
 
 let prop_oper5 tr st op =  ()
 
@@ -835,7 +836,7 @@ val prop_oper6: tr:ae
                 -> op:o
                 -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
                                   (is_dequeue op ==> return op = peek st))
-                        (ensures (st.ls <> [] /\ is_dequeue op ==> (sim2 (append tr op) (app_op st op))))
+                        (ensures (not (is_empty st) /\ is_dequeue op ==> (sim2 (append tr op) (app_op st op))))
 
 let prop_oper6 tr st op = ()
 

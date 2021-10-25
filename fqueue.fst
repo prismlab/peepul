@@ -696,7 +696,6 @@ val merge : ltr:ae
 
 let merge ltr l atr a btr b = S (merge_s (l.ls) (a.ls) (b.ls))
 
-
 val convergence : tr:ae
                 -> a:s
                 -> b:s
