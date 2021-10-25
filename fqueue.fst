@@ -696,11 +696,14 @@ val merge : ltr:ae
 
 let merge ltr l atr a btr b = S (merge_s (l.ls) (a.ls) (b.ls))
 
+
 val convergence : tr:ae
                 -> a:s
                 -> b:s
                 -> Lemma (requires (sim tr a) /\ (sim tr b))
-                        (ensures (a = b))
+                        (ensures (forall e. memq e a <==> memq e b) /\
+                                 (forall e e1. memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 a.ls <==>
+                                          memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 b.ls))
 
 #set-options "--z3rlimit 10000000"
 let convergence tr a b = ()
@@ -851,14 +854,4 @@ let prop_merge ltr l atr a btr b =
   prop_merge0 ltr l atr a btr b;
   prop_merge1 ltr l atr a btr b;
   prop_merge2 ltr l atr a btr b; ()
-
-val convergence : tr:ae
-                -> a:s
-                -> b:s
-                -> Lemma (requires (sim tr a) /\ (sim tr b))
-                        (ensures (forall e. memq e a <==> memq e b) /\
-                                 (forall e e1. memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 a.ls <==>
-                                          memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 b.ls))
-#set-options "--z3rlimit 10000000"
-let convergence tr a b = ()
 

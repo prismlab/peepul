@@ -771,11 +771,12 @@ val convergence : tr:ae
                 -> a:s
                 -> b:s
                 -> Lemma (requires (sim tr a) /\ (sim tr b))
-                        (ensures (a = b))
+                        (ensures (forall e. memq e a <==> memq e b) /\
+                                 (forall e e1. memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) <==>
+                                          memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b)))
 
 #set-options "--z3rlimit 10000000"
 let convergence tr a b = ()
-
 
 val prop_oper0: tr:ae
                 -> st:s
