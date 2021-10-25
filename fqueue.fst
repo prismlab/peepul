@@ -372,7 +372,7 @@ let rec count_enqueue tr =
   |(id,(Enqueue _))::xs -> 1 + count_enqueue xs
   |(id,_)::xs -> count_enqueue xs
 
-val count_deqeueue : tr:(list o) -> nat
+val count_dequeue : tr:(list o) -> nat
 let rec count_dequeue tr =
     match tr with
     |[] -> 0
@@ -581,8 +581,6 @@ let rec union_s a b =
     |x::xs,_ -> x::(union_s xs b)
     |[], x::xs -> x::(union_s [] xs)
 
-type sorted_list (l:list (nat * nat){unique_id l}) = (forall x y. mem x l /\ mem y l /\ ((snd x < snd y) || (snd x = snd y && fst x < fst y)) ==> order x y l)
-
 val sorted: l:list (nat * nat){unique_id l} -> Tot bool
 let rec sorted l = match l with
     | [] -> true
@@ -640,7 +638,7 @@ val sorted_union : a:list (nat * nat)
                  -> b:list (nat * nat)
                  -> Pure (list (nat * nat))
                    (requires (unique_id a /\ unique_id b) /\ (forall e. mem e a ==> not (mem_id (fst e) b)))
-                   (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b) /\ unique_id u /\ sorted u /\ 
+                   (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b) /\ unique_id u /\ sorted u /\
                             (forall x y. mem x a /\ mem y b /\ ((snd x < snd y) || (snd x = snd y && fst x < fst y)) ==> order x y u)))
 
 let sorted_union a b =

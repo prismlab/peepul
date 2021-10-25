@@ -1,4 +1,4 @@
-module Fqueue2 
+module Fqueue2
 
 open FStar.List.Tot
 
@@ -455,7 +455,7 @@ let rec count_enqueue tr =
   |(id,(Enqueue _))::xs -> 1 + count_enqueue xs
   |(id,_)::xs -> count_enqueue xs
 
-val count_deqeueue : tr:(list o) -> nat
+val count_dequeue : tr:(list o) -> nat
 let rec count_dequeue tr =
     match tr with
     |[] -> 0
