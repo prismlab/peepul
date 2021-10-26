@@ -297,8 +297,22 @@ val enqueue : x:(nat * nat)
                       (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 s1.back ==> order e e1 (rev (tolist r))) /\
                       (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
                       (forall e. memq e s1 ==> order e x (tolist r))))
+
 let enqueue x s1 =
   (S s1.front (x::s1.back))
+
+val enqueue0 :x:(nat * nat)
+             -> s1:s
+             -> Lemma (requires (not (mem_id (fst x) s1.front) /\ not (mem_id (fst x) s1.back)))
+                     (ensures (forall e e1. (mem e (tolist s1) /\ fst e <> fst e1 /\ ((mem e1 (tolist s1) /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
+                       (mem e (tolist (enqueue x s1)) /\ mem e1 (tolist (enqueue x s1)) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))))
+                       (decreases %[s1.front; s1.back]) [SMTPat (enqueue x s1)]
+
+let rec enqueue0 x s1 = match s1 with
+  | S [] [] -> ()
+  | S (y::ys) [] -> enqueue0 x (S ys [])
+  | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
+  | S [] (y::ys) -> enqueue0 y (S [] ys); enqueue0 x (S [] ys)  ; admit()
 
 val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
 let get_val a = match a with
@@ -335,10 +349,13 @@ val app_op : s1:s
              (requires ((not (mem_id (get_id op) s1.front)) /\ (not (mem_id (get_id op) s1.back))))
              (ensures (fun r ->
                          (is_enqueue op ==> ((rear r = Some (get_id op, get_ele op)) /\ (forall e. memq e s1 \/ e = (get_id op, get_ele op) <==> memq e r) /\
-                                     (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 (tolist r)) /\
-                                     (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 s1.back ==> order e e1 (rev (tolist r))) /\
-                                     (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
-                                     (forall e. memq e s1 ==> order e (get_id op, get_ele op) (tolist r)))) /\
+                                                 (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 (tolist r)) /\
+                                                 (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 s1.back ==> order e e1 (rev (tolist r))) /\
+                                                 (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
+                                                 (forall e e1. (mem e (tolist s1) /\ fst e <> fst e1 /\ ((mem e1 (tolist s1) /\ order e e1 (tolist s1)) \/
+                                                   (e1 = (get_id op, get_ele op)))) <==>
+                                                 (mem e (tolist r) /\ mem e1 (tolist r) /\ fst e <> fst e1 /\ order e e1 (tolist r))) /\
+                                                 (forall e. memq e s1 ==> order e (get_id op, get_ele op) (tolist r)))) /\
                          (is_dequeue op ==> ((forall e. memq e r <==> memq e s1 /\ Some e <> peek s1) /\
                                      (forall e e1. mem e r.front /\ mem e1 r.front /\ fst e <> fst e1 /\ order e e1 r.front ==> order e e1 (tolist s1)) /\
                                      (forall e e1. mem e r.back /\ mem e1 r.back /\ fst e <> fst e1 /\ order e e1 r.back ==> order e e1 (rev (tolist s1))) /\
@@ -801,7 +818,7 @@ val prop_oper1: tr:ae
                   -> st:s
                   -> op:o
                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                          (ensures (not (is_empty st) /\ is_enqueue op ==> (sim0 (append tr op) (app_op st op))))
+                          (ensures (not (is_empty st) /\ is_enqueue op ==>(sim0 (append tr op) (app_op st op))))
 
 let prop_oper1 tr st op =  ()
 
@@ -814,14 +831,17 @@ val prop_oper3: tr:ae
 
 let prop_oper3 tr st op = ()
 
+#set-options "--initial_fuel 15 --ifuel 15 --initial_ifuel 15 --fuel 15 --z3rlimit 10000000"
+
+// TODO: Absmerge has to include specs about concurrent events
+
 val prop_oper2: tr:ae
                 -> st:s
                 -> op:o
                 -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
-                        (ensures (not (is_empty st) /\ is_enqueue op ==> (sim1 (append tr op) (app_op st op))))
+                        (ensures ((is_enqueue op) /\ not (is_empty st) ==> (sim1 (append tr op) (app_op st op))))
 
 let prop_oper2 tr st op = ()
-
 
 val prop_oper5: tr:ae
                   -> st:s
@@ -829,7 +849,16 @@ val prop_oper5: tr:ae
                   -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)))
                           (ensures (not (is_empty st) /\ is_enqueue op ==> (sim2 (append tr op) (app_op st op))))
 
-let prop_oper5 tr st op =  ()
+let prop_oper5 tr st op = ()
+
+val prop_oper4: tr:ae
+                -> st:s
+                -> op:o
+                -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                                  (is_dequeue op ==> return op = peek st))
+                        (ensures (not (is_empty st) /\ is_dequeue op ==> (sim1 (append tr op) (app_op st op))))
+
+let prop_oper4 tr st op = ()
 
 val prop_oper6: tr:ae
                 -> st:s
@@ -868,9 +897,11 @@ val prop_merge0 : ltr: ae
                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                                    (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-                       (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+                       (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
 let prop_merge0 ltr l atr a btr b = ()
+
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
 
 val prop_merge1 : ltr: ae
                 -> l:s
