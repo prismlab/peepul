@@ -978,75 +978,82 @@ let prop_oper tr st op =
   prop_oper6 tr st op;
   ()
 
-// val prop_merge0 : ltr: ae
-//                 -> l:s
-//                 -> atr:ae
-//                 -> a:s
-//                 -> btr:ae
-//                 -> b:s
-//                 -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-//                                    (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
-//                                    (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
-//                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-//                                    (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-//                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-//                        (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+val prop_merge0 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-// let prop_merge0 ltr l atr a btr b = ()
+let prop_merge0 ltr l atr a btr b = ()
 
-// #set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
 
-// val prop_merge1 : ltr: ae
-//                 -> l:s
-//                 -> atr:ae
-//                 -> a:s
-//                 -> btr:ae
-//                 -> b:s
-//                 -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-//                                    (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-//                                    (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-//                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-//                        (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
 
-// let prop_merge1 ltr l atr a btr b = ()
+val prop_merge1 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-// val prop_merge2 : ltr: ae
-//                 -> l:s
-//                 -> atr:ae
-//                 -> a:s
-//                 -> btr:ae
-//                 -> b:s
-//                 -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-//                                    (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-//                                    (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-//                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-//                        (ensures (sim2 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+let prop_merge1 ltr l atr a btr b = ()
 
-// let prop_merge2 ltr l atr a btr b = ()
+val prop_merge2 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim2 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-// val prop_merge : ltr: ae
-//                 -> l:s
-//                 -> atr:ae
-//                 -> a:s
-//                 -> btr:ae
-//                 -> b:s
-//                 -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-//                                    (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-//                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-//                                    (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-//                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-//                        (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
-// let prop_merge ltr l atr a btr b =
-//   prop_merge0 ltr l atr a btr b;
-//   prop_merge1 ltr l atr a btr b;
-//   prop_merge2 ltr l atr a btr b; ()
+let prop_merge2 ltr l atr a btr b = ()
+
+val prop_merge : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+let prop_merge ltr l atr a btr b =
+  prop_merge0 ltr l atr a btr b;
+  prop_merge1 ltr l atr a btr b;
+  prop_merge2 ltr l atr a btr b; ()
 
 
 
