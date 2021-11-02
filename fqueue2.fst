@@ -758,7 +758,8 @@ let rec union_s a b =
 
 val split: l:list (nat * nat){unique_id l} -> Pure (list (nat * nat) * list (nat * nat))
              (requires (Cons? l /\ Cons? (Cons?.tl l)))
-	     (ensures (fun r -> unique_id (fst r) /\ unique_id (snd r) /\ split_inv l (fst r) (snd r)))
+	     (ensures (fun r -> unique_id (fst r) /\ unique_id (snd r) /\ split_inv l (fst r) (snd r) /\
+                               (forall e. mem e (fst r) ==> not (mem_id (fst e) (snd r))) /\ (forall e. mem e (snd r) ==> not (mem_id (fst e) (fst r)))))
 let rec split (x::y::l) =
   match l with
     | [] -> [x], [y]
@@ -772,14 +773,15 @@ type merge_inv (l1:list (nat * nat)) (l2:list (nat * nat)) (l:list (nat * nat)) 
     (Nil? l1 /\ Nil? l2 /\ Nil? l)
 
 val merge_sl: l1:list (nat * nat) -> l2:list (nat * nat) -> Pure (list (nat * nat))
-             (requires (sorted l1 /\ sorted l2 /\ unique_id l1 /\ unique_id l2))
+             (requires (sorted l1 /\ sorted l2 /\ unique_id l1 /\ unique_id l2 /\
+                               (forall e. mem e l1 ==> not (mem_id (fst e) l2)) /\ (forall e. mem e l2 ==> not (mem_id (fst e) l1))))
              (ensures (fun l -> unique_id l /\ sorted l /\ permutation_2 l l1 l2
                                          /\ merge_inv l1 l2 l))
 
 let rec merge_sl l1 l2 = match (l1, l2) with
   | [], _ -> l2
   | _, [] -> l1
-  | h1::tl1, h2::tl2 -> admit(); if fst h1 < fst h2
+  | h1::tl1, h2::tl2 -> if fst h1 < fst h2
                         then h1::(merge_sl tl1 l2)
                         else h2::(merge_sl l1 tl2)
 
@@ -994,7 +996,49 @@ val prop_merge0 : ltr: ae
                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
                        (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-let prop_merge0 ltr l atr a btr b = ()
+let prop_merge0 ltr l atr a btr b =
+  axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
+  let tr = absmerge ltr atr btr in
+  let s0 = merge ltr l atr a btr b in
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
+                             (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
+
+  let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ltr.l && not
+                             (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))) ltr.l in
+
+  let enq_list2 = filter_op (fun x -> is_enqueue x && mem x (union ltr atr).l && not
+                             (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                         get_id x <> get_id d && matched x d (union ltr atr)))) (union ltr atr).l in
+
+  let enq_list3 = filter_op (fun x -> is_enqueue x && mem x (union ltr btr).l && not
+                             (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                         get_id x <> get_id d && matched x d (union ltr btr)))) (union ltr btr).l in
+
+  let enq_list4 = filter_op (fun x -> is_enqueue x && mem x atr.l && not
+                             (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l in
+
+  let enq_list5 = filter_op (fun x -> is_enqueue x && mem x btr.l && not
+                             (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l in
+
+  // VVGG
+  assert(forall e. (mem e enq_list2 /\ mem e enq_list3) \/ ((mem e enq_list4) \/ (mem e enq_list5)) ==> mem e enq_list);
+  // VVGG assert(forall e. (mem e enq_list2 /\ mem e enq_list3) \/ ((mem e enq_list4) \/ (mem e enq_list5)) ==> memq (get_id e, get_ele e) s0);
+  // VVGG assert(forall e. ((mem e enq_list4) \/ (mem e enq_list5)) ==> mem e enq_list);
+  // VVGG assert(forall e. mem e enq_list4 ==> mem e enq_list2);
+  // VVGG assert(forall e. mem e enq_list5 ==> mem e enq_list3);
+  // GG assert(forall e. mem e enq_list2 ==> (mem e (absmerge ltr atr btr).l));
+  // GG assert(forall e1. mem e1 (union ltr btr).l ==> (mem e1 (absmerge ltr atr btr).l));
+  // assert(forall e e1. mem e enq_list2 /\ mem e1 (union ltr btr).l /\ is_dequeue e1 /\ not(matched e e1 (absmerge ltr atr btr)) ==> mem e enq_list);
+  // assert(forall e e1. mem e enq_list2 /\ mem e1 (union ltr btr).l /\ is_dequeue e1 /\ not(matched e e1 (absmerge ltr atr btr)) ==> memq (get_id e, get_ele e) s0);
+  // assert(forall e. mem e enq_list ==> memq (get_id e, get_ele e) s0);
+  // VVGG assert(forall e. ((memq e a /\ memq e b /\ memq e l) \/ (mem e (diff_s (tolist a) (tolist l))) \/ (mem e (diff_s (tolist b) (tolist l)))) ==>
+  //          mem (fst e, Enqueue (snd e)) enq_list);
+  // VVGG assert(forall e. ((memq e a /\ memq e b /\ memq e l) \/ (mem e (diff_s (tolist a) (tolist l))) \/ (mem e (diff_s (tolist b) (tolist l)))) <==>
+  //          memq e s0);
+  // VVGG assert(forall e. memq e s0 ==> mem (fst e, Enqueue (snd e)) enq_list);
+  // VVGG assert(forall_mem (tolist s0) (fun e -> mem (fst e, Enqueue (snd e)) enq_list));
+  admit();
+  ()
 
 
 #set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
