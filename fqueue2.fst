@@ -594,6 +594,7 @@ val sim2 : tr:ae
                                              (fst e < fst e1)))) ==>
                        memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
 
+
 let sim2 tr s0 =
     axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
@@ -699,7 +700,15 @@ val absmerge : l:ae
                                          ((((mem e a.l /\ mem e1 b.l) \/ (mem e1 a.l /\ mem e b.l)) /\ (get_id e <> get_id e1)) \/
                                          (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e)) \/
                                          (mem e b.l /\ mem e1 b.l /\ get_id e <> get_id e1 /\ ~(b.vis e e1 \/ b.vis e1 e)) \/
-                                         (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e))))))
+                                         (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e)))) /\
+                                (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
+                                        ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
+                                         (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
+                                         (mem e b.l /\ mem d b.l /\ get_id e <> get_id d /\ matched e d b) \/
+                                         (mem e l.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d (union l a)) \/
+                                         (mem e l.l /\ mem d b.l /\ get_id e <> get_id d /\ matched e d (union l b))
+                                        ))
+                                         ))
 
 let absmerge l a b =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
@@ -917,14 +926,6 @@ val prop_merge0 : ltr: ae
                                    (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
                        (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-val pm0 : e:list o
-        -> e6:list o
-        -> e4:list o
-        -> e5:list o
-        -> Lemma (ensures (forall x. mem x e ==> mem x e6 \/ mem x e4 \/ mem x e5))
-
-let pm0 e e4 e5 e6 = admit(); ()
-
 #pop-options
 
 let prop_merge0 ltr l atr a btr b =
@@ -959,7 +960,8 @@ let prop_merge0 ltr l atr a btr b =
   // pm0 enq_list enq_list6 enq_list4 enq_list5;
   // VVGG assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) ==> mem e enq_list);
   // assert(forall e. (mem e enq_list) /\ (mem e enq_list2) ==> (mem e enq_list3));
-  // VVGG assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) <==> memq (get_id e, get_ele e) s0);
+  // VVGG 
+  assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) <==> memq (get_id e, get_ele e) s0);
   // VVGG assert(forall e. mem e enq_list4 ==> mem e enq_list2);
   // VVGG assert(forall e. mem e enq_list5 ==> mem e enq_list3);
   // VVGG assert(forall e. mem e enq_list6 <==> memq (get_id e, get_ele e) a /\ memq (get_id e, get_ele e) b /\ memq (get_id e, get_ele e) l);
@@ -972,12 +974,21 @@ let prop_merge0 ltr l atr a btr b =
 
   //             (not (exists_mem atr.l (fun d -> is_dequeue d && get_id x <> get_id d && matched x d atr))) \/
   //             (not (exists_mem btr.l (fun d -> is_dequeue d && get_id x <> get_id d && matched x d btr))))
+
   //          ));
   //
-  // VVGGIMP assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x ltr.l && not
-  //                            (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
+  // VVGGIMP assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (is_enqueue x && mem x ltr.l && not
+  //                           (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
   // VVGGIMP assert(forall x. mem x enq_list1 ==> (mem x ltr.l && not
   //                                    (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
+  // VVGGIMP assert(forall x. mem x enq_list1 <==> (is_enqueue x && mem x ltr.l && not
+  //                                     (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
+  // VVGGIMP assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x ltr.l && not
+  //                              (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))
+  //                              && not (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l &&
+  //                                        get_id x <> get_id d && matched x d (union ltr atr)))
+  //                              && not (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l &&
+  //                                        get_id x <> get_id d && matched x d (union ltr btr)))));
   // assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x enq_list1));
                              // (not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
                              //             get_id x <> get_id d && matched x d (union ltr atr)))
@@ -1005,7 +1016,8 @@ let prop_merge0 ltr l atr a btr b =
   //          (((is_dequeue d && get_id x <> get_id d && btr.vis x d))))
   //          ));
 
-  // assert(forall e. mem e enq_list ==> ((mem e enq_list6) \/ ((mem e enq_list4) \/ (mem e enq_list5))));
+  // VVGGIMP 
+  assert(forall e. mem e enq_list ==> ((mem e enq_list6) \/ ((mem e enq_list4) \/ (mem e enq_list5))));
 
   // assert(forall e. mem e enq_list ==> memq (get_id e, get_ele e) s0);
 
