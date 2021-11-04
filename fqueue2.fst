@@ -974,9 +974,11 @@ let prop_merge0 ltr l atr a btr b =
   //             (not (exists_mem btr.l (fun d -> is_dequeue d && get_id x <> get_id d && matched x d btr))))
   //          ));
   //
-  // assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x ltr.l && not
+  // VVGGIMP assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x ltr.l && not
   //                            (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
-  assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x enq_list1));
+  // VVGGIMP assert(forall x. mem x enq_list1 ==> (mem x ltr.l && not
+  //                                    (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
+  // assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x enq_list1));
                              // (not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
                              //             get_id x <> get_id d && matched x d (union ltr atr)))
                              //   ) \/ (mem x ltr.l && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
