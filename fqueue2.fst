@@ -181,9 +181,9 @@ val app : l1:(list (nat * nat))
         -> Pure (list (nat * nat))
                (requires (unique_id l1 /\ unique_id l2) /\ (forall e. mem e l1 ==> not (mem_id (fst e) l2)))
                (ensures (fun r -> (forall e. mem e r <==> mem e l1 \/ mem e l2) /\ unique_id r /\
-                               (forall e e1. mem e l1 /\ mem e1 l1 /\ fst e <> fst e1 /\ order e e1 l1 ==> order e e1 r) /\
-                               (forall e e1. mem e l2 /\ mem e1 l2 /\ fst e <> fst e1 /\ order e e1 l2 ==> order e e1 r) /\
-                               (forall e e1. mem e l1 /\ mem e1 l2 /\ fst e <> fst e1 ==> order e e1 r)))
+                               (forall e e1. (mem e l1 /\ mem e1 l1 /\ fst e <> fst e1 /\ order e e1 l1) \/
+                                        (mem e l2 /\ mem e1 l2 /\ fst e <> fst e1 /\ order e e1 l2) \/
+                                        (mem e l1 /\ mem e1 l2 /\ fst e <> fst e1) <==> mem e r /\ mem e1 r /\ fst e <> fst e1 /\ order e e1 r)))
                  (decreases %[l1;l2])
 let rec app l1 l2 =
       match l1,l2 with
@@ -192,13 +192,15 @@ let rec app l1 l2 =
       |x::xs, _ -> x::(app xs l2)
       |[], x::xs -> x::xs
 
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
+
 val tolist : s1:s
            -> Pure (list (nat * nat))
                   (requires true)
                   (ensures (fun r -> (forall e. mem e r <==> memq e s1) /\ unique_id r /\
-                           (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 r) /\
-                           (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 (rev s1.back) ==> order e e1 r) /\
-                           (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 r)))
+                           (forall e e1. (mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front) \/
+                                    (mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 (rev s1.back)) \/
+                                    (mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1) <==> mem e r /\ mem e1 r /\ fst e <> fst e1 /\  order e e1 r)))
 let tolist (S f b) = app f (rev b)
 
 val norm : s0:s -> Tot (s1:s{((forall e e1. (memq e s1 /\ memq e1 s1 /\ fst e <> fst e1 /\ order e e1 (tolist s1)) <==>
@@ -285,39 +287,54 @@ let rec ax10 l x = match l with
   | [] -> ()
   | y::ys -> ax10 ys x; ax3 l x; ax6 l x
 
-#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
-
 val enqueue : x:(nat * nat)
             -> s1:s
             -> Pure s
              (requires (not (mem_id (fst x) s1.front) /\ not (mem_id (fst x) s1.back)))
              (ensures (fun r -> (rear r = Some x) /\ (forall e. memq e s1 \/ e = x <==> memq e r) /\
                       (forall e e1. mem e s1.front /\ mem e1 s1.front /\ fst e <> fst e1 /\ order e e1 s1.front ==> order e e1 (tolist r)) /\
-                      (forall e e1. mem e s1.back /\ mem e1 s1.back /\ fst e <> fst e1 /\ order e e1 s1.back ==> order e e1 (rev (tolist r))) /\
+                      (forall e e1. mem e s1.back /\ mem e1 s1.back /\ order e e1 s1.back /\ fst e <> fst e1 ==> order e e1 (rev (tolist r))) /\
                       (forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==> order e e1 (tolist r)) /\
                       (forall e. memq e s1 ==> order e x (tolist r))))
 
-let enqueue x s1 =
-  (S s1.front (x::s1.back))
+let enqueue x s1 = (S s1.front (x::s1.back))
+
+#set-options "--initial_fuel 7 --ifuel 7 --initial_ifuel 7 --fuel 7 --z3rlimit 10000"
 
 val enqueue0 :x:(nat * nat)
              -> s1:s
              -> Lemma (requires (not (mem_id (fst x) s1.front) /\ not (mem_id (fst x) s1.back)))
-                     (ensures (forall e e1. (mem e (tolist s1) /\ fst e <> fst e1 /\ ((mem e1 (tolist s1) /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
-                       (mem e (tolist (enqueue x s1)) /\ mem e1 (tolist (enqueue x s1)) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))))
-                       (decreases (length (tolist (s1)))) [SMTPat (enqueue x s1)]
+                     (ensures (forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
+                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))))
+                       (decreases (length (tolist (s1))))  [SMTPat (enqueue x s1)]
+
 
 let rec enqueue0 x s1 = match (s1) with
   | S [] [] -> ()
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
-  | S [] (g::gs) -> // enqueue0 g (S [] gs); enqueue0 x (S [] gs);
+  | S [] (g::gs) -> if (tl (rev (g::gs)) = []) then () else
+                  assert(not (mem_id (fst x) (tl (rev (g::gs)))));
+                  enqueue0 x (S [] (tl (rev (g::gs))));
+                  assert(forall e. memq e s1 ==> order e x (tolist (enqueue x s1)));
+                  assert(forall e. memq e s1 /\ fst e <> fst x <==> memq e (enqueue x s1) /\ memq x (enqueue x s1) /\ fst e <> fst x /\ order e x (tolist (enqueue x s1)));
+                  assert(forall e e1. mem e s1.front /\ mem e1 s1.front /\ order e e1 (s1.front) /\ fst e <> fst e1 ==>
+                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
+                  assert(forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==>
+                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
+                  // assert(forall e e1. mem e s1.back /\ mem e1 s1.back /\ order e e1 (rev s1.back) /\ fst e <> fst e1 ==>
+                  //          memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
+                  // assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1))) ==>
+                  //      (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))));
+                  // assert(forall e e1. (mem e s1.front /\ mem e1 s1.front /\ order e e1 (s1.front) /\ fst e <> fst e1) \/
+                  //                (mem e s1.back /\ mem e1 s1.back /\ order e1 e (s1.back) /\ fst e <> fst e1) \/
+                  //                (mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1) <==>
+                  //                (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1))));
                   admit()
 
 val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
 let get_val a = match a with
     | Some (x, y) -> (x, y)
-
 
 val is_empty : s1:s -> Tot (b:bool{(s1.front = [] /\ s1.back = []) <==> b = true})
 let is_empty s = (s.front = [] && s.back = [])
@@ -660,7 +677,6 @@ let union l a =
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1)) (union_list_ae l a))
 
-
 val absmerge_list_ae : l:ae
                      -> a:ae
                      -> b:ae
@@ -927,6 +943,8 @@ val prop_merge0 : ltr: ae
 
 #pop-options
 
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
+
 let prop_merge0 ltr l atr a btr b =
   axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
   let tr = absmerge ltr atr btr in
@@ -951,20 +969,21 @@ let prop_merge0 ltr l atr a btr b =
   let enq_list5 = filter_op (fun x -> is_enqueue x && mem x btr.l && not
                              (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l in
 
-  let enq_list6 = filter_op (fun x -> is_enqueue x && mem x ltr.l
+  let enq_list6 = filter_op (fun x -> is_enqueue x && mem x ltr.l && not
+                             (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))
                                && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
                                          get_id x <> get_id d && matched x d (union ltr atr)))
                                && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
                                          get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
   // pm0 enq_list enq_list6 enq_list4 enq_list5;
   // VVGG assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) ==> mem e enq_list);
-  // assert(forall e. (mem e enq_list) /\ (mem e enq_list2) ==> (mem e enq_list3));
-  // VVGG assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) <==> memq (get_id e, get_ele e) s0);
+  // VVGG assert(forall e. (mem e enq_list6) ==> mem e enq_list);
+  // VVGG assert(forall e. (mem e enq_list6) \/ (mem e enq_list4) \/ (mem e enq_list5) ==> memq (get_id e, get_ele e) s0);
   // VVGG assert(forall e. mem e enq_list4 ==> mem e enq_list2);
   // VVGG assert(forall e. mem e enq_list5 ==> mem e enq_list3);
   // VVGG assert(forall e. mem e enq_list6 <==> memq (get_id e, get_ele e) a /\ memq (get_id e, get_ele e) b /\ memq (get_id e, get_ele e) l);
-  // VVGG assert(forall e. mem e enq_list4 <==> (memq (get_id e, get_ele e) a /\ not(memq (get_id e, get_ele e) l)));
-  // VVGG assert(forall e. mem e enq_list5 <==> memq (get_id e, get_ele e) b /\ not(memq (get_id e, get_ele e) l));
+  // VVGG assert(forall e. mem e enq_list4 ==> (memq (get_id e, get_ele e) a /\ not(memq (get_id e, get_ele e) l)));
+  // VVGG assert(forall e. mem e enq_list5 ==> memq (get_id e, get_ele e) b /\ not(memq (get_id e, get_ele e) l));
   // GG assert(forall e. mem e enq_list2 /\ mem e enq_list3 <==> mem e enq_list6);
   // VGG assert(forall x. (not (exists_mem tr.l (fun d -> is_dequeue d && get_id x <> get_id d && matched x d tr))) ==>
   //             ((((not(exists_mem (union ltr atr).l (fun d -> is_dequeue d && get_id x <> get_id d && matched x d (union ltr atr)))) /\
@@ -975,11 +994,11 @@ let prop_merge0 ltr l atr a btr b =
 
   //          ));
   //
-  // VVGGIMP assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (is_enqueue x && mem x ltr.l && not
+  // VVGG assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (is_enqueue x && mem x ltr.l && not
   //                           (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
-  // VVGGIMP assert(forall x. mem x enq_list1 ==> (mem x ltr.l && not
+  // VVGG assert(forall x. mem x enq_list1 ==> (mem x ltr.l && not
   //                                    (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
-  // VVGGIMP assert(forall x. mem x enq_list1 <==> (is_enqueue x && mem x ltr.l && not
+  // VVGG assert(forall x. mem x enq_list1 <==> (is_enqueue x && mem x ltr.l && not
   //                                     (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))));
   assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x ltr.l && not
                                (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))
@@ -987,6 +1006,12 @@ let prop_merge0 ltr l atr a btr b =
                                          get_id x <> get_id d && matched x d (union ltr atr)))
                                && not (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l &&
                                          get_id x <> get_id d && matched x d (union ltr btr)))));
+  // assert(forall x. (mem x ltr.l && not
+  //                              (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))
+  //                              && not (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l &&
+  //                                        get_id x <> get_id d && matched x d (union ltr atr)))
+  //                              && not (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l &&
+  //                                        get_id x <> get_id d && matched x d (union ltr btr)))) ==> mem x enq_list6);
   // assert(forall x. mem x enq_list ==> mem x enq_list4 \/ mem x enq_list5 \/ (mem x enq_list1));
                              // (not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
                              //             get_id x <> get_id d && matched x d (union ltr atr)))
@@ -997,6 +1022,7 @@ let prop_merge0 ltr l atr a btr b =
   // VVGGIMP Inferred from above two -  assert(forall e. mem e enq_list ==> mem e enq_list2 \/ mem e enq_list3);
 
   // GG assert(forall x d.
+
   //          (((((is_dequeue d && get_id x <> get_id d && matched x d (union ltr atr))) /\
   //          (((is_dequeue d && get_id x <> get_id d && matched x d (union ltr btr))))) \/
 
@@ -1014,14 +1040,14 @@ let prop_merge0 ltr l atr a btr b =
   //          (((is_dequeue d && get_id x <> get_id d && btr.vis x d))))
   //          ));
 
-  // VVGGIMP assert(forall e. mem e enq_list ==> ((mem e enq_list6) \/ ((mem e enq_list4) \/ (mem e enq_list5))));
+  // VVGGIMP assert(forall e. mem e enq_list ==> ((mem e enq_list4) \/ (mem e enq_list5) \/ (mem e enq_list6)));
 
   // assert(forall e. mem e enq_list ==> memq (get_id e, get_ele e) s0);
 
   // VVGG assert(forall e. ((memq e a /\ memq e b /\ memq e l) \/ (mem e (diff_s (tolist a) (tolist l))) \/ (mem e (diff_s (tolist b) (tolist l)))) ==>
-  //          mem (fst e, Enqueue (snd e)) enq_list);
+  //        mem (fst e, Enqueue (snd e)) enq_list);
   // VVGG assert(forall e. ((memq e a /\ memq e b /\ memq e l) \/ (mem e (diff_s (tolist a) (tolist l))) \/ (mem e (diff_s (tolist b) (tolist l)))) <==>
-  //          memq e s0);
+  //        memq e s0);
   // VVGG assert(forall e. memq e s0 ==> mem (fst e, Enqueue (snd e)) enq_list);
   // VVGG assert(forall_mem (tolist s0) (fun e -> mem (fst e, Enqueue (snd e)) enq_list));
   // VVGG assert(forall_mem enq_list (fun x -> mem x tr.l && is_enqueue x && mem ((get_id x), (get_ele x)) (tolist s0)));
@@ -1029,9 +1055,64 @@ let prop_merge0 ltr l atr a btr b =
   admit();
   ()
 
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
 
+val prop_merge1 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
-// EVERYTHING TILL HERE + TILL prop_oper GOES THROUGH!
+let prop_merge1 ltr l atr a btr b = ()
+
+val prop_merge2 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim2 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+
+let prop_merge2 ltr l atr a btr b = ()
+
+val prop_merge : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+let prop_merge ltr l atr a btr b =
+  prop_merge0 ltr l atr a btr b;
+  prop_merge1 ltr l atr a btr b;
+  prop_merge2 ltr l atr a btr b; ()
+
 
 val convergence : tr:ae
                 -> a:s
@@ -1118,65 +1199,6 @@ let prop_oper tr st op =
   prop_oper5 tr st op;
   prop_oper6 tr st op;
   ()
-
-#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 1000000"
-
-
-val prop_merge1 : ltr: ae
-                -> l:s
-                -> atr:ae
-                -> a:s
-                -> btr:ae
-                -> b:s
-                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
-                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-                       (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
-
-let prop_merge1 ltr l atr a btr b = ()
-
-val prop_merge2 : ltr: ae
-                -> l:s
-                -> atr:ae
-                -> a:s
-                -> btr:ae
-                -> b:s
-                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
-                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-                       (ensures (sim2 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
-
-let prop_merge2 ltr l atr a btr b = ()
-
-val prop_merge : ltr: ae
-                -> l:s
-                -> atr:ae
-                -> a:s
-                -> btr:ae
-                -> b:s
-                -> Lemma (requires ((forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
-                                   (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
-                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                                   (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-                                   (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
-let prop_merge ltr l atr a btr b =
-  prop_merge0 ltr l atr a btr b;
-  prop_merge1 ltr l atr a btr b;
-  prop_merge2 ltr l atr a btr b; ()
 
 
 
