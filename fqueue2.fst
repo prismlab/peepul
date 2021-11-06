@@ -1101,7 +1101,7 @@ let prop_merge001 ltr l atr a btr b =
   axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
   prop_merge01 ltr l atr a btr b;
   let tr = absmerge ltr atr btr in
-  let s0 = merge ltr l atr a btr b in admit();
+  let s0 = merge ltr l atr a btr b in
   let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                              (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && mem x tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
 
