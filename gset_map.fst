@@ -79,6 +79,7 @@ assume val axiom1 : l:ae
                   -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ G.get_id (get_gset e) <> G.get_id (get_gset e') /\ G.get_id (get_gset e') <> G.get_id (get_gset e'') /\ G.get_id (get_gset e) <> G.get_id (get_gset e'') /\ l.vis e e' /\ l.vis e' e'') ==> l.vis e e'') (*transitive*) /\
                    (forall e e'. (mem e l.l /\ mem e' l.l /\ G.get_id (get_gset e) <> G.get_id (get_gset e') /\ l.vis e e') ==> not (l.vis e' e)) (*asymmetric*) /\
                    (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)))
+                   [SMTPat (unique_id l.l)]
 
 val forallb : #a:eqtype 
             -> f:(a -> bool)
