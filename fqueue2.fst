@@ -1,5 +1,7 @@
 module Fqueue2
 
+open FStar.Map
+open FStar.Set
 open FStar.List.Tot
 
 #set-options "--query_stats"
@@ -754,19 +756,16 @@ let absmerge l a b =
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
                  (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
 
-val diff_s : a:list (nat * nat)
-           -> l:list (nat * nat)
-           -> Pure (list (nat * nat))
-             (requires (unique_id a /\ unique_id l /\ sorted l /\ sorted a /\ (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1))))
-             (ensures (fun d -> (forall e. mem e d <==> (mem e a /\ not (mem e l))) /\ unique_id d /\ sorted d /\ (forall e. mem_id e d <==> (mem_id e a /\ not (mem_id e l))) /\
-                             (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ mem e d /\ mem e1 d /\ order e e1 a <==> mem e d /\ mem e1 d /\ order e e1 d)))
+val as_set : l:list (nat * nat)
+             -> Pure (set (nat * nat))
+                    (requires (unique_id l /\ sorted l))
+                    (ensures (fun u -> forall e. mem e l <==> Set.mem e u))
 
-let rec diff_s a l =  match a with
-  | [] -> []
-  | x::xs -> let d = (if (not (mem_id (fst x) l) && (mem_id (fst x) a)) then x::(diff_s xs l) else (diff_s xs l)) in
-           assert(forall e. mem_id e a /\ not (mem_id e l) ==> mem_id e d);
-           assert(forall e. mem e d ==> (mem e a /\ not (mem e l)));
-           assert(forall e. not (mem_id (fst e) l) /\ (mem_id (fst e) a) ==> not (mem (e) l)); d
+let rec as_set (l:list (nat * nat)) =
+  match l with
+  | [] -> Set.empty
+  | hd::tl -> Set.union (singleton hd) (as_set tl)
+
 
 val filter1 : f:((nat * nat) -> bool)
                -> l:list (nat * nat)
@@ -779,6 +778,29 @@ val filter1 : f:((nat * nat) -> bool)
 let rec filter1 f l = match l with
   | [] -> ()
   | x::xs -> filter1 f xs
+
+
+val as_set_id : l:list (nat * nat)
+             -> Pure (set nat)
+                    (requires (unique_id l /\ sorted l))
+                    (ensures (fun u -> forall e. mem_id e l <==> Set.mem e u))
+
+let rec as_set_id (l:list (nat * nat)) =
+  match l with
+  | [] -> Set.empty
+  | hd::tl -> Set.union (singleton (fst hd)) (as_set_id tl)
+
+val diff_s : a:list (nat * nat)
+           -> l:list (nat * nat)
+           -> Pure (list (nat * nat))
+             (requires (unique_id a /\ unique_id l /\ sorted l /\ sorted a /\ (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1))))
+             (ensures (fun d -> (forall e. mem e d <==> (mem e a /\ not (mem e l))) /\ unique_id d /\ sorted d /\ (forall e. mem_id e d <==> (mem_id e a /\ not (mem_id e l))) /\
+                             (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ mem e d /\ mem e1 d /\ order e e1 a <==> mem e d /\ mem e1 d /\ order e e1 d)))
+
+let diff_s a l =
+  let mset_a = as_set_id a in
+  let mset_l = as_set_id l in
+    filter (fun x -> not (Set.mem (fst x) mset_l) && (Set.mem (fst x) mset_a)) a
 
 val intersection : l:list (nat * nat)
                  -> a:list (nat * nat)
@@ -797,7 +819,9 @@ val intersection : l:list (nat * nat)
                                       mem e a /\ mem e1 a /\ order e e1 a /\ mem e b /\ mem e1 b /\ order e e1 b) <==> (mem e i /\ mem e1 i /\ order e e1 i))))
 
 let intersection l a b =
-          filter (fun e -> mem e a && mem e b) l
+  let mset_a = as_set a in
+  let mset_b = as_set b in
+          filter (fun e -> Set.mem e mset_a && Set.mem e mset_b) l
 
 val union_s : a:list (nat * nat)
             -> b:list (nat * nat)
