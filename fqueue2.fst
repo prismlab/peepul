@@ -797,10 +797,15 @@ val diff_s : a:list (nat * nat)
              (ensures (fun d -> (forall e. mem e d <==> (mem e a /\ not (mem e l))) /\ unique_id d /\ sorted d /\ (forall e. mem_id e d <==> (mem_id e a /\ not (mem_id e l))) /\
                              (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ mem e d /\ mem e1 d /\ order e e1 a <==> mem e d /\ mem e1 d /\ order e e1 d)))
 
-let diff_s a l =
+let rec diff_s a l =
   let mset_a = as_set_id a in
   let mset_l = as_set_id l in
-    filter (fun x -> not (Set.mem (fst x) mset_l) && (Set.mem (fst x) mset_a)) a
+  match a with
+    | [] -> []
+    | x::xs -> let d = (if (not (Set.mem (fst x) mset_l) && (Set.mem (fst x) mset_a)) then x::(diff_s xs l) else (diff_s xs l)) in
+             assert(forall e. mem_id e a /\ not (mem_id e l) ==> mem_id e d);
+             assert(forall e. mem e d ==> (mem e a /\ not (mem e l)));
+             assert(forall e. not (mem_id (fst e) l) /\ (mem_id (fst e) a) ==> not (mem (e) l)); d
 
 val intersection : l:list (nat * nat)
                  -> a:list (nat * nat)
