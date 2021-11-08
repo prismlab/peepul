@@ -917,10 +917,7 @@ val sorted_union : a:list (nat * nat)
                                (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ order e e1 b)) ==> (mem e u /\ mem e1 u /\ order e e1 u))))
 
 let sorted_union a b =
-    let la = sort a in
-    let lb = sort b in
-    union1 la lb
-
+    union1 a b
 
 val merge_s : l:list (nat * nat)
             -> a:list (nat * nat)
@@ -943,8 +940,7 @@ val merge_s : l:list (nat * nat)
                                       (((mem e (diff_s a l) /\ mem e1 (diff_s b l)) \/ (mem e1 (diff_s a l) /\ mem e (diff_s b l))) /\ (fst e < fst e1))) <==>
                                        (mem e res /\ mem e1 res /\ fst e <> fst e1 /\ order e e1 res))))
 
-
-let merge_s l a b = admit();
+let merge_s l a b =
   let ixn = intersection l a b in
   let diff_a = diff_s a l in
   let diff_b = diff_s b l in
