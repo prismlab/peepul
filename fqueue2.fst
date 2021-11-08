@@ -981,8 +981,10 @@ val merge : ltr:ae
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
-                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
-                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\ // Ideally should follow from sim relation + ID of ops
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
                               (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
                               (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
@@ -993,10 +995,12 @@ val merge : ltr:ae
                                 (forall e. memq e l /\ not (memq e a) ==> not (memq e res)) /\
                                 (forall e. memq e l /\ not (memq e b) ==> not (memq e res)) /\
                                 (forall e e1. ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
-                                         (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                         (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                         (mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l)) /\ (fst e < fst e1))) <==>
-                                         (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)))
+                                          (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
+                                          (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
+                                          (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                                          (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                                          (mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l)) /\ (fst e < fst e1))) <==>
+                                          (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)))
                             ))
 
 #push-options "--initial_fuel 6 --ifuel 6 --initial_ifuel 6 --fuel 6 --z3rlimit 10000"
