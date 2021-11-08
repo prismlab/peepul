@@ -316,7 +316,23 @@ let rec enqueue0 x s1 = match (s1) with
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
   | S [] (g::gs) -> if (tl (rev (g::gs)) = []) then () else
-                     enqueue0 x (S [] (tl (rev (g::gs))))
+                  enqueue0 x (S [] (tl (rev (g::gs))));
+                  assert(forall e. memq e s1 ==> order e x (tolist (enqueue x s1)));
+                  assert(forall e. memq e s1 /\ fst e <> fst x <==>
+                           memq e (enqueue x s1) /\ memq x (enqueue x s1) /\ fst e <> fst x /\ order e x (tolist (enqueue x s1)));
+                  assert(forall e e1. mem e s1.front /\ mem e1 s1.front /\ order e e1 (s1.front) /\ fst e <> fst e1 ==>
+                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
+                  assert(forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==>
+                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
+                  assert(forall e e1. mem e s1.back /\ mem e1 s1.back /\ order e e1 (rev s1.back) /\ fst e <> fst e1 ==>
+                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 ((tolist (enqueue x s1))));
+                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1))) ==>
+                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))));
+                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) ==>
+                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1))));
+                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
+                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1))));
+                  ()
 
 val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
 let get_val a = match a with
