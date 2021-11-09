@@ -2396,8 +2396,7 @@ val prop_merge2 : ltr: ae
                               (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                               (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l)))) /\
-                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))) /\
-                              (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
                        (ensures (sim2 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
 let prop_merge2 ltr l atr a btr b =
@@ -2433,7 +2432,6 @@ let prop_merge2 ltr l atr a btr b =
                                       order ((get_id e), (get_ele e)) ((get_id e1), (get_ele e1)) (tolist s0)
                                       ));
   ()
-
 
 val prop_merge1 : ltr: ae
                 -> l:s
