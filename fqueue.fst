@@ -975,36 +975,72 @@ val merge : ltr:ae
                    (ensures (fun res -> unique_id (tolist res) /\ sorted (tolist res) /\ (forall e. memq e res <==> ((memq e l /\ memq e a /\ memq e b) \/
                                 (memq e a /\ not (memq e l)) \/ (memq e b /\ not (memq e l)))) /\
                                 (forall e. memq e l /\ not (memq e a) ==> not (memq e res)) /\
-                                (forall e. memq e l /\ not (memq e b) ==> not (memq e res)) /\
-                                (forall e e1. ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
-                                          (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
-                                          (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                                (forall e. memq e l /\ not (memq e b) ==> not (memq e res))))
+
+#set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 100"
+
+let merge ltr l atr a btr b =
+  let res = (S (merge_s (tolist l) (tolist a) (tolist b)) []) in
+  assert(unique_id (tolist res) /\ sorted (tolist res) /\ (forall e. memq e res <==> ((memq e l /\ memq e a /\ memq e b) \/
+                                (memq e a /\ not (memq e l)) \/ (memq e b /\ not (memq e l)))) /\ (forall e. memq e l /\ not (memq e a) ==> not (memq e res)) /\
+                                (forall e. memq e l /\ not (memq e b) ==> not (memq e res)));
+  res
+
+val merge0 : ltr:ae
+           -> l:s
+           -> atr:ae
+           -> a:s
+           -> btr:ae
+           -> b:s
+           -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                              (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+
+                   (ensures ((forall e e1. ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e (merge ltr l atr a btr b) /\
+                                             memq e1 (merge ltr l atr a btr b)) \/
+                                          (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e (merge ltr l atr a btr b) /\
+                                            memq e1 (merge ltr l atr a btr b)) \/
+                                          (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e (merge ltr l atr a btr b) /\
+                                            memq e1 (merge ltr l atr a btr b)) \/
+                                          (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e (merge ltr l atr a btr b) /\
+                                            memq e1 (merge ltr l atr a btr b)) \/
+                                          (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e (merge ltr l atr a btr b) /\
+                                            memq e1 (merge ltr l atr a btr b)) \/
                                           (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
                                             (mem e (diff_s (tolist b) (tolist l)) /\ mem e1 (diff_s (tolist a) (tolist l)))) /\ (fst e < fst e1))) <==>
-                                          (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)))
-                            ))
+                                          (memq e (merge ltr l atr a btr b) /\ memq e1 (merge ltr l atr a btr b) /\ fst e <> fst e1 /\
+                                            order e e1 (tolist (merge ltr l atr a btr b)))))) [SMTPat (merge ltr l atr a btr b)]
 
-let merge ltr l atr a btr b = let res = (S (merge_s (tolist l) (tolist a) (tolist b)) []) in
-  assert(forall e e1. (memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) ==>
-                 (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)));
-  assert(forall e e1. ((memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
-                                          (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                          (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
-                                            (mem e (diff_s (tolist b) (tolist l)) /\ mem e1 (diff_s (tolist a) (tolist l)))) /\ (fst e < fst e1))) ==>
-                                          (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)));
-  assert(forall e e1. (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)) ==>
-                         ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
-                                          (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
-                                          (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                          (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
-                                          (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
-                                            (mem e (diff_s (tolist b) (tolist l)) /\ mem e1 (diff_s (tolist a) (tolist l)))) /\ (fst e < fst e1))));
-  res
+let merge0 ltr l atr a btr b =
+  let res = (S (merge_s (tolist l) (tolist a) (tolist b)) []) in
+  assert(forall e e1. ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
+                        (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
+                        (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
+                        (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                        (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                        (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
+                          (mem e1 (diff_s (tolist a) (tolist l)) /\ mem e (diff_s (tolist b) (tolist l)))) /\ (fst e < fst e1))) ==>
+                            (memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)));
+  assert(forall e e1. ((memq e res /\ memq e1 res /\ fst e <> fst e1 /\ order e e1 (tolist res)) ==>
+                        (memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
+                        (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
+                        (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
+                        (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                        (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
+                        (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
+                        (mem e1 (diff_s (tolist a) (tolist l)) /\ mem e (diff_s (tolist b) (tolist l)))) /\ (fst e < fst e1))));
+  ()
 
 val absmerge01 : ltr:ae
                -> atr:ae
