@@ -591,7 +591,7 @@ val sim1 : tr:ae
                                       ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
                                                (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                                     tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                 (fst e < fst e1))))))})
+                                      (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))})
 
 let sim1 tr s0 =
     axiom_ae tr;
@@ -602,7 +602,7 @@ let sim1 tr s0 =
                        ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) ||
                          (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                 tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) &&
-                   (fst e < fst e1))))))))
+                       (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))))
 
 val sim2 : tr:ae
         -> s0:s
@@ -612,7 +612,7 @@ val sim2 : tr:ae
                                     ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
                                              (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                                   tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                             (fst e < fst e1)))) ==>
+                                             (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))))) ==>
                        memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
 
 
@@ -637,7 +637,7 @@ val sim : tr:ae
                                       ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
                                                (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                                     tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                 (fst e < fst e1))))))
+                                      (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))
                       )})
 
 let sim tr s0 = sim0 tr s0 && sim1 tr s0 && sim2 tr s0
@@ -654,7 +654,7 @@ val sim3 : tr:ae
                                       ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
                                                (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                                     tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                 (fst e < fst e1)))))))) [SMTPat (sim tr s0)]
+                                 (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))))))))) [SMTPat (sim tr s0)]
 let sim3 tr s0 = ()
 
 val append : tr:ae
@@ -1322,7 +1322,8 @@ val prop_merge11 : ltr: ae
                                         (((absmerge ltr atr btr).vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
                                                  (~((absmerge ltr atr btr).vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) \/
                                                  (absmerge ltr atr btr).vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                                 (fst e < fst e1)))
+                                                 (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))
+    ))
     )))
 
 let prop_merge11 ltr l atr a btr b =
@@ -1336,38 +1337,14 @@ let prop_merge11 ltr l atr a btr b =
   let enq_list4 = filter_op (fun x -> is_enqueue x && mem x atr.l && not
                              (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l in
 
-  // let enq_list5 = filter_op (fun x -> is_enqueue x && mem x btr.l && not
-  //                            (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l in
-
-  // let enq_list6 = filter_op (fun x -> is_enqueue x && mem x ltr.l && not
-  //                            (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l && get_id x <> get_id d && matched x d ltr))
-  //                              && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
-  //                                        get_id x <> get_id d && matched x d (union ltr atr)))
-  //                              && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
-  //                                        get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
-
-  // assert(forall e. mem e enq_list4 ==> mem e enq_list);
-
   assert(forall e e1. not (memq e l) /\ memq e a /\ not (memq e1 l) /\ memq e1 a /\ order e e1 (tolist (merge ltr l atr a btr b)) ==>
                     (mem (fst e, Enqueue (snd e)) (enq_list) && mem (fst e1, Enqueue (snd e1)) (enq_list) && fst e <> fst e1 &&
                        ((atr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) ||
                          (not (atr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
                                 atr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) &&
-                   (fst e < fst e1))
-  )
+                   (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))))
   ));
-
-  // assert(forall e e1. mem e (tolist l) /\ mem e (tolist a) /\ mem e (tolist b) /\ mem e1 (tolist l) /\ mem e1 (tolist a) /\ mem e1 (tolist b) /\
-  //          (mem e1 (filter_s (fun e1 -> fst e <> fst e1 && order e e1 (intersection (tolist l) (tolist a) (tolist b)))
-  //                  (intersection (tolist l) (tolist a) (tolist b)))) ==>
-  //                   (mem (fst e, Enqueue (snd e)) (enq_list) && mem (fst e1, Enqueue (snd e1)) (enq_list6) && fst e <> fst e1 &&
-  //                      ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) ||
-  //                        (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
-  //                               tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) &&
-  //                  (fst e < fst e1)))
-  //          ));
-  admit(); ()
-
+  ()
 
 val prop_merge1 : ltr: ae
                 -> l:s
