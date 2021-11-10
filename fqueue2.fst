@@ -1,6 +1,5 @@
 module Fqueue2
 
-open FStar.Map
 open FStar.Set
 open FStar.List.Tot
 
@@ -317,7 +316,7 @@ let rec enqueue0 x s1 = match (s1) with
   | S [] [] -> ()
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
-  | S [] (g::gs) -> if (tl (rev (g::gs)) = []) then () else admit();
+  | S [] (g::gs) -> if (tl (rev (g::gs)) = []) then () else
                   enqueue0 x (S [] (tl (rev (g::gs))));
                   assert(forall e. memq e s1 ==> order e x (tolist (enqueue x s1)));
                   assert(forall e. memq e s1 /\ fst e <> fst x <==>
@@ -594,7 +593,7 @@ val sim1 : tr:ae
                                       (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))})
 
 let sim1 tr s0 =
-    axiom_ae tr; admit();
+    axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
         (forall_mem (tolist s0) (fun e -> (forall_mem (filter_s (fun e1 -> memq e s0 && memq e1 s0 && fst e <> fst e1 && order e e1 (tolist s0)) (tolist s0))
@@ -750,7 +749,7 @@ val absmerge : l:ae
                                          ))
 
 let absmerge l a b =
-    admit(); (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
@@ -775,10 +774,9 @@ val filter1 : f:((nat * nat) -> bool)
                                            mem e l /\ mem e1 l  /\ order e e1 l /\ f e /\ f e1))
                        [SMTPat (filter f l)]
 
-let rec filter1 f l = admit(); match l with
+let rec filter1 f l = match l with
   | [] -> ()
   | x::xs -> filter1 f xs
-
 
 val as_set_id : l:list (nat * nat)
              -> Pure (set nat)
@@ -800,7 +798,7 @@ val diff_s : a:list (nat * nat)
 let diff_s a l =
   let mset_a = as_set_id a in
   let mset_l = as_set_id l in
-    admit(); assert(forall (e:(nat* nat)). mem_id (fst e) l <==> Set.mem (fst e) mset_l);
+    assert(forall (e:(nat* nat)). mem_id (fst e) l <==> Set.mem (fst e) mset_l);
     assert(forall (e:(nat* nat)). mem_id (fst e) a <==> Set.mem (fst e) mset_a);
     filter (fun x -> not (Set.mem (fst x) mset_l) && (Set.mem (fst x) mset_a)) a
 
@@ -820,7 +818,7 @@ val intersection : l:list (nat * nat)
                                     (forall e e1. (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\
                                       mem e a /\ mem e1 a /\ order e e1 a /\ mem e b /\ mem e1 b /\ order e e1 b) <==> (mem e i /\ mem e1 i /\ order e e1 i))))
 
-let intersection l a b = admit();
+let intersection l a b =
   let mset_a = as_set a in
   let mset_b = as_set b in
           filter (fun e -> Set.mem e mset_a && Set.mem e mset_b) l
@@ -901,7 +899,7 @@ val union1 : a:list (nat * nat)
                                (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ order e e1 b)) ==> (mem e u /\ mem e1 u /\ order e e1 u))))
 
 let rec union1 l1 l2 =
-  admit(); match l1, l2 with
+ match l1, l2 with
   | [], [] -> []
   | [], l2 -> l2
   | l1, [] -> l1
@@ -944,7 +942,7 @@ val merge_s : l:list (nat * nat)
                                               (((mem e (diff_s a l) /\ mem e1 (diff_s b l)) \/ (mem e1 (diff_s a l) /\ mem e (diff_s b l))) /\ (fst e < fst e1))) <==>
                                        (mem e res /\ mem e1 res /\ fst e <> fst e1 /\ order e e1 res))))
 
-let merge_s l a b = admit();
+let merge_s l a b =
   let ixn = intersection l a b in
   let diff_a = diff_s a l in
   let diff_b = diff_s b l in
@@ -1006,7 +1004,7 @@ val merge : ltr:ae
 
 #push-options "--initial_fuel 6 --ifuel 6 --initial_ifuel 6 --fuel 6 --z3rlimit 10000"
 
-let merge ltr l atr a btr b = admit(); (S (merge_s (tolist l) (tolist a) (tolist b)) [])
+let merge ltr l atr a btr b = (S (merge_s (tolist l) (tolist a) (tolist b)) [])
 
 
 val absmerge01 : ltr:ae
@@ -1027,7 +1025,7 @@ val absmerge01 : ltr:ae
                                  is_dequeue d /\ mem d (absmerge ltr atr btr).l /\ get_id x <> get_id d /\ matched x d (absmerge ltr atr btr))))
 
 let absmerge01 ltr atr btr =
-  admit(); let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
   let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ltr.l
@@ -1076,7 +1074,7 @@ val prop_merge02  : ltr: ae
                                                                   get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l)))))
 
 let prop_merge02  ltr l atr a btr b =
-  admit(); absmerge01 ltr atr btr;
+  absmerge01 ltr atr btr;
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
@@ -1132,7 +1130,7 @@ val prop_merge01 : ltr: ae
                        [SMTPat (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b))]
 
 let prop_merge01 ltr l atr a btr b =
-  admit(); prop_merge02 ltr l atr a btr b;
+  prop_merge02 ltr l atr a btr b;
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
@@ -1179,7 +1177,7 @@ val prop_merge001 : ltr: ae
 #set-options "--query_stats --initial_fuel 7 --ifuel 7 --initial_ifuel 7 --fuel 7 --z3rlimit 10000"
 
 let prop_merge001 ltr l atr a btr b =
-  admit(); axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
+  axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
   prop_merge01 ltr l atr a btr b;
   let tr = absmerge ltr atr btr in
   let s0 = merge ltr l atr a btr b in
@@ -1221,7 +1219,7 @@ val prop_merge002 : ltr: ae
                                                   mem ((get_id x), (get_ele x)) (tolist (merge ltr l atr a btr b)))))
 
 let prop_merge002 ltr l atr a btr b =
-  admit(); axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
+  axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
   prop_merge01 ltr l atr a btr b;
   let tr = absmerge ltr atr btr in
   let s0 = merge ltr l atr a btr b in
@@ -1273,7 +1271,7 @@ val prop_merge0 : ltr: ae
 #push-options "--initial_fuel 7 --ifuel 7 --initial_ifuel 7 --fuel 7 --z3rlimit 100000"
 
 let prop_merge0 ltr l atr a btr b =
-  admit(); axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
+  axiom_ae ltr; axiom_ae atr; axiom_ae btr; axiom_ae (union ltr atr); axiom_ae (union ltr btr);
   prop_merge01 ltr l atr a btr b; prop_merge001 ltr l atr a btr b; prop_merge002 ltr l atr a btr b;
   let tr = absmerge ltr atr btr in
   let s0 = merge ltr l atr a btr b in
