@@ -1,4 +1,4 @@
-module Fqueue2
+module Fqueue
 
 open FStar.Set
 open FStar.List.Tot
@@ -640,21 +640,6 @@ val sim : tr:ae
 
 let sim tr s0 = sim0 tr s0 && sim1 tr s0 && sim2 tr s0
 
-val sim3 : tr:ae
-         -> s0:s
-         -> Lemma (requires sim tr s0)
-                 (ensures ((forall e. memq e s0 <==> (mem (fst e, Enqueue (snd e)) tr.l /\
-                               (forall d. mem d tr.l /\ fst e <> get_id d /\ is_dequeue d ==> (not (matched (fst e, Enqueue (snd e)) d tr))))) /\
-                                   (forall e e1. (memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0) <==>
-                                      (mem (fst e, Enqueue (snd e)) tr.l /\ mem (fst e1, Enqueue (snd e1)) tr.l /\ fst e <> fst e1 /\
-                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e <> get_id d ==> not (matched (fst e, Enqueue (snd e)) d tr)) /\
-                                           (forall d. mem d tr.l /\ is_dequeue d /\ fst e1 <> get_id d ==> not (matched (fst e1, Enqueue (snd e1)) d tr)) /\
-                                      ((tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1))) \/
-                                               (not (tr.vis (fst e, Enqueue (snd e)) (fst e1, Enqueue (snd e1)) ||
-                                                    tr.vis (fst e1, Enqueue (snd e1)) (fst e, Enqueue (snd e))) /\
-                                 (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))))))))) [SMTPat (sim tr s0)]
-let sim3 tr s0 = ()
-
 val append : tr:ae
              -> op:o
              -> Pure ae
@@ -688,7 +673,7 @@ val union : l:ae
                                      (mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1))) /\
                              (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ ~(u.vis e e1 \/ u.vis e1 e)) <==>
                                      ((mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e)) \/
-                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e)))) /\ 
+                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e)))) /\
                              (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
                                         ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
                                          (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
