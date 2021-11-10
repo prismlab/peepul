@@ -614,7 +614,6 @@ val sim2 : tr:ae
                                              (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1)))))) ==>
                        memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
 
-
 let sim2 tr s0 =
     axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
@@ -935,10 +934,10 @@ val merge_s : l:list (nat * nat)
                                     (forall e. mem e l /\ not (mem e a) ==> not (mem e res)) /\
                                     (forall e. mem e l /\ not (mem e b) ==> not (mem e res)) /\
                                     (forall e e1. ((mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\ mem e res /\ mem e1 res) \/
-                                              (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\ mem e res /\ mem e1 res) \/
-                                              (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ order e e1 a /\ mem e res /\ mem e1 res) \/
                                               (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ order e e1 a /\ mem e res /\ mem e1 res) \/
                                               (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ order e e1 b /\ mem e res /\ mem e1 res) \/
+                                              (mem e l /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ mem e res /\ mem e1 res) \/
+                                              (mem e l /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ mem e res /\ mem e1 res) \/
                                               (((mem e (diff_s a l) /\ mem e1 (diff_s b l)) \/ (mem e1 (diff_s a l) /\ mem e (diff_s b l))) /\ (fst e < fst e1))) <==>
                                        (mem e res /\ mem e1 res /\ fst e <> fst e1 /\ order e e1 res))))
 
@@ -2962,8 +2961,6 @@ let prop_merge2 ltr l atr a btr b =
                                       order ((get_id e), (get_ele e)) ((get_id e1), (get_ele e1)) (tolist s0)
                                       ));
   ()
-
-
 
 val prop_merge : ltr: ae
                 -> l:s
