@@ -312,7 +312,7 @@ val enqueue0 :x:(nat * nat)
                        (decreases (length (tolist (s1))))  [SMTPat (enqueue x s1)]
 
 
-let rec enqueue0 x s1 = admit(); match (s1) with
+let rec enqueue0 x s1 = match (s1) with
   | S [] [] -> ()
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
@@ -593,7 +593,7 @@ val sim1 : tr:ae
                                       (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))})
 
 let sim1 tr s0 =
-    admit(); axiom_ae tr;
+    axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
         (forall_mem (tolist s0) (fun e -> (forall_mem (filter_s (fun e1 -> memq e s0 && memq e1 s0 && fst e <> fst e1 && order e e1 (tolist s0)) (tolist s0))
@@ -615,7 +615,7 @@ val sim2 : tr:ae
                        memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
 
 let sim2 tr s0 =
-    admit(); axiom_ae tr;
+    axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                 (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
                    (forall_mem (enq_list) (fun e -> is_enqueue e && (forall_mem (filter_op (fun e1 -> is_enqueue e1 && get_id e <> get_id e1 && ((tr.vis e e1) ||
@@ -733,7 +733,7 @@ val absmerge : l:ae
                                          ))
 
 let absmerge l a b =
-    admit(); (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
@@ -758,7 +758,7 @@ val filter1 : f:((nat * nat) -> bool)
                                            mem e l /\ mem e1 l  /\ order e e1 l /\ f e /\ f e1))
                        [SMTPat (filter f l)]
 
-let rec filter1 f l = admit(); match l with
+let rec filter1 f l =  match l with
   | [] -> ()
   | x::xs -> filter1 f xs
 
@@ -1284,7 +1284,7 @@ val prop_merge05 : ltr: ae
                        [SMTPat (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b))]
 
 let prop_merge05 ltr l atr a btr b =
-  admit(); absmerge01 ltr atr btr; prop_merge03 ltr l atr a btr b; prop_merge04 ltr l atr a btr b; prop_merge02 ltr l atr a btr b;
+  absmerge01 ltr atr btr; prop_merge03 ltr l atr a btr b; prop_merge04 ltr l atr a btr b; prop_merge02 ltr l atr a btr b;
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
