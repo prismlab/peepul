@@ -18,4 +18,4 @@ List of verified MRDTs:
 7. Last-Writer-Wins register (state : (timestamp, value))
 8. Grows-only set : (state : list (unique elements))
 9. Grows-only map composed of Grows-only set : (state : list (unique keys, Gset.state))
-10. Functional queue : (state : list (unique increasing ids, elements) × list (unique decreasing ids, elements))
+10. Functional queue : (state : list (unique ids, elements) × list (unique ids, elements))
