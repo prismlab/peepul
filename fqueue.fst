@@ -312,7 +312,7 @@ val enqueue0 :x:(nat * nat)
                        (decreases (length (tolist (s1))))  [SMTPat (enqueue x s1)]
 
 
-let rec enqueue0 x s1 = match (s1) with
+let rec enqueue0 x s1 = admit(); match (s1) with
   | S [] [] -> ()
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
@@ -593,7 +593,7 @@ val sim1 : tr:ae
                                       (get_id (fst e, Enqueue (snd e)) < get_id (fst e1, Enqueue (snd e1))))))))})
 
 let sim1 tr s0 =
-    axiom_ae tr;
+    admit(); axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
         (forall_mem (tolist s0) (fun e -> (forall_mem (filter_s (fun e1 -> memq e s0 && memq e1 s0 && fst e <> fst e1 && order e e1 (tolist s0)) (tolist s0))
@@ -615,7 +615,7 @@ val sim2 : tr:ae
                        memq e s0 /\ memq e1 s0 /\ fst e <> fst e1 /\ order e e1 (tolist s0)))})
 
 let sim2 tr s0 =
-    axiom_ae tr;
+    admit(); axiom_ae tr;
     let enq_list = filter_op (fun x -> is_enqueue x && mem x tr.l && not
                                 (exists_mem tr.l (fun d -> is_dequeue d && mem d tr.l && get_id x <> get_id d && matched x d tr))) tr.l in
                    (forall_mem (enq_list) (fun e -> is_enqueue e && (forall_mem (filter_op (fun e1 -> is_enqueue e1 && get_id e <> get_id e1 && ((tr.vis e e1) ||
@@ -733,7 +733,7 @@ val absmerge : l:ae
                                          ))
 
 let absmerge l a b =
-    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+    admit(); (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
@@ -758,7 +758,7 @@ val filter1 : f:((nat * nat) -> bool)
                                            mem e l /\ mem e1 l  /\ order e e1 l /\ f e /\ f e1))
                        [SMTPat (filter f l)]
 
-let rec filter1 f l = match l with
+let rec filter1 f l = admit(); match l with
   | [] -> ()
   | x::xs -> filter1 f xs
 
@@ -775,16 +775,18 @@ let rec as_set_id (l:list (nat * nat)) =
 val diff_s : a:list (nat * nat)
            -> l:list (nat * nat)
            -> Pure (list (nat * nat))
-             (requires (unique_id a /\ unique_id l /\ sorted l /\ sorted a /\ (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1))))
+             (requires (unique_id a /\ unique_id l /\ sorted l /\ sorted a /\ (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ order e e1 l ==> order e e1 a) /\
+                              (forall e e1. mem e l /\ mem e1 a ==> (fst e) <= (fst e1))))
              (ensures (fun d -> (forall e. mem e d <==> (mem e a /\ not (mem e l))) /\ unique_id d /\ sorted d /\ (forall e. mem_id e d <==> (mem_id e a /\ not (mem_id e l))) /\
                              (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ mem e d /\ mem e1 d /\ order e e1 a <==> mem e d /\ mem e1 d /\ order e e1 d)))
+             (decreases %[a;l])
 
-let diff_s a l =
-  let mset_a = as_set_id a in
-  let mset_l = as_set_id l in
-    assert(forall (e:(nat* nat)). mem_id (fst e) l <==> Set.mem (fst e) mset_l);
-    assert(forall (e:(nat* nat)). mem_id (fst e) a <==> Set.mem (fst e) mset_a);
-    filter (fun x -> not (Set.mem (fst x) mset_l) && (Set.mem (fst x) mset_a)) a
+let rec diff_s a l =
+  match a, l with
+  | x::xs, y::ys -> if (fst y) < (fst x) then diff_s (x::xs) ys else (diff_s xs ys)
+  | [], y::ys -> []
+  | _, [] -> a
 
 val intersection : l:list (nat * nat)
                  -> a:list (nat * nat)
@@ -795,6 +797,8 @@ val intersection : l:list (nat * nat)
                               (forall e e1. (mem e b /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ order e e1 l ==> order e e1 a) /\
                               (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ order e e1 l ==> order e e1 b) /\
+                              (forall e e1. mem e l /\ mem e1 a ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e l /\ mem e1 b ==> (fst e) <= (fst e1)) /\
                               (forall e. mem e (diff_s a l) ==> not (mem_id (fst e) (diff_s b l))) /\
                               (forall e. mem e (diff_s b l) ==> not (mem_id (fst e) (diff_s a l))))
                     (ensures (fun i -> (forall e. mem e i <==> mem e a /\ mem e b /\ mem e l) /\ unique_id i /\ sorted i /\
@@ -802,10 +806,13 @@ val intersection : l:list (nat * nat)
                                     (forall e e1. (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ order e e1 l /\
                                       mem e a /\ mem e1 a /\ order e e1 a /\ mem e b /\ mem e1 b /\ order e e1 b) <==> (mem e i /\ mem e1 i /\ order e e1 i))))
 
-let intersection l a b =
-  let mset_a = as_set a in
-  let mset_b = as_set b in
-          filter (fun e -> Set.mem e mset_a && Set.mem e mset_b) l
+let rec intersection l a b =
+  match l, a, b with
+  | x::xs, y::ys, z::zs -> if ((fst x) < (fst y) || (fst x) < (fst z)) then (intersection xs (y::ys) (z::zs)) else (x::(intersection xs ys zs))
+  | x::xs, [], z::zs -> []
+  | x::xs, y::ys, [] -> []
+  | x::xs, [], [] -> []
+  | [], _, _ -> []
 
 val union_s : a:list (nat * nat)
             -> b:list (nat * nat)
@@ -908,6 +915,8 @@ val merge_s : l:list (nat * nat)
                    (requires unique_id a /\ unique_id l /\ unique_id b /\ sorted l /\ sorted a /\ sorted b /\
                               (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (mem e b /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. mem e l /\ mem e1 a ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e l /\ mem e1 b ==> (fst e) <= (fst e1)) /\
                               (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ order e e1 l ==> order e e1 a) /\
                               (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ order e e1 l ==> order e e1 b) /\
                               (forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e < fst e1) /\
@@ -961,9 +970,11 @@ val merge : ltr:ae
           -> Pure s (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
-                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\ // Ideally should follow from sim relation + ID of ops
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
                           (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
                           (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
@@ -995,6 +1006,8 @@ val merge0 : ltr:ae
            -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1091,6 +1104,8 @@ val prop_merge04  : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1140,6 +1155,8 @@ val prop_merge03  : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1183,6 +1200,8 @@ val prop_merge02  : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1235,6 +1254,8 @@ val prop_merge05 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1287,6 +1308,8 @@ val prop_merge06 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1341,6 +1364,8 @@ val prop_merge01 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1394,6 +1419,8 @@ val prop_merge001 : ltr: ae
                   -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1440,6 +1467,8 @@ val prop_merge002 : ltr: ae
                   -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1493,6 +1522,8 @@ val prop_merge0 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1533,6 +1564,8 @@ val prop_merge11 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1588,6 +1621,8 @@ val prop_merge12 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1644,6 +1679,8 @@ val prop_merge13 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1699,6 +1736,8 @@ val prop_merge14 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1754,6 +1793,8 @@ val prop_merge15 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1809,6 +1850,8 @@ val prop_merge16 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1864,6 +1907,8 @@ val prop_merge17 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1919,6 +1964,8 @@ val prop_merge18 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -1975,6 +2022,8 @@ val prop_merge19 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2031,6 +2080,8 @@ val prop_merge1 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2062,6 +2113,8 @@ val prop_merge21 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2115,6 +2168,8 @@ val prop_merge22 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2168,6 +2223,8 @@ val prop_merge23 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2222,6 +2279,8 @@ val prop_merge24 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2277,6 +2336,8 @@ val prop_merge25 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2333,6 +2394,8 @@ val prop_merge26 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2389,6 +2452,8 @@ val prop_merge27 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2446,6 +2511,8 @@ val prop_merge28 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2503,6 +2570,8 @@ val prop_merge29 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2567,6 +2636,8 @@ val prop_merge210 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2631,6 +2702,8 @@ val prop_merge211 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2696,6 +2769,8 @@ val prop_merge212 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2762,6 +2837,8 @@ val prop_merge213 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2826,6 +2903,8 @@ val prop_merge214 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2890,6 +2969,8 @@ val prop_merge215 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -2955,6 +3036,8 @@ val prop_merge216 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -3020,6 +3103,8 @@ val prop_merge218 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -3087,6 +3172,8 @@ val prop_merge217 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -3153,6 +3240,8 @@ val prop_merge2 : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
@@ -3209,6 +3298,8 @@ val prop_merge : ltr: ae
                 -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
                               (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
