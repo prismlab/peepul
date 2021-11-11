@@ -19,3 +19,4 @@ List of verified MRDTs:
 8. Grows-only set : (state : list (unique elements))
 9. Grows-only map composed of Grows-only set : (state : list (unique keys, Gset.state))
 10. Functional queue : (state : list (unique ids, elements) × list (unique ids, elements))
+11. Functional queue : (state : list (unique ids, elements))
