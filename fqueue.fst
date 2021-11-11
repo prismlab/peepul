@@ -1,6 +1,5 @@
 module Fqueue
 
-open FStar.Set
 open FStar.List.Tot
 
 #set-options "--query_stats"
@@ -532,20 +531,6 @@ let rec filter_sort f l =
   | [] -> ()
   | x::xs -> filter_sort f xs
 
-val count_enqueue : tr:(list o) -> nat
-let rec count_enqueue tr =
-  match tr with
-  |[] -> 0
-  |(id,(Enqueue _))::xs -> 1 + count_enqueue xs
-  |(id,_)::xs -> count_enqueue xs
-
-val count_dequeue : tr:(list o) -> nat
-let rec count_dequeue tr =
-    match tr with
-    |[] -> 0
-    |(id,(Dequeue _))::xs -> 1 + count_dequeue xs
-    |(id,_)::xs -> count_dequeue xs
-
 val forall_mem : #t:eqtype
              -> l:list t
              -> f:(t -> bool)
@@ -738,39 +723,6 @@ let absmerge l a b =
                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
                  (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
-
-val as_set : l:list (nat * nat)
-             -> Pure (set (nat * nat))
-                    (requires (unique_id l /\ sorted l))
-                    (ensures (fun u -> forall e. mem e l <==> Set.mem e u))
-
-let rec as_set (l:list (nat * nat)) =
-  match l with
-  | [] -> Set.empty
-  | hd::tl -> Set.union (singleton hd) (as_set tl)
-
-
-val filter1 : f:((nat * nat) -> bool)
-               -> l:list (nat * nat)
-               -> Lemma (requires (unique_id l /\ sorted l))
-                       (ensures unique_id (filter f l) /\ sorted (filter f l) /\  (forall e. mem e (filter f l) <==> mem e l /\ f e) /\
-                                (forall e e1. fst e <> fst e1 /\ mem e (filter f l) /\ mem e1 (filter f l) /\ order e e1 (filter f l) <==>
-                                           mem e l /\ mem e1 l  /\ order e e1 l /\ f e /\ f e1))
-                       [SMTPat (filter f l)]
-
-let rec filter1 f l =  match l with
-  | [] -> ()
-  | x::xs -> filter1 f xs
-
-val as_set_id : l:list (nat * nat)
-             -> Pure (set nat)
-                    (requires (unique_id l /\ sorted l))
-                    (ensures (fun u -> forall e. mem_id e l <==> Set.mem e u))
-
-let rec as_set_id (l:list (nat * nat)) =
-  match l with
-  | [] -> Set.empty
-  | hd::tl -> Set.union (singleton (fst hd)) (as_set_id tl)
 
 val diff_s : a:list (nat * nat)
            -> l:list (nat * nat)
