@@ -1059,6 +1059,8 @@ val absmerge01 : ltr:ae
                  mem x (absmerge ltr atr btr).l /\ ~(exists d. mem d (absmerge ltr atr btr).l /\
                                  is_dequeue d /\ mem d (absmerge ltr atr btr).l /\ get_id x <> get_id d /\ matched x d (absmerge ltr atr btr))))
 
+#push-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
+
 let absmerge01 ltr atr btr =
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
@@ -1078,7 +1080,9 @@ let absmerge01 ltr atr btr =
   assert(forall e. mem e enq_list1 <==> mem e enq_list2);
   assert(forall e. mem e enq_list2 ==> mem e enq_list); ()
 
-val prop_merge02  : ltr: ae
+#pop-options
+
+val prop_merge04  : ltr: ae
                 -> l:s
                 -> atr:ae
                 -> a:s
@@ -1101,7 +1105,99 @@ val prop_merge02  : ltr: ae
                        (ensures (forall e. mem e (filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                                      mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l)
-                                     /\ mem e ltr.l <==>
+                                     /\ mem e ltr.l ==>
+                                       ((mem e (filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l)))))
+
+let prop_merge04  ltr l atr a btr b =
+  absmerge01 ltr atr btr;
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
+  let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
+  assert(forall x. mem x enq_list /\ mem x ltr.l ==> (mem x ltr.l
+                                               && not (exists_mem ltr.l (fun d -> is_dequeue d && mem d ltr.l && mem x ltr.l &&
+                                                                  get_id x <> get_id d && matched x d ltr))
+                                               && not (exists_mem atr.l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem btr.l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))));
+  ()
+
+val prop_merge03  : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                              (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (forall e. ((mem e (filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l))) ==>
+                                (mem e (filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                                     mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l)
+                                     /\ mem e ltr.l)))
+
+let prop_merge03  ltr l atr a btr b =
+  absmerge01 ltr atr btr;
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
+  let enq_list1 = filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
+  assert(forall e. mem e enq_list1 ==> mem e enq_list /\ mem e ltr.l);
+  ()
+
+val prop_merge02  : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                              (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (forall e. (mem e (filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                                     mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l)
+                                     /\ mem e ltr.l) <==>
                                        ((mem e (filter_op (fun x -> is_enqueue x && mem x ltr.l
                                                && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
                                                                   get_id x <> get_id d && matched x d (union ltr atr)))
@@ -1109,7 +1205,7 @@ val prop_merge02  : ltr: ae
                                                                   get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l)))))
 
 let prop_merge02  ltr l atr a btr b =
-  absmerge01 ltr atr btr;
+  absmerge01 ltr atr btr; prop_merge03 ltr l atr a btr b; prop_merge04 ltr l atr a btr b;
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
@@ -1127,6 +1223,114 @@ let prop_merge02  ltr l atr a btr b =
                                                && not (exists_mem btr.l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
                                                                   get_id x <> get_id d && matched x d (union ltr btr)))));
   ()
+
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000"
+
+val prop_merge05 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                              (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (forall e. mem e (filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                                     mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l) ==>
+                                       ((mem e (filter_op (fun x -> is_enqueue x && mem x atr.l && not
+                                   (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l)) \/
+
+                                        (mem e (filter_op (fun x -> is_enqueue x && mem x btr.l && not
+                                   (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l)) \/
+
+                                        (mem e (filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l)))))
+                       [SMTPat (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b))]
+
+let prop_merge05 ltr l atr a btr b =
+  prop_merge02 ltr l atr a btr b;
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
+  let enq_list1 = filter_op (fun x -> is_enqueue x && mem x atr.l && not
+                                   (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l in
+  let enq_list2 = filter_op (fun x -> is_enqueue x && mem x btr.l && not
+                                   (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l in
+  let enq_list3 = filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
+  assert(forall x. mem x enq_list  ==> ((mem x enq_list1) \/ (mem x enq_list2) \/ (mem x enq_list3))); ()
+
+val prop_merge06 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                            (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                              (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
+                       (ensures (forall e. ((mem e (filter_op (fun x -> is_enqueue x && mem x atr.l && not
+                                   (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l)) \/
+
+                                        (mem e (filter_op (fun x -> is_enqueue x && mem x btr.l && not
+                                   (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l)) \/
+
+                                        (mem e (filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l))) ==>
+
+                                (mem e (filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                                     mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l))))
+                       [SMTPat (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b))]
+
+let prop_merge06 ltr l atr a btr b =
+  prop_merge02 ltr l atr a btr b;
+  let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
+                                   (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
+                mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
+  let enq_list1 = filter_op (fun x -> is_enqueue x && mem x atr.l && not
+                                   (exists_mem atr.l (fun d -> is_dequeue d && mem d atr.l && mem x atr.l && get_id x <> get_id d && matched x d atr))) atr.l in
+  let enq_list2 = filter_op (fun x -> is_enqueue x && mem x btr.l && not
+                                   (exists_mem btr.l (fun d -> is_dequeue d && mem d btr.l && mem x btr.l && get_id x <> get_id d && matched x d btr))) btr.l in
+  let enq_list3 = filter_op (fun x -> is_enqueue x && mem x ltr.l
+                                               && not (exists_mem (union ltr atr).l (fun d -> is_dequeue d && mem d (union ltr atr).l && mem x (union ltr atr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr atr)))
+                                               && not (exists_mem (union ltr btr).l (fun d -> is_dequeue d && mem d (union ltr btr).l && mem x (union ltr btr).l &&
+                                                                  get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
+  assert(forall e. ((mem e enq_list1) \/ (mem e enq_list2) \/ (mem e enq_list3)) ==> mem e enq_list); ()
+
 
 val prop_merge01 : ltr: ae
                 -> l:s
@@ -1165,7 +1369,7 @@ val prop_merge01 : ltr: ae
                        [SMTPat (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b))]
 
 let prop_merge01 ltr l atr a btr b =
-  prop_merge02 ltr l atr a btr b;
+  prop_merge02 ltr l atr a btr b; prop_merge05 ltr l atr a btr b; prop_merge06 ltr l atr a btr b;
   let enq_list = filter_op (fun x -> is_enqueue x && mem x (absmerge ltr atr btr).l && not
                                    (exists_mem (absmerge ltr atr btr).l (fun d -> is_dequeue d && mem d (absmerge ltr atr btr).l &&
                 mem x (absmerge ltr atr btr).l && get_id x <> get_id d && matched x d (absmerge ltr atr btr)))) (absmerge ltr atr btr).l in
@@ -1280,7 +1484,6 @@ let prop_merge002 ltr l atr a btr b =
   assert(forall e. mem e enq_list ==> memq (get_id e, get_ele e) s0);
   ()
 
-
 val prop_merge0 : ltr: ae
                 -> l:s
                 -> atr:ae
@@ -1320,7 +1523,6 @@ let prop_merge0 ltr l atr a btr b =
   ()
 
 #pop-options
-
 
 val prop_merge11 : ltr: ae
                 -> l:s
