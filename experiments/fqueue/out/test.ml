@@ -17,7 +17,7 @@ let app_op queue r = if (Random.int 100 < r) then (enqueue (next_id (), random 1
 let merge lca a b = S ((merge_s (tolist lca) (tolist a) (tolist b)), [])
 
 let rec test lca a b count =
-  if count = 0 then () else
+  if count = 0 then (lca, a, b) else
   let lca = merge lca a b in
   let replica_ratio = 50 in
   let insert_ratio = 50 in
@@ -28,12 +28,11 @@ let rec test lca a b count =
 
 let rec gen_list acc x =
   if x = 0 then acc else
-    gen_list ((next_id (), random 1000)::acc) (x-1)
+    gen_list (acc @ [(next_id (), random 1000)]) (x-1)
 
 let _ =
-  let lca = S (gen_list [] 50, gen_list [] 50) in
-  let a = S (gen_list [] 60, gen_list [] 60) in
-  let b = S (gen_list [] 60, gen_list [] 60) in
-  test lca a b 1000000
-
-
+  let lca = S (gen_list [] 100, []) in
+  let a = S (gen_list [] 120, []) in
+  let b = S (gen_list [] 120, []) in
+  let  (lca, a, b) = test lca a b 100 in
+  ()
