@@ -8,4 +8,9 @@
  (modules Fqueue test)
  (libraries astring cohttp fmt fstarlib core_kernel))
 
+(executable
+ (name rga)
+ (modules rga)
+ (libraries astring cohttp fmt fstarlib core_kernel))
+
 

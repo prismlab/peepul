@@ -31,8 +31,8 @@ let rec gen_list acc x =
     gen_list (acc @ [(next_id (), random 1000)]) (x-1)
 
 let _ =
-  let lca = S (gen_list [] 100, []) in
-  let a = S (gen_list [] 120, []) in
-  let b = S (gen_list [] 120, []) in
-  let  (lca, a, b) = test lca a b 100 in
+  let lca = S (gen_list [] 10000, []) in
+  let a = lca in
+  let b = lca in
+  let (lca, a, b) = test lca a b 100000 in
   ()
