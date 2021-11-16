@@ -30,6 +30,6 @@ let _ =
   let lca = gen_list [] 10000 in
   let a = lca in
   let b = lca in
-  test lca a b 1000
+  test lca a b 10000
 
 

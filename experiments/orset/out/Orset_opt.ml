@@ -263,38 +263,52 @@ let rec (unionst : s -> s -> s) =
       | (x::xs, uu___) -> x :: (unionst xs b)
       | uu___ -> b
 
-let (merge1 : s -> s -> s -> s) =
-  fun l ->
-    fun a ->
-      fun b ->
-        let i =
-          filter
-            (fun e ->
-               (FStar_List_Tot_Base.mem e a) && (FStar_List_Tot_Base.mem e b))
-            l in
-        let la = diff a l in
-        let lb = diff b l in
-        let la1 =
-          filter
-            (fun e ->
-               (member_ele (snd e) la) &&
-                 (Prims.op_Negation (member_ele (snd e) lb))) la in
-        let lb1 =
-          filter
-            (fun e ->
-               (member_ele (snd e) lb) &&
-                 (Prims.op_Negation (member_ele (snd e) la))) lb in
-        let la2 =
-          filter
-            (fun e ->
-               ((member_ele (snd e) la) && (member_ele (snd e) lb)) &&
-                 ((fst (get_node a (snd e))) > (fst (get_node b (snd e)))))
-            la in
-        let lb2 =
-          filter
-            (fun e ->
-               ((member_ele (snd e) la) && (member_ele (snd e) lb)) &&
-                 ((fst (get_node b (snd e))) > (fst (get_node a (snd e)))))
-            lb in
-        let u1 = unionst i la1 in
-        let u2 = unionst u1 lb1 in let u3 = unionst u2 la2 in unionst u3 lb2
+let rec merge1 l a b =
+   match l,a,b with
+   |[],[],[] -> []
+   |x::xs, _, _ -> if (FStar_List_Tot_Base.mem x a && FStar_List_Tot_Base.mem x b) then x::(merge1 xs (remove a x) (remove b x))
+                    else if FStar_List_Tot_Base.mem x a then merge1 xs (remove a x) b
+                      else if FStar_List_Tot_Base.mem x b then merge1 xs a (remove b x)
+                        else (merge1 xs a b)
+
+   |[], (id,ele)::xs, _ -> if (not (member_ele ele b)) then (id,ele)::(merge1 [] xs b)
+                            else (let b1 = (get_node b ele) in (if id > fst b1 then (id,ele)::(merge1 [] xs (remove b b1))
+                               else (merge1 [] xs b)))
+
+   |[],[],_ -> b
+
+(* let (merge1 : s -> s -> s -> s) = *)
+(*   fun l -> *)
+(*     fun a -> *)
+(*       fun b -> *)
+(*         let i = *)
+(*           filter *)
+(*             (fun e -> *)
+(*                (FStar_List_Tot_Base.mem e a) && (FStar_List_Tot_Base.mem e b)) *)
+(*             l in *)
+(*         let la = diff a l in *)
+(*         let lb = diff b l in *)
+(*         let la1 = *)
+(*           filter *)
+(*             (fun e -> *)
+(*                (member_ele (snd e) la) && *)
+(*                  (Prims.op_Negation (member_ele (snd e) lb))) la in *)
+(*         let lb1 = *)
+(*           filter *)
+(*             (fun e -> *)
+(*                (member_ele (snd e) lb) && *)
+(*                  (Prims.op_Negation (member_ele (snd e) la))) lb in *)
+(*         let la2 = *)
+(*           filter *)
+(*             (fun e -> *)
+(*                ((member_ele (snd e) la) && (member_ele (snd e) lb)) && *)
+(*                  ((fst (get_node a (snd e))) > (fst (get_node b (snd e))))) *)
+(*             la in *)
+(*         let lb2 = *)
+(*           filter *)
+(*             (fun e -> *)
+(*                ((member_ele (snd e) la) && (member_ele (snd e) lb)) && *)
+(*                  ((fst (get_node b (snd e))) > (fst (get_node a (snd e))))) *)
+(*             lb in *)
+(*         let u1 = unionst i la1 in *)
+(*         let u2 = unionst u1 lb1 in let u3 = unionst u2 la2 in unionst u3 lb2 *)
