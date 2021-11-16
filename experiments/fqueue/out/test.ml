@@ -34,5 +34,5 @@ let _ =
   let lca = S (gen_list [] 10000, []) in
   let a = lca in
   let b = lca in
-  let (lca, a, b) = test lca a b 100000 in
+  let (lca, a, b) = test lca a b 10000 in
   ()
