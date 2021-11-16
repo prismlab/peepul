@@ -3,14 +3,14 @@ let _ = Random.self_init ()
 
 let random x = Z.of_int (Random.int x)
 
-let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt_detailed.Add, random 10000)
-  else (random 1000000, Orset_opt_detailed.Rem, random 10000)
+let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt.Add (random 100))
+  else (random 1000000, Orset_opt.Rem (random 100))
 
 let pick_r r r1 r2 = if (Random.int 100 < r) then r1 else r2
 
-let app_op set op = (Orset_opt_detailed.app_op set op)
+let app_op set op = (Orset_opt.app_op set op)
 
-let merge lca a b = Orset_opt_detailed.merge_s lca a b
+let merge lca a b = Orset_opt.merge1 lca a b
 
 let rec test lca a b count =
   if count = 0 then () else
@@ -27,9 +27,9 @@ let rec gen_list acc x =
     gen_list ((random 100000, random 1000)::acc) (x-1)
 
 let _ =
-  let lca = gen_list [] 100 in
-  let a = gen_list [] 120 in
-  let b = gen_list [] 120 in
-  test lca a b 10000
+  let lca = gen_list [] 10000 in
+  let a = lca in
+  let b = lca in
+  test lca a b 1000
 
 
