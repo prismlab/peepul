@@ -1,7 +1,5 @@
 module Rope
 
-open FStar.List.Tot
-
 #set-options "--query_stats"
 
 type id = nat
@@ -35,6 +33,26 @@ let _ = assert(is_rope (Node (Leaf (String.make 3 (Char.char_of_int 2)) 3) 3 (Le
 [@@expect_failure]
 let _ = assert(is_rope (Node (Leaf (String.make 3 (Char.char_of_int 2)) 3) 4 (Leaf (String.make 1 (Char.char_of_int 3)) 1)))
 
-val index_r: r:rope -> i:nat{i < String.length (str_of_rope r)} -> Tot (c:String.char{String.index (str_of_rope r) i = c})
+val get: r:rope -> i:nat{i < String.length (str_of_rope r)} -> Tot (c:String.char{String.index (str_of_rope r) i = c})
+
+let get r i = admit(); Char.char_of_int 5
+
+val set: r:rope -> c:String.char -> i:nat{i < String.length (str_of_rope r)} ->
+                Tot (res:rope{String.length (str_of_rope r) = String.length (str_of_rope res) /\
+                                            (forall (x:nat{x < String.length (str_of_rope r)}). (get r x = get res x) \/ (x = i /\ get res x = c))})
+
+val split: r:rope -> i:nat{i < String.length (str_of_rope r)} ->
+                  Tot (res:(rope * rope){str_of_rope r =  String.concat "" [(str_of_rope (fst res));(str_of_rope (snd res))]})
+
+let split r i = admit(); (r, r)
+
+val concat: r1:rope -> r2:rope -> Tot (r:rope{str_of_rope r = String.concat "" [(str_of_rope r1);(str_of_rope r2)]})
+
+val insert: r:rope -> i:nat{i < String.length (str_of_rope r)} -> s:string ->
+                   Tot (res:rope{str_of_rope res = String.concat "" [str_of_rope (fst (split r i)) ; s ; str_of_rope (snd (split r i))]})
+
+val delete: r:rope -> i:nat{i < String.length (str_of_rope r)} -> j:nat{i < j /\ j < String.length (str_of_rope r)}
+            -> Tot (res:rope{str_of_rope res = String.concat "" [str_of_rope (fst (split r i)); str_of_rope (snd (split r j))]})
+
 
 
