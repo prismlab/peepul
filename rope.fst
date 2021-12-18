@@ -34,12 +34,11 @@ let rec is_rope a = match a with
 | Leaf s w -> w = String.length s
 | Node l w r -> w = String.length (str_of_rope l) && is_rope l && is_rope r
 
-type rope = a:tree{is_rope a}
-
-
 val is_rope': a:rope -> Lemma (requires True) (ensures (get_weight a = String.length (str_of_rope (get_left a)) /\
                                                     (Node? a ==> is_rope (get_left a) /\ is_rope (get_right a)))) [SMTPat (is_rope a)]
 let is_rope' a = ()
+
+type rope = a:tree{is_rope a}
 
 let _ = assert(is_rope (Node (Leaf (String.make 3 (Char.char_of_int 2)) 3) 3 (Leaf (String.make 1 (Char.char_of_int 3)) 1)))
 
@@ -71,7 +70,6 @@ val concat: r1:rope -> r2:rope -> Tot (r:rope{str_of_rope r = String.concat "" [
 
 val insert: r:rope -> i:nat{i < String.length (str_of_rope r)} -> s:string ->
                    Tot (res:rope{str_of_rope res = String.concat "" [str_of_rope (fst (split r i)) ; s ; str_of_rope (snd (split r i))]})
-
 
 val delete: r:rope -> i:nat{i < String.length (str_of_rope r)} -> j:nat{i < j /\ j < String.length (str_of_rope r)}
             -> Tot (res:rope{str_of_rope res = String.concat "" [str_of_rope (fst (split r i)); str_of_rope (snd (split r j))]})

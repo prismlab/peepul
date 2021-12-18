@@ -27,9 +27,10 @@ let rec gen_list acc x =
     gen_list ((random 100000, random 1000)::acc) (x-1)
 
 let _ =
-  let lca = gen_list [] 10000 in
+  Memtrace.trace_if_requested ();
+  let lca = gen_list [] 1000 in
   let a = lca in
   let b = lca in
-  test lca a b 10000
+  test lca a b 1000
 
 
