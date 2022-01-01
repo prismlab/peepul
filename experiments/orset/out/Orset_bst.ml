@@ -266,18 +266,27 @@ let (sim : Orset_opt.ae -> t -> Prims.bool) =
         (Orset_opt.forallb (fun a -> member_ele (Orset_opt.get_ele a) s1) lst)
 let (diff : t -> t -> t) =
   fun a -> fun l -> totree (Orset_opt.diff (flatten a) (flatten l))
-let (merge :
-  Orset_opt.ae -> t -> Orset_opt.ae -> t -> Orset_opt.ae -> t -> t) =
-  fun ltr ->
-    fun l ->
-      fun atr ->
-        fun a ->
-          fun btr ->
-            fun b ->
-              let m =
-                Orset_opt.merge ltr (flatten l) atr (flatten a) btr
-                  (flatten b) in
-              totree m
+(* let (merge : *)
+(*   Orset_opt.ae -> t -> Orset_opt.ae -> t -> Orset_opt.ae -> t -> t) = *)
+(*   fun ltr -> *)
+(*     fun l -> *)
+(*       fun atr -> *)
+(*         fun a -> *)
+(*           fun btr -> *)
+(*             fun b -> *)
+(*               let m = *)
+(*                 Orset_opt.merge ltr (flatten l) atr (flatten a) btr *)
+(*                   (flatten b) in *)
+(*               totree m *)
+
+let (merge1 : t ->  t -> t -> t) =
+  fun l ->
+  fun a ->
+  fun b ->
+  let m =
+    Orset_opt.merge1 (flatten l) (flatten a) (flatten b) in
+  totree m
+
 let (max : Prims.int -> Prims.int -> Prims.int) =
   fun n1 -> fun n2 -> if n1 > n2 then n1 else n2
 let rec (pos : Orset_opt.s -> (Prims.nat * Prims.nat) -> Prims.nat) =

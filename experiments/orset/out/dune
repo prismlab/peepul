@@ -2,10 +2,11 @@
  (dev
   (flags (:standard -w -A))))
 
-(executable
- (name test1)
+(executables
+ (names test_opt test_opt_detailed test_bst)
  (ocamlopt_flags (-I %{env:FSTAR_HOME=/home/adharsh/Sources/FStar}/bin))
- (modules Orset_opt_detailed test1)
+ (modules ("Orset_opt" "test_opt" "Orset_opt_detailed" "test_opt_detailed" "Orset_bst" "test_bst"))
  (libraries base memtrace astring cohttp fmt fstarlib core_kernel))
+
 
 
