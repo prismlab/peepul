@@ -193,7 +193,8 @@ val remove_st : i:string
               -> Tot (r:s {(forall e. mem e r <==> mem e s1 /\ item e <> i) /\
                           (forall i1. mem_item_s i1 s1 /\ i1 <> i <==> mem_item_s i1 r) /\
                           (mem_item_s i s1 ==> List.Tot.length r = List.Tot.length s1 - 1) /\
-                          (not (mem_item_s i s1) ==> List.Tot.length r = List.Tot.length s1)})
+                          (not (mem_item_s i s1) ==> List.Tot.length r = List.Tot.length s1) /\
+                          not (mem_item_s i r)})
 let rec remove_st i s1 =
   match s1 with
   |[] -> []
@@ -222,6 +223,139 @@ let convergence tr a b =
   assert (forall i. mem_item_s i a ==> (C.sim (project i tr) (ctr (get i a))) /\
                                  (C.sim (project i tr) (ctr (get i b)))); ()
 
+val filters : f:((string * C.s) -> bool)
+             -> l:s
+             -> Tot (l1:s {(forall e. mem e l1 <==> mem e l /\ f e) /\
+                          (forall i. mem_item_s i l1 <==> mem_item_s i l /\ f (get i l)) /\
+                          (forall i. mem_item_s i l1 ==> ctr (get i l1) = ctr (get i l))})
+let rec filters f l = 
+          match l with
+          |[] -> []
+          |hd::tl -> if f hd then hd::(filters f tl) else filters f tl
+
+val filters_uni : f:((string * C.s) -> bool)
+                   -> l:s
+                   -> Lemma (requires unique_s l)
+                           (ensures (unique_s (filters f l)))
+                           [SMTPat (filters f l)]
+let rec filters_uni f l =
+      match l with
+      |[] -> ()
+      |x::xs -> filters_uni f xs
+
+val unionst : a:s
+            -> b:s
+            -> Pure s
+                (requires (forall e. mem_item_s e a ==> not (mem_item_s e b)))
+
+                (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
+                              (forall e. mem_item_s e r <==> mem_item_s e a \/ mem_item_s e b)))
+let rec unionst a b =
+      match a,b with
+      |[],[] -> []
+      |x::xs,_ -> x::unionst xs b
+      |_ -> b
+
+val un1 : l:s -> a:s -> b:s
+        -> Pure s
+               (requires (forall i. mem_item_s i l ==> mem_item_s i a /\ mem_item_s i b) /\
+                         (forall i. mem_item_s i l ==> ctr (get i a) >= ctr (get i l) /\ ctr (get i b) >= ctr (get i l)))
+         (ensures (fun r -> (forall e. mem e r <==> (mem_item_s (item e) l /\ mem_item_s (item e) a /\ mem_item_s (item e) b /\ 
+                                  ctr e = ctr (get (item e) a) + ctr (get (item e) b) - ctr (get (item e) l))) /\
+                         (forall i. mem_item_s i r <==> mem_item_s i l /\ mem_item_s i a /\ mem_item_s i b)))
+
+#set-options "--z3rlimit 10000000"
+let rec un1 l a b =
+  match l,a,b with
+  |[],[],[] -> []
+  |e::xs,_,_ -> ((item e), (ctr (get (item e) a) + ctr (get (item e) b) - ctr (get (item e) l)))::un1 xs a b
+  |[],_,_ -> []
+
+val un2 : a:s -> b:s
+          -> Pure s
+                 (requires true)
+                 (ensures (fun r -> (forall e. mem e r <==> (mem_item_s (item e) a /\ mem_item_s (item e) b /\ 
+                                    ctr e = ctr (get (item e) a) + ctr (get (item e) b))) /\
+                                 (forall i. mem_item_s i r <==> mem_item_s i a /\ mem_item_s i b)))
+                       (decreases %[a;b])
+
+#set-options "--initial_fuel 10 --max_fuel 10 --initial_ifuel 10 --max_ifuel 10"
+#set-options "--z3rlimit 10000000"
+let rec un2 a b =
+  match a,b with
+  |[],[] -> []
+  |x::xs,_ -> if (mem_item_s (item x) b) then 
+                   ((item x), (ctr (get (item x) a) + ctr (get (item x) b)))::un2 xs b
+            else un2 xs b
+  |[],x::xs -> []
+
+val merge1 : l:s -> a:s -> b:s
+           -> Pure (list (string * C.s))
+             (requires (forall i. mem_item_s i l ==> mem_item_s i a /\ mem_item_s i b) /\
+                      (forall i. mem_item_s i l ==> ctr (get i a) >= ctr (get i l) /\ ctr (get i b) >= ctr (get i l)))
+                      (ensures (fun r -> (forall i. mem_item_s i r ==> 
+                               (mem_item_s i a /\ mem_item_s i b /\ mem_item_s i l) \/ 
+                               (mem_item_s i a /\ mem_item_s i b /\ not (mem_item_s i l)) \/
+                               (mem_item_s i a /\ not (mem_item_s i b)) \/ (mem_item_s i b /\ not (mem_item_s i a))) /\
+                         (forall e. mem e r <==> ((mem_item_s (item e) l /\ mem_item_s (item e) a /\ mem_item_s (item e) b /\ 
+                                      (ctr e = ctr (get (item e) a) + ctr (get (item e) b) - ctr (get (item e) l))) \/
+                                      (mem_item_s (item e) a /\ mem_item_s (item e) b /\ not (mem_item_s (item e) l) /\ 
+                                      ctr e = ctr (get (item e) a) + ctr (get (item e) b)) \/
+                           (mem_item_s (item e) a /\ not (mem_item_s (item e) b) /\ ctr e = ctr (get (item e) a)) \/
+                           (mem_item_s (item e) b /\ not (mem_item_s (item e) a) /\ ctr e = ctr (get (item e) b)))) /\ unique_s r))
+             (decreases %[l;a;b])
+
+#set-options "--z3rlimit 10000000"
+let merge1 l a b =
+  lemma2 l; lemma2 a; lemma2 b; 
+  let m1 = un1 l a b in
+  assert (forall e. mem e m1 <==> (mem_item_s (item e) l /\ mem_item_s (item e) a /\ mem_item_s (item e) b /\ 
+                                        (ctr e = ctr (get (item e) a) + ctr (get (item e) b) - ctr (get (item e) l)))); 
+  let m2 = un2 (filters (fun a1 -> not (mem_item_s (item a1) l)) a) (filters (fun a1 -> not (mem_item_s (item a1) l)) b) in
+  assert (forall e. mem_item_s e m1 ==> not (mem_item_s e m2));
+  assert (forall e. mem e m2 <==> (mem_item_s (item e) a /\ mem_item_s (item e) b /\ not (mem_item_s (item e) l) /\ 
+                                        ctr e = ctr (get (item e) a) + ctr (get (item e) b)));
+  let m3 = filters (fun a1 -> not (mem_item_s (item a1) b)) a in
+  assert (forall e. mem e m3 <==> (mem_item_s (item e) a /\ not (mem_item_s (item e) b) /\ ctr e = ctr (get (item e) a)));
+  let m4 = filters (fun a1 -> not (mem_item_s (item a1) a)) b in
+  assert (forall e. mem_item_s e m3 ==> not (mem_item_s e m4));
+  assert (forall e. mem e m4 <==> (mem_item_s (item e) b /\ not (mem_item_s (item e) a) /\ ctr e = ctr (get (item e) b)));
+  let u1 = unionst m1 m2 in
+  assert (forall i. mem_item_s i u1 ==> not (mem_item_s i m3));
+  let u2 = unionst u1 m3 in
+  assert (forall i. mem_item_s i u2 ==> not (mem_item_s i m4));
+  unionst u2 m4
+
+val lemma5 : l:ae op 
+           -> a:ae op 
+           -> Lemma (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)))
+                   (ensures (forall e. mem_op e (union1 l a) <==> mem_op e l.l \/ mem_op e a.l) /\
+                            (forall e. C.sum (project e (union l a)).l = C.sum (project e l).l + C.sum (project e a).l))
+                                (decreases %[l.l;a.l])
+
+#set-options "--z3rlimit 10000000"
+let rec lemma5 l a = 
+    match l,a with
+    |(A _ []), (A _ []) -> ()
+    |(A _ (x::xs)), _ -> lemma5 (A l.vis xs) a
+    |(A _ []), (A _ (x::xs)) -> lemma5 l (A a.vis xs)
+
+val lem_item : l:s -> a:s -> b:s
+             -> Lemma (requires (forall i. mem_item_s i l ==> mem_item_s i a /\ mem_item_s i b))
+                     (ensures (forall r i. (mem_item_s i r <==>
+                              (mem_item_s i a /\ mem_item_s i b /\ mem_item_s i l) \/ 
+                              (mem_item_s i a /\ mem_item_s i b /\ not (mem_item_s i l)) \/
+                              (mem_item_s i a /\ not (mem_item_s i b)) \/ 
+                              (mem_item_s i b /\ not (mem_item_s i a))) ==>
+                              (mem_item_s i r <==> mem_item_s i a \/ mem_item_s i b)))
+
+let rec lem_item l a b = 
+  match l,a,b with
+  |[],[],[] -> ()
+  |x::xs,_,_ -> lem_item xs a b
+  |[],x::xs,_ -> lem_item [] xs b
+  |[],[],_ -> ()
+
 val merge : ltr:ae op
           -> l:s
           -> atr:ae op
@@ -239,23 +373,13 @@ val merge : ltr:ae op
                                    ctr e = ctr (get (item e) a) + ctr (get (item e) b)) \/
                              (mem_item_s (item e) a /\ not (mem_item_s (item e) b) /\ ctr e = ctr (get (item e) a)) \/
                              (mem_item_s (item e) b /\ not (mem_item_s (item e) a) /\ ctr e = ctr (get (item e) b))))))
+
 let merge ltr l atr a btr b =
+  lem_item l a b;
   assert (forall i. mem_item_s i l ==> mem_item_s i a /\ mem_item_s i b);
-  admit()
-
-val lemma5 : l:ae op 
-           -> a:ae op 
-           -> Lemma (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)))
-                   (ensures (forall e. mem_op e (union1 l a) <==> mem_op e l.l \/ mem_op e a.l) /\
-                            (forall e. C.sum (project e (union l a)).l = C.sum (project e l).l + C.sum (project e a).l))
-                         (decreases %[l.l;a.l])
-
-#set-options "--z3rlimit 10000000"
-let rec lemma5 l a = 
-  match l,a with
-  |(A _ []), (A _ []) -> ()
-  |(A _ (x::xs)), _ -> lemma5 (A l.vis xs) a
-  |(A _ []), (A _ (x::xs)) -> lemma5 l (A a.vis xs)
+  lemma5 ltr atr; lemma5 ltr btr;
+  assert (forall i. mem_item_s i l ==> ctr (get i a) >= ctr (get i l) /\ ctr (get i b) >= ctr (get i l));
+  merge1 l a b
 
 val lemma6 : l:ae op
            -> a:ae op
@@ -351,24 +475,24 @@ let prop_merge1 ltr l atr a btr b =
   lemma7 (union ltr atr) atr;
   lemma5 ltr atr; lemma5 ltr btr;
   lemma6 ltr atr btr
- (*)(*)lemma2 l; lemma2 a; lemma2 b; lemma2 (merge ltr l atr a btr b);
+ (*)lemma2 l; lemma2 a; lemma2 b; lemma2 (merge ltr l atr a btr b);
  lemma1 ltr; lemma1 (union ltr atr); lemma1 (union ltr btr); 
- lemma1 atr; lemma1 btr; lemma1 (absmerge ltr atr btr); *)
- assert (forall e. not (mem_item_s e b) /\ mem_item_s e a ==> (forall e1. mem e1 (union ltr btr).l ==> get_op e1 <> (C.Add, e)) /\
+ lemma1 atr; lemma1 btr; lemma1 (absmerge ltr atr btr); 
+ assume (forall e. not (mem_item_s e b) /\ mem_item_s e a ==> (forall e1. mem e1 (union ltr btr).l ==> get_op e1 <> (C.Add, e)) /\
             (exists e1. mem e1 (union ltr atr).l /\ get_op e1 = (C.Add, e)));
  assume (forall i. not (mem_item_s i b) /\ mem_item_s i a ==> (forall e. mem e (union ltr atr).l /\ get_op e = (C.Add,i) <==>
               mem e atr.l /\ get_op e = (C.Add, i)));
  assume (forall i. not (mem_item_s i b) /\ mem_item_s i a ==> (forall e. mem e (absmerge ltr atr btr).l /\
               get_op e = (C.Add,i) <==> mem e (union ltr atr).l /\ get_op e = (C.Add, i)));
  assume (forall i. not (mem_item_s i b) /\ mem_item_s i a ==> ctr (get i (merge ltr l atr a btr b)) = ctr (get i a));
- (*)lemma7 (absmerge ltr atr btr) (union ltr atr);
- lemma7 (union ltr atr) atr;*)
+ lemma7 (absmerge ltr atr btr) (union ltr atr);
+ lemma7 (union ltr atr) atr;
  assume (forall i. mem_item_s i a /\ not (mem_item_s i b) ==> (forall e. mem e (project i (absmerge ltr atr btr)).l <==> 
               mem e (project i (union ltr atr)).l));
  assume (forall i. mem_item_s i a /\ not (mem_item_s i b) ==> (forall e. mem e (project i (union ltr atr)).l <==> 
               mem e (project i atr).l)); 
- (*)lemma5 ltr atr; lemma5 ltr btr;
- lemma6 ltr atr btr*) ()*)
+ lemma5 ltr atr; lemma5 ltr btr;
+ lemma6 ltr atr btr*)
 
 val prop_merge2 : ltr:ae op
                 -> l:s
