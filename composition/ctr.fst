@@ -31,7 +31,7 @@ let sim tr s1 = (s1 = sum tr.l)
 val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (forall e. mem e tr.l ==> get_op e = get_op op) /\
+              -> Lemma (requires (sim tr st) /\
                                 (not (member (get_id op) tr.l)))
                       (ensures (sim (append tr op) (app_op st op)))
 let prop_oper tr st op = ()
