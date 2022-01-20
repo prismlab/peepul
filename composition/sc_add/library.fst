@@ -35,7 +35,7 @@ let rec unique l =
 val get_eve : #op:eqtype 
             -> id:nat 
             -> l:list (nat * op){unique l /\ member id l}
-            -> Tot (s:(nat * op) {get_id s = id})
+            -> Tot (s:(nat * op) {get_id s = id /\ mem s l})
 let rec get_eve id l =
   match l with
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
@@ -207,6 +207,31 @@ let sub_ae f l =
   assert (unique l.l);
   (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1 && f o && f o1)) (filter f l.l))
 
+val remove_op1 : #op:eqtype 
+               -> tr:ae op 
+               -> x:(nat * op) 
+               -> Pure (list (nat * op))
+                      (requires (mem x tr.l))
+                      (ensures (fun r -> (forall e. mem e r <==> mem e tr.l /\ e <> x) /\ unique r /\ 
+                                        (List.Tot.length r = List.Tot.length tr.l - 1)))
+                 (decreases tr.l)
+
+let rec remove_op1 #op tr x =
+  match tr.l with
+  |x1::xs -> if x = x1 then xs else x1::remove_op1 (A tr.vis xs) x
+
+val remove_op : #op:eqtype 
+              -> tr:ae op 
+              -> x:(nat * op) 
+              -> Pure (ae op)
+                     (requires (mem x tr.l))
+                     (ensures (fun r -> (forall e. mem e r.l <==> mem e tr.l /\ e <> x) /\ unique r.l /\
+                     (forall e e1. mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ e <> x /\ e1 <> x /\ tr.vis e e1 <==>
+                    mem e (remove_op1 tr x) /\ mem e1 (remove_op1 tr x) /\ get_id e <> get_id e1 /\ tr.vis e e1) /\
+                                (List.Tot.length r.l = List.Tot.length tr.l - 1)))
+                (decreases tr.l)
+let remove_op #op tr x =
+    (A (fun o o1 -> mem o (remove_op1 tr x) && mem o1 (remove_op1 tr x) && get_id o <> get_id o1 && tr.vis o o1) (remove_op1 tr x))
 
 class mrdt (s:eqtype) (op:eqtype) (m: datatype s op) = {
   sim : ae op -> s -> Tot bool;
