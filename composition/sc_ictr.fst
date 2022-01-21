@@ -1,8 +1,8 @@
-module Sc
+module Sc_ictr
 open FStar.List.Tot
 
 open Library
-module C = Ctr
+module C = Ictr
 
 type op = (C.op * string)
 
