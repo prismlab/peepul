@@ -136,33 +136,19 @@ val sim1 : tr:ae
 let sim1 tr s0 = (snd s0 = dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
                                   (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l))
 
-val sim2 : tr:ae
-         -> s0:s
-         -> Tot (b:bool{b = true <==> ((fst s0 - snd s0) = isum (filter_op (fun x -> Inc? (snd x) &&
-                           not (exists_mem tr.l (fun y -> get_id x <> get_id y && mem y tr.l && Dec? (snd y) && Some? (return y)
-                             && matched x y tr))) tr.l))})
-
-let sim2 tr s0 = (fst s0 - snd s0) = isum (filter_op (fun x -> Inc? (snd x) &&
-                           not (exists_mem tr.l (fun y -> get_id x <> get_id y && mem y tr.l && Dec? (snd y) && Some? (return y)
-                             && matched x y tr))) tr.l)
-
 val sim : tr:ae
         -> s0:s
         -> Tot (b:bool{b = true <==> (fst s0 = isum (filter_op (fun x -> Inc? (snd x)) tr.l)) /\
                                 (snd s0 = dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l)) /\
-                                ((fst s0 - snd s0) = isum (filter_op (fun x -> Inc? (snd x) &&
-                                  not (exists_mem tr.l (fun y -> get_id x <> get_id y && mem y tr.l && Dec? (snd y) && Some? (return y)
-                                  && matched x y tr))) tr.l))})
+                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l))})
 
-let sim tr s0 = sim0 tr s0 && sim1 tr s0 && sim2 tr s0
+let sim tr s0 = sim0 tr s0 && sim1 tr s0
 
 val convergence : tr:ae
                 -> a:s
                 -> b:s
                 -> Lemma (requires (sim tr a /\ sim tr b))
-                        (ensures (a = b // (fst a - snd a = fst b = snd b)
-                        ))
+                        (ensures (a = b))
 let convergence tr a b = ()
 
 val append : tr:ae
@@ -235,21 +221,13 @@ let prop_oper2 tr st op = assert(forall x. mem x tr.l ==> (append tr op).vis x o
                           assert(forall x. not (x = op && (Dec? (snd x))) = true);
                           assert(forall x. (mem x (append tr op).l && x = op && (Dec? (snd x))) = false);
                           assert(filter_op (fun x -> Dec? (snd x) && x = op) (append tr op).l = []);
-                          // assert(filter_op (fun x -> (Dec? (snd x) && mem x tr.l) || (Dec? (snd x) && x = op)) (append tr op).l =
-                          //                  filter_op (fun x -> Dec? (snd x) && (mem x tr.l || x = op)) (append tr op).l);
-                          assert(filter_op (fun x -> Dec? (snd x) && mem x tr.l) tr.l = filter_op (fun x -> Dec? (snd x) && mem x tr.l) (append tr op).l);
+                          assert(filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l =
+                                  filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) (append tr op).l);
 
-                          // assert((filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))
-                          //     ) (append tr op).l)
-                          //   = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))
-                          //   ) tr.l));
-
-                          // assert(snd (app_op st op) = dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                          //   (exists_mem (append tr op).l (fun y -> Inc? (snd y) && x = (get_id x, Dec (Some (get_id y)))))) (append tr op).l));
-                          admit(); ()
-
+                          admit();
+                          ()
 
 val prop_oper3 : tr:ae
                -> st:s
@@ -258,28 +236,7 @@ val prop_oper3 : tr:ae
                                  (not (member (get_id op) tr.l)))
                        (ensures (sim1 (append tr op) (app_op st op)))
 
-let prop_oper3 tr st op = ()
-
-
-val prop_oper4 : tr:ae
-               -> st:s
-               -> op:o
-               -> Lemma (requires (sim tr st) /\ (Inc? (snd op)) /\
-                                 (not (member (get_id op) tr.l)))
-                       (ensures (sim2 (append tr op) (app_op st op)))
-
-let prop_oper4 tr st op = ()
-
-
-val prop_oper5 : tr:ae
-               -> st:s
-               -> op:o
-               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\
-                                 (not (member (get_id op) tr.l)))
-                       (ensures (sim2 (append tr op) (app_op st op)))
-
-let prop_oper5 tr st op = ()
-
+let prop_oper3 tr st op = admit(); ()
 
 val prop_oper : tr:ae
                -> st:s
@@ -288,11 +245,24 @@ val prop_oper : tr:ae
                        (ensures (sim (append tr op) (app_op st op)))
 
 let prop_oper tr st op =
-  prop_oper0 tr st op;
+  admit(); prop_oper0 tr st op;
   prop_oper1 tr st op;
   prop_oper2 tr st op;
-  prop_oper3 tr st op;
-  prop_oper4 tr st op;
-  prop_oper5 tr st op; ()
+  prop_oper3 tr st op; ()
 
 
+val merge: ltr:ae
+           -> l:s
+           -> atr:ae
+           -> a:s
+           -> btr:ae
+           -> b:s
+           -> Pure s (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                    (ensures (fun res -> true))
+
+let merge lca a b =
+  let i = (fst a) + (fst b) - (fst l) in
+  let d = (snd a) + (snd b) - (snd l) in ()
