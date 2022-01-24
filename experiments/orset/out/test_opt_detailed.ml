@@ -2,8 +2,8 @@ let _ = Random.self_init ()
 
 let random x = Z.of_int (Random.int x)
 
-let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt_detailed.Add, (random 100))
-  else (random 1000000, Orset_opt_detailed.Rem, (random 100))
+let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt_detailed.Add, (random 25))
+  else (random 1000000, Orset_opt_detailed.Rem, (random 25))
 
 let pick_r r r1 r2 = if (Random.int 100 < r) then r1 else r2
 
