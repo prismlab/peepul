@@ -200,8 +200,6 @@ let rec ax_dsum1 l l1 = match l, l1 with
   | [], y::ys -> admit()
   | [], [] -> ()
 
-#reset-options
-
 val prop_oper2 : tr:ae
                -> st:s
                -> op:o
@@ -209,45 +207,83 @@ val prop_oper2 : tr:ae
                                  (not (member (get_id op) tr.l)))
                        (ensures (sim1 (append tr op) (app_op st op)))
 
-let prop_oper2 tr st op = let l = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) in
-                          let l1 = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l) in
-                          ax_dsum1 l l1;
-                          assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l)
-                                   ==> mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l));
+#set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 10000000"
 
-                          assert(forall d. mem d tr.l /\ Dec? (snd op) ==> mem d (append tr op).l /\ Dec? (snd op));
-                          assert(forall d. mem d (append tr op).l /\ Dec? (snd op) ==> mem d tr.l /\ Dec? (snd op));
-
-                          assert(forall d. mem d tr.l /\ Dec? (snd op) <==> mem d (append tr op).l /\ Dec? (snd op));
-
-                          assert(forall d. Dec? (snd d) /\ mem d (append tr op).l ==> not(matched op d (append tr op)));
-
-                          assert(forall x. Dec? (snd x) /\ Some? (return x) /\ (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr)) ==>
-                                      Dec? (snd x) /\ Some? (return x) /\
-                                 (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op))));
-
-                          assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) ==>
-                                  mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
-
-                          assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) <==>
-                                  mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
-
-                          assert(dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) =
-                                 dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) in
+                          // let l1 = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l) in
+                          // ax_dsum1 l l1;
+                          // assert(forall d. mem d tr.l /\ Dec? (snd d) ==> (append tr op).vis d op);
+                          assert(fst st + 1 = fst (app_op st op));
                           assert(snd st = snd (app_op st op));
-                          assert(snd (app_op st op) = dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-                                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
-                          assert(sim1 (append tr op) (app_op st op));
+
+                          assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) = (fst st - snd st));
+
+                          assert(forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
+                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) \/ i = op ==>
+                                mem i (filter_op (fun x -> Inc? (snd x) &&
+                                not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec?
+                                                (snd y) && matched x y (append tr op)))) (append tr op).l));
+
+                          assert(forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
+                                not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                                  matched x y (append tr op)))) (append tr op).l)
+                                ==> mem i (filter_op (fun x -> Inc? (snd x) &&
+                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) \/ i = op);
+
+                          assert(forall i. (mem i (filter_op (fun x -> Inc? (snd x) &&
+                                not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                                    matched x y (append tr op)))) (append tr op).l))
+                                <==> (mem i (filter_op (fun x -> Inc? (snd x) &&
+                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) \/ i = op));
+
+                          assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                                not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                                    matched x y (append tr op)))) (append tr op).l) =
+                                 isum ((filter_op (fun x -> Inc? (snd x) &&
+                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l)) + 1);
+
+                          // assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                          //              not (exists_mem (append tr op).l
+                          //    (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (append tr op)))) (append tr op).l) = (fst st - snd st + 1));
+
+                          admit();
+                          // assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l)
+                          //          ==> mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l));
+
+                          // assert(forall d. mem d tr.l /\ Dec? (snd op) ==> mem d (append tr op).l /\ Dec? (snd op));
+                          // assert(forall d. mem d (append tr op).l /\ Dec? (snd op) ==> mem d tr.l /\ Dec? (snd op));
+
+                          // assert(forall d. mem d tr.l /\ Dec? (snd op) <==> mem d (append tr op).l /\ Dec? (snd op));
+
+                          // assert(forall d. Dec? (snd d) /\ mem d (append tr op).l ==> not(matched op d (append tr op)));
+
+                          // assert(forall x. Dec? (snd x) /\ Some? (return x) /\ (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr)) ==>
+                          //             Dec? (snd x) /\ Some? (return x) /\
+                          //        (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op))));
+
+                          // assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) ==>
+                          //         mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+
+                          // assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) <==>
+                          //         mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+
+                          // assert(dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) =
+                          //        dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+                          // assert(snd st = snd (app_op st op));
+                          // assert(snd (app_op st op) = dsum (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
+                          //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+                          // assert(sim1 (append tr op) (app_op st op));
                           ()
 
 val prop_oper3 : tr:ae
