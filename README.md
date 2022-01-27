@@ -20,3 +20,7 @@ List of verified MRDTs:
 9. Grows-only map composed of Grows-only set : (state : list (unique keys, Gset.state))
 10. Functional queue : (state : list (unique ids, elements) × list (unique ids, elements))
 11. Functional queue : (state : list (unique ids, elements))
+
+Composition:
+12. Shopping cart with increment-only counter (state : list (unique items, icounter))
+13. Shopping cart with PN counter (state : list (unique items, pncounter))
