@@ -16,8 +16,9 @@ let get_op (_,op) = op
 val incr: s1:s -> Tot (s0:s{s0 = (fst s1 + 1, snd s1)})
 let incr s = (fst s + 1, snd s)
 
-val decr: s1:s -> Tot (s0:s{((fst s1 - snd s1 = 0) ==> s0 = s1) /\ ((fst s1 - snd s1 > 0) ==> s0 = (fst s1, snd s1 + 1))})
-let decr s = if (fst s > snd s) then (fst s, snd s + 1) else s
+val decr: s1:s -> Tot (s0:(option nat * s){((fst s1 - snd s1 = 0) ==> (snd s0) = s1 /\ None? (fst s0)) /\
+                                              ((fst s1 - snd s1 > 0) ==> (snd s0) = (fst s1, snd s1 + 1) /\ Some? (fst s0))})
+let decr s = if (fst s > snd s) then (Some (fst s - snd s), (fst s, snd s + 1)) else (None, s)
 
 val return : d:o{Dec? (snd d)} -> Tot (v:option nat{d = (get_id d, (Dec v))})
 let return (_, Dec x) = x
@@ -31,7 +32,7 @@ val app_op: s1:s -> op:o -> Tot (s0:s{(Inc? (snd op) ==> s0 = (fst s1 + 1, snd s
                                    })
 let app_op st op = match op with
   | _, Inc -> incr st
-  | _, Dec x -> decr st
+  | _, Dec x -> snd (decr st)
 
 val member : id:nat
            -> l:list o
@@ -97,17 +98,16 @@ let rec exists_mem l f =
   | [] -> false
   | hd::tl -> if f hd then true else exists_mem tl f
 
-#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
 val ctr : s0:s -> Tot (z:int{z = fst s0 - snd s0})
 let ctr s = fst s - snd s
 
 val matched : i:o -> d:o -> tr:ae
             -> Pure bool (requires (get_id i <> get_id d))
-                        (ensures (fun b -> (Inc? (snd i) /\ Dec? (snd d) /\ mem i tr.l /\ mem d tr.l /\ Some? (return d) /\
-                                    unopt (return d) = get_id i /\ (tr.vis i d)) <==>
+                        (ensures (fun b -> (Inc? (get_op i) /\ Dec? (get_op d) /\ mem i tr.l /\ mem d tr.l /\ (return d) = Some (get_id i) /\ (tr.vis i d)) <==>
                           (b = true)))
-let matched i d tr = (Inc? (snd i) && Dec? (snd d)) && (mem i tr.l && mem d tr.l) && Some? (return d) &&
-                           unopt (return d) = get_id i && (tr.vis i d)
+let matched i d tr = (Inc? (snd i) && Dec? (snd d)) && (mem i tr.l && mem d tr.l) && (return d) = Some (get_id i) && (tr.vis i d)
+
+#set-options "--initial_fuel 7 --ifuel 7 --initial_ifuel 7 --fuel 7 --z3rlimit 10000"
 
 val isum : l:(list o){forall i. mem i l ==> Inc? (snd i)}
         -> Tot nat (decreases %[l])
@@ -215,8 +215,8 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
                           //         (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l) in
                           // ax_dsum1 l l1;
                           // assert(forall d. mem d tr.l /\ Dec? (snd d) ==> (append tr op).vis d op);
-                          assert(fst st + 1 = fst (app_op st op));
-                          assert(snd st = snd (app_op st op));
+                          // assert(fst st + 1 = fst (app_op st op));
+                          // assert(snd st = snd (app_op st op));
 
                           assert(isum (filter_op (fun x -> Inc? (snd x) &&
                                        not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) = (fst st - snd st));
@@ -239,11 +239,11 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
                                 <==> (mem i (filter_op (fun x -> Inc? (snd x) &&
                                        not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) \/ i = op));
 
-                          assert(isum (filter_op (fun x -> Inc? (snd x) &&
-                                not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
-                                    matched x y (append tr op)))) (append tr op).l) =
-                                 isum ((filter_op (fun x -> Inc? (snd x) &&
-                                       not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l)) + 1);
+                          // assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                          //       not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                          //           matched x y (append tr op)))) (append tr op).l) =
+                          //        isum ((filter_op (fun x -> Inc? (snd x) &&
+                          //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l)) + 1);
 
                           // assert(isum (filter_op (fun x -> Inc? (snd x) &&
                           //              not (exists_mem (append tr op).l
@@ -289,19 +289,31 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
 val prop_oper3 : tr:ae
                -> st:s
                -> op:o
-               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\
+               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\ (fst st - snd st <= 0) /\
                                  (not (member (get_id op) tr.l)))
                        (ensures (sim1 (append tr op) (app_op st op)))
 
 #set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 10000000"
 
-// We need a way to indicate which incr and decr are matched without using the abs. exec.
-// In FQueue, we stored the IDs in the state so we knew which enqueue is being matched with this dequeue
-// But here we don't store it anywhere. We *could* find the oldest unmatched incr and
+let prop_oper3 tr st op = ()
 
-let prop_oper3 tr st op = match return op with
-  | None -> admit()
-  | Some x -> admit()
+val prop_oper4 : tr:ae
+               -> st:s
+               -> op:o
+               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\ (fst st - snd st > 0) /\
+                                 (not (member (get_id op) tr.l)))
+                       (ensures (sim1 (append tr op) (app_op st op)))
+
+#set-options "--initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000000"
+
+let prop_oper4 tr st op = assert(fst st = fst (app_op st op));
+                          assert(snd st + 1 = snd (app_op st op));
+                          // assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                          //              not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                          //              matched x y (append tr op)))) (append tr op).l) =
+                          //         isum (filter_op (fun x -> Inc? (snd x) &&
+                          //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) - 1);
+                          admit()
 
 // let prop_oper3 tr st op = match fst st - snd st = 0 with
 //   | true -> // let l = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
@@ -347,7 +359,9 @@ val prop_oper : tr:ae
 let prop_oper tr st op =
   match op with
   | (_, Inc) -> prop_oper0 tr st op; prop_oper2 tr st op
-  | (_, Dec _) -> prop_oper1 tr st op; prop_oper3 tr st op
+  | (_, Dec _) -> match (fst st - snd st > 0) with
+                 | true -> prop_oper1 tr st op; prop_oper4 tr st op
+                 | false -> prop_oper1 tr st op; prop_oper3 tr st op
 
 val merge: ltr:ae
            -> l:s
