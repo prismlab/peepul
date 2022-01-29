@@ -1,0 +1,4414 @@
+desc: --max-snapshots=1000 --massif-out-file=test_opt_1k.massif
+cmd: ./_build/default/test_opt.exe
+time_unit: i
+#-----------
+snapshot=0
+#-----------
+time=0
+mem_heap_B=0
+mem_heap_extra_B=0
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=1
+#-----------
+time=1984124
+mem_heap_B=424
+mem_heap_extra_B=16
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=2
+#-----------
+time=1984183
+mem_heap_B=480
+mem_heap_extra_B=32
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=3
+#-----------
+time=1984233
+mem_heap_B=536
+mem_heap_extra_B=48
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=4
+#-----------
+time=1984282
+mem_heap_B=592
+mem_heap_extra_B=64
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=5
+#-----------
+time=1985047
+mem_heap_B=608
+mem_heap_extra_B=72
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=6
+#-----------
+time=1985099
+mem_heap_B=624
+mem_heap_extra_B=80
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=7
+#-----------
+time=1985151
+mem_heap_B=640
+mem_heap_extra_B=88
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=8
+#-----------
+time=1985203
+mem_heap_B=656
+mem_heap_extra_B=96
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=9
+#-----------
+time=1985255
+mem_heap_B=672
+mem_heap_extra_B=104
+mem_stacks_B=0
+heap_tree=detailed
+n5: 672 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 80 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 80 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 80 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 80 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 80 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 80 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 80 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=10
+#-----------
+time=1985307
+mem_heap_B=688
+mem_heap_extra_B=112
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=11
+#-----------
+time=1985359
+mem_heap_B=704
+mem_heap_extra_B=120
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=12
+#-----------
+time=1985411
+mem_heap_B=720
+mem_heap_extra_B=128
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=13
+#-----------
+time=1985463
+mem_heap_B=736
+mem_heap_extra_B=136
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=14
+#-----------
+time=1985515
+mem_heap_B=752
+mem_heap_extra_B=144
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=15
+#-----------
+time=1985567
+mem_heap_B=768
+mem_heap_extra_B=152
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=16
+#-----------
+time=1985619
+mem_heap_B=784
+mem_heap_extra_B=160
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=17
+#-----------
+time=1985671
+mem_heap_B=800
+mem_heap_extra_B=168
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=18
+#-----------
+time=1985723
+mem_heap_B=816
+mem_heap_extra_B=176
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=19
+#-----------
+time=1985775
+mem_heap_B=832
+mem_heap_extra_B=184
+mem_stacks_B=0
+heap_tree=detailed
+n5: 832 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 240 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 240 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 240 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 240 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 240 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 240 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 240 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=20
+#-----------
+time=1985827
+mem_heap_B=848
+mem_heap_extra_B=192
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=21
+#-----------
+time=1985879
+mem_heap_B=864
+mem_heap_extra_B=200
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=22
+#-----------
+time=1985931
+mem_heap_B=880
+mem_heap_extra_B=208
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=23
+#-----------
+time=1985983
+mem_heap_B=896
+mem_heap_extra_B=216
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=24
+#-----------
+time=1986035
+mem_heap_B=912
+mem_heap_extra_B=224
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=25
+#-----------
+time=1986087
+mem_heap_B=928
+mem_heap_extra_B=232
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=26
+#-----------
+time=1986139
+mem_heap_B=944
+mem_heap_extra_B=240
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=27
+#-----------
+time=1986191
+mem_heap_B=960
+mem_heap_extra_B=248
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=28
+#-----------
+time=1986243
+mem_heap_B=976
+mem_heap_extra_B=256
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=29
+#-----------
+time=1986295
+mem_heap_B=992
+mem_heap_extra_B=264
+mem_stacks_B=0
+heap_tree=detailed
+n5: 992 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 400 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 400 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 400 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 400 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 400 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 400 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 400 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=30
+#-----------
+time=1986347
+mem_heap_B=1008
+mem_heap_extra_B=272
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=31
+#-----------
+time=1986399
+mem_heap_B=1024
+mem_heap_extra_B=280
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=32
+#-----------
+time=1986451
+mem_heap_B=1040
+mem_heap_extra_B=288
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=33
+#-----------
+time=1986503
+mem_heap_B=1056
+mem_heap_extra_B=296
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=34
+#-----------
+time=1986555
+mem_heap_B=1072
+mem_heap_extra_B=304
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=35
+#-----------
+time=1986607
+mem_heap_B=1088
+mem_heap_extra_B=312
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=36
+#-----------
+time=1986659
+mem_heap_B=1104
+mem_heap_extra_B=320
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=37
+#-----------
+time=1986711
+mem_heap_B=1120
+mem_heap_extra_B=328
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=38
+#-----------
+time=1986763
+mem_heap_B=1136
+mem_heap_extra_B=336
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=39
+#-----------
+time=1986815
+mem_heap_B=1152
+mem_heap_extra_B=344
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1152 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 560 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 560 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 560 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 560 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 560 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 560 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 560 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=40
+#-----------
+time=1986867
+mem_heap_B=1168
+mem_heap_extra_B=352
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=41
+#-----------
+time=1986919
+mem_heap_B=1184
+mem_heap_extra_B=360
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=42
+#-----------
+time=1986971
+mem_heap_B=1200
+mem_heap_extra_B=368
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=43
+#-----------
+time=1987023
+mem_heap_B=1216
+mem_heap_extra_B=376
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=44
+#-----------
+time=1987075
+mem_heap_B=1232
+mem_heap_extra_B=384
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=45
+#-----------
+time=1987127
+mem_heap_B=1248
+mem_heap_extra_B=392
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=46
+#-----------
+time=1987179
+mem_heap_B=1264
+mem_heap_extra_B=400
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=47
+#-----------
+time=1987231
+mem_heap_B=1280
+mem_heap_extra_B=408
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=48
+#-----------
+time=1987283
+mem_heap_B=1296
+mem_heap_extra_B=416
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=49
+#-----------
+time=1987335
+mem_heap_B=1312
+mem_heap_extra_B=424
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1312 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 720 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 720 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 720 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 720 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 720 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 720 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 720 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=50
+#-----------
+time=1987387
+mem_heap_B=1328
+mem_heap_extra_B=432
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=51
+#-----------
+time=1987439
+mem_heap_B=1344
+mem_heap_extra_B=440
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=52
+#-----------
+time=1987491
+mem_heap_B=1360
+mem_heap_extra_B=448
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=53
+#-----------
+time=1987543
+mem_heap_B=1376
+mem_heap_extra_B=456
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=54
+#-----------
+time=1987595
+mem_heap_B=1392
+mem_heap_extra_B=464
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=55
+#-----------
+time=1987647
+mem_heap_B=1408
+mem_heap_extra_B=472
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=56
+#-----------
+time=1987699
+mem_heap_B=1424
+mem_heap_extra_B=480
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=57
+#-----------
+time=1987751
+mem_heap_B=1440
+mem_heap_extra_B=488
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=58
+#-----------
+time=1987803
+mem_heap_B=1456
+mem_heap_extra_B=496
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=59
+#-----------
+time=1987855
+mem_heap_B=1472
+mem_heap_extra_B=504
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1472 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 880 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 880 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 880 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 880 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 880 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 880 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 880 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=60
+#-----------
+time=1987907
+mem_heap_B=1488
+mem_heap_extra_B=512
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=61
+#-----------
+time=1987959
+mem_heap_B=1504
+mem_heap_extra_B=520
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=62
+#-----------
+time=1988011
+mem_heap_B=1520
+mem_heap_extra_B=528
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=63
+#-----------
+time=1988063
+mem_heap_B=1536
+mem_heap_extra_B=536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=64
+#-----------
+time=1988115
+mem_heap_B=1552
+mem_heap_extra_B=544
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=65
+#-----------
+time=1988167
+mem_heap_B=1568
+mem_heap_extra_B=552
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=66
+#-----------
+time=1988219
+mem_heap_B=1584
+mem_heap_extra_B=560
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=67
+#-----------
+time=1988271
+mem_heap_B=1600
+mem_heap_extra_B=568
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=68
+#-----------
+time=1988323
+mem_heap_B=1616
+mem_heap_extra_B=576
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=69
+#-----------
+time=1988375
+mem_heap_B=1632
+mem_heap_extra_B=584
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1632 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1040 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1040 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1040 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1040 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1040 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1040 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1040 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=70
+#-----------
+time=1988427
+mem_heap_B=1648
+mem_heap_extra_B=592
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=71
+#-----------
+time=1988479
+mem_heap_B=1664
+mem_heap_extra_B=600
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=72
+#-----------
+time=1988531
+mem_heap_B=1680
+mem_heap_extra_B=608
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=73
+#-----------
+time=1988583
+mem_heap_B=1696
+mem_heap_extra_B=616
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=74
+#-----------
+time=1988635
+mem_heap_B=1712
+mem_heap_extra_B=624
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=75
+#-----------
+time=1988687
+mem_heap_B=1728
+mem_heap_extra_B=632
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=76
+#-----------
+time=1988739
+mem_heap_B=1744
+mem_heap_extra_B=640
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=77
+#-----------
+time=1988791
+mem_heap_B=1760
+mem_heap_extra_B=648
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=78
+#-----------
+time=1988843
+mem_heap_B=1776
+mem_heap_extra_B=656
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=79
+#-----------
+time=1988895
+mem_heap_B=1792
+mem_heap_extra_B=664
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1792 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1200 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1200 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1200 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1200 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1200 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1200 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1200 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=80
+#-----------
+time=1988947
+mem_heap_B=1808
+mem_heap_extra_B=672
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=81
+#-----------
+time=1988999
+mem_heap_B=1824
+mem_heap_extra_B=680
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=82
+#-----------
+time=1989051
+mem_heap_B=1840
+mem_heap_extra_B=688
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=83
+#-----------
+time=1989103
+mem_heap_B=1856
+mem_heap_extra_B=696
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=84
+#-----------
+time=1989155
+mem_heap_B=1872
+mem_heap_extra_B=704
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=85
+#-----------
+time=1989207
+mem_heap_B=1888
+mem_heap_extra_B=712
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=86
+#-----------
+time=1989259
+mem_heap_B=1904
+mem_heap_extra_B=720
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=87
+#-----------
+time=1989311
+mem_heap_B=1920
+mem_heap_extra_B=728
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=88
+#-----------
+time=1989363
+mem_heap_B=1936
+mem_heap_extra_B=736
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=89
+#-----------
+time=1989415
+mem_heap_B=1952
+mem_heap_extra_B=744
+mem_stacks_B=0
+heap_tree=detailed
+n5: 1952 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1360 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1360 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1360 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1360 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1360 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1360 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1360 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=90
+#-----------
+time=1989467
+mem_heap_B=1968
+mem_heap_extra_B=752
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=91
+#-----------
+time=1989519
+mem_heap_B=1984
+mem_heap_extra_B=760
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=92
+#-----------
+time=1989571
+mem_heap_B=2000
+mem_heap_extra_B=768
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=93
+#-----------
+time=1989623
+mem_heap_B=2016
+mem_heap_extra_B=776
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=94
+#-----------
+time=1989675
+mem_heap_B=2032
+mem_heap_extra_B=784
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=95
+#-----------
+time=1989727
+mem_heap_B=2048
+mem_heap_extra_B=792
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=96
+#-----------
+time=1989779
+mem_heap_B=2064
+mem_heap_extra_B=800
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=97
+#-----------
+time=1989831
+mem_heap_B=2080
+mem_heap_extra_B=808
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=98
+#-----------
+time=1989883
+mem_heap_B=2096
+mem_heap_extra_B=816
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=99
+#-----------
+time=1989935
+mem_heap_B=2112
+mem_heap_extra_B=824
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2112 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1520 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1520 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1520 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1520 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1520 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1520 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1520 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=100
+#-----------
+time=1989987
+mem_heap_B=2128
+mem_heap_extra_B=832
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=101
+#-----------
+time=1990039
+mem_heap_B=2144
+mem_heap_extra_B=840
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=102
+#-----------
+time=1990091
+mem_heap_B=2160
+mem_heap_extra_B=848
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=103
+#-----------
+time=1990143
+mem_heap_B=2176
+mem_heap_extra_B=856
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=104
+#-----------
+time=1990195
+mem_heap_B=2192
+mem_heap_extra_B=864
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=105
+#-----------
+time=1990247
+mem_heap_B=2208
+mem_heap_extra_B=872
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=106
+#-----------
+time=1990299
+mem_heap_B=2224
+mem_heap_extra_B=880
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=107
+#-----------
+time=1990351
+mem_heap_B=2240
+mem_heap_extra_B=888
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=108
+#-----------
+time=1990403
+mem_heap_B=2256
+mem_heap_extra_B=896
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=109
+#-----------
+time=1990455
+mem_heap_B=2272
+mem_heap_extra_B=904
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2272 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1680 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1680 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1680 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1680 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1680 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1680 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1680 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=110
+#-----------
+time=1990507
+mem_heap_B=2288
+mem_heap_extra_B=912
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=111
+#-----------
+time=1990559
+mem_heap_B=2304
+mem_heap_extra_B=920
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=112
+#-----------
+time=1990611
+mem_heap_B=2320
+mem_heap_extra_B=928
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=113
+#-----------
+time=1990663
+mem_heap_B=2336
+mem_heap_extra_B=936
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=114
+#-----------
+time=1990715
+mem_heap_B=2352
+mem_heap_extra_B=944
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=115
+#-----------
+time=1990767
+mem_heap_B=2368
+mem_heap_extra_B=952
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=116
+#-----------
+time=1990819
+mem_heap_B=2384
+mem_heap_extra_B=960
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=117
+#-----------
+time=1990871
+mem_heap_B=2400
+mem_heap_extra_B=968
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=118
+#-----------
+time=1990923
+mem_heap_B=2416
+mem_heap_extra_B=976
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=119
+#-----------
+time=1990975
+mem_heap_B=2432
+mem_heap_extra_B=984
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2432 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 1840 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 1840 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 1840 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 1840 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 1840 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 1840 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 1840 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=120
+#-----------
+time=1991027
+mem_heap_B=2448
+mem_heap_extra_B=992
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=121
+#-----------
+time=1991079
+mem_heap_B=2464
+mem_heap_extra_B=1000
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=122
+#-----------
+time=1991131
+mem_heap_B=2480
+mem_heap_extra_B=1008
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=123
+#-----------
+time=1991183
+mem_heap_B=2496
+mem_heap_extra_B=1016
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=124
+#-----------
+time=1991235
+mem_heap_B=2512
+mem_heap_extra_B=1024
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=125
+#-----------
+time=1991287
+mem_heap_B=2528
+mem_heap_extra_B=1032
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=126
+#-----------
+time=1991339
+mem_heap_B=2544
+mem_heap_extra_B=1040
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=127
+#-----------
+time=1991391
+mem_heap_B=2560
+mem_heap_extra_B=1048
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=128
+#-----------
+time=1991443
+mem_heap_B=2576
+mem_heap_extra_B=1056
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=129
+#-----------
+time=1991495
+mem_heap_B=2592
+mem_heap_extra_B=1064
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2592 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2000 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2000 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2000 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2000 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2000 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2000 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2000 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=130
+#-----------
+time=1991547
+mem_heap_B=2608
+mem_heap_extra_B=1072
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=131
+#-----------
+time=1991599
+mem_heap_B=2624
+mem_heap_extra_B=1080
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=132
+#-----------
+time=1991651
+mem_heap_B=2640
+mem_heap_extra_B=1088
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=133
+#-----------
+time=1991703
+mem_heap_B=2656
+mem_heap_extra_B=1096
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=134
+#-----------
+time=1991755
+mem_heap_B=2672
+mem_heap_extra_B=1104
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=135
+#-----------
+time=1991807
+mem_heap_B=2688
+mem_heap_extra_B=1112
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=136
+#-----------
+time=1991859
+mem_heap_B=2704
+mem_heap_extra_B=1120
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=137
+#-----------
+time=1991911
+mem_heap_B=2720
+mem_heap_extra_B=1128
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=138
+#-----------
+time=1991963
+mem_heap_B=2736
+mem_heap_extra_B=1136
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=139
+#-----------
+time=1992015
+mem_heap_B=2752
+mem_heap_extra_B=1144
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2752 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2160 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2160 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2160 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2160 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2160 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2160 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2160 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=140
+#-----------
+time=1992067
+mem_heap_B=2768
+mem_heap_extra_B=1152
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=141
+#-----------
+time=1992119
+mem_heap_B=2784
+mem_heap_extra_B=1160
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=142
+#-----------
+time=1992171
+mem_heap_B=2800
+mem_heap_extra_B=1168
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=143
+#-----------
+time=1992223
+mem_heap_B=2816
+mem_heap_extra_B=1176
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=144
+#-----------
+time=1992275
+mem_heap_B=2832
+mem_heap_extra_B=1184
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=145
+#-----------
+time=1992327
+mem_heap_B=2848
+mem_heap_extra_B=1192
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=146
+#-----------
+time=1992379
+mem_heap_B=2864
+mem_heap_extra_B=1200
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=147
+#-----------
+time=1992431
+mem_heap_B=2880
+mem_heap_extra_B=1208
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=148
+#-----------
+time=1992483
+mem_heap_B=2896
+mem_heap_extra_B=1216
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=149
+#-----------
+time=1992535
+mem_heap_B=2912
+mem_heap_extra_B=1224
+mem_stacks_B=0
+heap_tree=detailed
+n5: 2912 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2320 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2320 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2320 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2320 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2320 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2320 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2320 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=150
+#-----------
+time=1992587
+mem_heap_B=2928
+mem_heap_extra_B=1232
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=151
+#-----------
+time=1992639
+mem_heap_B=2944
+mem_heap_extra_B=1240
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=152
+#-----------
+time=1992691
+mem_heap_B=2960
+mem_heap_extra_B=1248
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=153
+#-----------
+time=1992743
+mem_heap_B=2976
+mem_heap_extra_B=1256
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=154
+#-----------
+time=1992795
+mem_heap_B=2992
+mem_heap_extra_B=1264
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=155
+#-----------
+time=1992847
+mem_heap_B=3008
+mem_heap_extra_B=1272
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=156
+#-----------
+time=1992899
+mem_heap_B=3024
+mem_heap_extra_B=1280
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=157
+#-----------
+time=1992951
+mem_heap_B=3040
+mem_heap_extra_B=1288
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=158
+#-----------
+time=1993003
+mem_heap_B=3056
+mem_heap_extra_B=1296
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=159
+#-----------
+time=1993055
+mem_heap_B=3072
+mem_heap_extra_B=1304
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3072 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2480 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2480 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2480 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2480 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2480 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2480 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2480 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=160
+#-----------
+time=1993107
+mem_heap_B=3088
+mem_heap_extra_B=1312
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=161
+#-----------
+time=1993159
+mem_heap_B=3104
+mem_heap_extra_B=1320
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=162
+#-----------
+time=1993211
+mem_heap_B=3120
+mem_heap_extra_B=1328
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=163
+#-----------
+time=1993263
+mem_heap_B=3136
+mem_heap_extra_B=1336
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=164
+#-----------
+time=1993315
+mem_heap_B=3152
+mem_heap_extra_B=1344
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=165
+#-----------
+time=1993367
+mem_heap_B=3168
+mem_heap_extra_B=1352
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=166
+#-----------
+time=1993419
+mem_heap_B=3184
+mem_heap_extra_B=1360
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=167
+#-----------
+time=1993471
+mem_heap_B=3200
+mem_heap_extra_B=1368
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=168
+#-----------
+time=1993523
+mem_heap_B=3216
+mem_heap_extra_B=1376
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=169
+#-----------
+time=1993575
+mem_heap_B=3232
+mem_heap_extra_B=1384
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3232 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2640 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2640 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2640 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2640 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2640 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2640 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2640 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=170
+#-----------
+time=1993627
+mem_heap_B=3248
+mem_heap_extra_B=1392
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=171
+#-----------
+time=1993679
+mem_heap_B=3264
+mem_heap_extra_B=1400
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=172
+#-----------
+time=1993731
+mem_heap_B=3280
+mem_heap_extra_B=1408
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=173
+#-----------
+time=1993783
+mem_heap_B=3296
+mem_heap_extra_B=1416
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=174
+#-----------
+time=1993835
+mem_heap_B=3312
+mem_heap_extra_B=1424
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=175
+#-----------
+time=1993887
+mem_heap_B=3328
+mem_heap_extra_B=1432
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=176
+#-----------
+time=1993939
+mem_heap_B=3344
+mem_heap_extra_B=1440
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=177
+#-----------
+time=1993991
+mem_heap_B=3360
+mem_heap_extra_B=1448
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=178
+#-----------
+time=1994043
+mem_heap_B=3376
+mem_heap_extra_B=1456
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=179
+#-----------
+time=1994095
+mem_heap_B=3392
+mem_heap_extra_B=1464
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3392 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2800 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2800 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2800 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2800 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2800 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2800 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2800 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=180
+#-----------
+time=1994147
+mem_heap_B=3408
+mem_heap_extra_B=1472
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=181
+#-----------
+time=1994199
+mem_heap_B=3424
+mem_heap_extra_B=1480
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=182
+#-----------
+time=1994251
+mem_heap_B=3440
+mem_heap_extra_B=1488
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=183
+#-----------
+time=1994303
+mem_heap_B=3456
+mem_heap_extra_B=1496
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=184
+#-----------
+time=1994355
+mem_heap_B=3472
+mem_heap_extra_B=1504
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=185
+#-----------
+time=1994407
+mem_heap_B=3488
+mem_heap_extra_B=1512
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=186
+#-----------
+time=1994459
+mem_heap_B=3504
+mem_heap_extra_B=1520
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=187
+#-----------
+time=1994511
+mem_heap_B=3520
+mem_heap_extra_B=1528
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=188
+#-----------
+time=1994563
+mem_heap_B=3536
+mem_heap_extra_B=1536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=189
+#-----------
+time=1994615
+mem_heap_B=3552
+mem_heap_extra_B=1544
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3552 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 2960 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2960 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 2960 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 2960 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 2960 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2960 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2960 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=190
+#-----------
+time=1994667
+mem_heap_B=3568
+mem_heap_extra_B=1552
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=191
+#-----------
+time=1994719
+mem_heap_B=3584
+mem_heap_extra_B=1560
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=192
+#-----------
+time=1994771
+mem_heap_B=3600
+mem_heap_extra_B=1568
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=193
+#-----------
+time=1994823
+mem_heap_B=3616
+mem_heap_extra_B=1576
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=194
+#-----------
+time=1994875
+mem_heap_B=3632
+mem_heap_extra_B=1584
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=195
+#-----------
+time=1994927
+mem_heap_B=3648
+mem_heap_extra_B=1592
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=196
+#-----------
+time=1994979
+mem_heap_B=3664
+mem_heap_extra_B=1600
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=197
+#-----------
+time=1995031
+mem_heap_B=3680
+mem_heap_extra_B=1608
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=198
+#-----------
+time=1995083
+mem_heap_B=3696
+mem_heap_extra_B=1616
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=199
+#-----------
+time=1995135
+mem_heap_B=3712
+mem_heap_extra_B=1624
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3712 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3120 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3120 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3120 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3120 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3120 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3120 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3120 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=200
+#-----------
+time=1995187
+mem_heap_B=3728
+mem_heap_extra_B=1632
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=201
+#-----------
+time=1995239
+mem_heap_B=3744
+mem_heap_extra_B=1640
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=202
+#-----------
+time=1995291
+mem_heap_B=3760
+mem_heap_extra_B=1648
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=203
+#-----------
+time=1995343
+mem_heap_B=3776
+mem_heap_extra_B=1656
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=204
+#-----------
+time=1995395
+mem_heap_B=3792
+mem_heap_extra_B=1664
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=205
+#-----------
+time=1995447
+mem_heap_B=3808
+mem_heap_extra_B=1672
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=206
+#-----------
+time=1995499
+mem_heap_B=3824
+mem_heap_extra_B=1680
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=207
+#-----------
+time=1995551
+mem_heap_B=3840
+mem_heap_extra_B=1688
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=208
+#-----------
+time=1995603
+mem_heap_B=3856
+mem_heap_extra_B=1696
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=209
+#-----------
+time=1995655
+mem_heap_B=3872
+mem_heap_extra_B=1704
+mem_stacks_B=0
+heap_tree=detailed
+n5: 3872 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3280 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3280 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3280 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3280 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3280 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3280 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3280 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n1: 56 0x9D01F5: caml_alloc_minor_tables (minor_gc.c:69)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0239: caml_alloc_minor_tables (minor_gc.c:75)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+ n1: 56 0x9D0276: caml_alloc_minor_tables (minor_gc.c:81)
+  n1: 56 0x9EB420: caml_init_domain (domain.c:48)
+   n1: 56 0x9C9E11: caml_startup_common (startup_nat.c:112)
+    n1: 56 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 56 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 56 0x5662AB: main (main.c:41)
+#-----------
+snapshot=210
+#-----------
+time=1995707
+mem_heap_B=3888
+mem_heap_extra_B=1712
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=211
+#-----------
+time=1995759
+mem_heap_B=3904
+mem_heap_extra_B=1720
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=212
+#-----------
+time=1995811
+mem_heap_B=3920
+mem_heap_extra_B=1728
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=213
+#-----------
+time=1995863
+mem_heap_B=3936
+mem_heap_extra_B=1736
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=214
+#-----------
+time=1995915
+mem_heap_B=3952
+mem_heap_extra_B=1744
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=215
+#-----------
+time=1995967
+mem_heap_B=3968
+mem_heap_extra_B=1752
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=216
+#-----------
+time=1996019
+mem_heap_B=3984
+mem_heap_extra_B=1760
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=217
+#-----------
+time=1996071
+mem_heap_B=4000
+mem_heap_extra_B=1768
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=218
+#-----------
+time=1996123
+mem_heap_B=4016
+mem_heap_extra_B=1776
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=219
+#-----------
+time=1996175
+mem_heap_B=4032
+mem_heap_extra_B=1784
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4032 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3440 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3440 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3440 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3440 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3440 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3440 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3440 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=220
+#-----------
+time=1996227
+mem_heap_B=4048
+mem_heap_extra_B=1792
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=221
+#-----------
+time=1996279
+mem_heap_B=4064
+mem_heap_extra_B=1800
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=222
+#-----------
+time=1996331
+mem_heap_B=4080
+mem_heap_extra_B=1808
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=223
+#-----------
+time=1996383
+mem_heap_B=4096
+mem_heap_extra_B=1816
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=224
+#-----------
+time=1996435
+mem_heap_B=4112
+mem_heap_extra_B=1824
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=225
+#-----------
+time=1996487
+mem_heap_B=4128
+mem_heap_extra_B=1832
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=226
+#-----------
+time=1996539
+mem_heap_B=4144
+mem_heap_extra_B=1840
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=227
+#-----------
+time=1996591
+mem_heap_B=4160
+mem_heap_extra_B=1848
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=228
+#-----------
+time=1996643
+mem_heap_B=4176
+mem_heap_extra_B=1856
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=229
+#-----------
+time=1996695
+mem_heap_B=4192
+mem_heap_extra_B=1864
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4192 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3600 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3600 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3600 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3600 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3600 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3600 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3600 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=230
+#-----------
+time=1996747
+mem_heap_B=4208
+mem_heap_extra_B=1872
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=231
+#-----------
+time=1996799
+mem_heap_B=4224
+mem_heap_extra_B=1880
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=232
+#-----------
+time=1996851
+mem_heap_B=4240
+mem_heap_extra_B=1888
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=233
+#-----------
+time=1996903
+mem_heap_B=4256
+mem_heap_extra_B=1896
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=234
+#-----------
+time=1996955
+mem_heap_B=4272
+mem_heap_extra_B=1904
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=235
+#-----------
+time=1997007
+mem_heap_B=4288
+mem_heap_extra_B=1912
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=236
+#-----------
+time=1997059
+mem_heap_B=4304
+mem_heap_extra_B=1920
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=237
+#-----------
+time=1997111
+mem_heap_B=4320
+mem_heap_extra_B=1928
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=238
+#-----------
+time=1997163
+mem_heap_B=4336
+mem_heap_extra_B=1936
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=239
+#-----------
+time=1997215
+mem_heap_B=4352
+mem_heap_extra_B=1944
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4352 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3760 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3760 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3760 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3760 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3760 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3760 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3760 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=240
+#-----------
+time=1997267
+mem_heap_B=4368
+mem_heap_extra_B=1952
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=241
+#-----------
+time=1997319
+mem_heap_B=4384
+mem_heap_extra_B=1960
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=242
+#-----------
+time=1997371
+mem_heap_B=4400
+mem_heap_extra_B=1968
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=243
+#-----------
+time=1997423
+mem_heap_B=4416
+mem_heap_extra_B=1976
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=244
+#-----------
+time=1997475
+mem_heap_B=4432
+mem_heap_extra_B=1984
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=245
+#-----------
+time=1997527
+mem_heap_B=4448
+mem_heap_extra_B=1992
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=246
+#-----------
+time=1997579
+mem_heap_B=4464
+mem_heap_extra_B=2000
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=247
+#-----------
+time=1997631
+mem_heap_B=4480
+mem_heap_extra_B=2008
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=248
+#-----------
+time=1997683
+mem_heap_B=4496
+mem_heap_extra_B=2016
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=249
+#-----------
+time=1997735
+mem_heap_B=4512
+mem_heap_extra_B=2024
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4512 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 3920 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 3920 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 3920 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 3920 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 3920 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 3920 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 3920 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=250
+#-----------
+time=1997787
+mem_heap_B=4528
+mem_heap_extra_B=2032
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=251
+#-----------
+time=1997839
+mem_heap_B=4544
+mem_heap_extra_B=2040
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=252
+#-----------
+time=1997891
+mem_heap_B=4560
+mem_heap_extra_B=2048
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=253
+#-----------
+time=1997943
+mem_heap_B=4576
+mem_heap_extra_B=2056
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=254
+#-----------
+time=1997995
+mem_heap_B=4592
+mem_heap_extra_B=2064
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=255
+#-----------
+time=1998047
+mem_heap_B=4608
+mem_heap_extra_B=2072
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=256
+#-----------
+time=1998099
+mem_heap_B=4624
+mem_heap_extra_B=2080
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=257
+#-----------
+time=1998151
+mem_heap_B=4640
+mem_heap_extra_B=2088
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=258
+#-----------
+time=1998203
+mem_heap_B=4656
+mem_heap_extra_B=2096
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=259
+#-----------
+time=1998255
+mem_heap_B=4672
+mem_heap_extra_B=2104
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4672 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 4080 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 4080 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 4080 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 4080 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 4080 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 4080 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 4080 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=260
+#-----------
+time=1998307
+mem_heap_B=4688
+mem_heap_extra_B=2112
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=261
+#-----------
+time=1998359
+mem_heap_B=4704
+mem_heap_extra_B=2120
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=262
+#-----------
+time=1998411
+mem_heap_B=4720
+mem_heap_extra_B=2128
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=263
+#-----------
+time=1998463
+mem_heap_B=4736
+mem_heap_extra_B=2136
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=264
+#-----------
+time=1998515
+mem_heap_B=4752
+mem_heap_extra_B=2144
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=265
+#-----------
+time=1998567
+mem_heap_B=4768
+mem_heap_extra_B=2152
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=266
+#-----------
+time=1998619
+mem_heap_B=4784
+mem_heap_extra_B=2160
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=267
+#-----------
+time=1998671
+mem_heap_B=4800
+mem_heap_extra_B=2168
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=268
+#-----------
+time=1998723
+mem_heap_B=4816
+mem_heap_extra_B=2176
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=269
+#-----------
+time=1998775
+mem_heap_B=4832
+mem_heap_extra_B=2184
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4832 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 4240 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 4240 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 4240 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 4240 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 4240 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 4240 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 4240 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=270
+#-----------
+time=1998827
+mem_heap_B=4848
+mem_heap_extra_B=2192
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=271
+#-----------
+time=1998879
+mem_heap_B=4864
+mem_heap_extra_B=2200
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=272
+#-----------
+time=1998931
+mem_heap_B=4880
+mem_heap_extra_B=2208
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=273
+#-----------
+time=1998983
+mem_heap_B=4896
+mem_heap_extra_B=2216
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=274
+#-----------
+time=1999035
+mem_heap_B=4912
+mem_heap_extra_B=2224
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=275
+#-----------
+time=1999087
+mem_heap_B=4928
+mem_heap_extra_B=2232
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=276
+#-----------
+time=1999139
+mem_heap_B=4944
+mem_heap_extra_B=2240
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=277
+#-----------
+time=1999191
+mem_heap_B=4960
+mem_heap_extra_B=2248
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=278
+#-----------
+time=1999243
+mem_heap_B=4976
+mem_heap_extra_B=2256
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=279
+#-----------
+time=1999295
+mem_heap_B=4992
+mem_heap_extra_B=2264
+mem_stacks_B=0
+heap_tree=detailed
+n3: 4992 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 4400 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 4400 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 4400 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 4400 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 4400 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 4400 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 4400 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=280
+#-----------
+time=1999347
+mem_heap_B=5008
+mem_heap_extra_B=2272
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=281
+#-----------
+time=1999399
+mem_heap_B=5024
+mem_heap_extra_B=2280
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=282
+#-----------
+time=1999451
+mem_heap_B=5040
+mem_heap_extra_B=2288
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=283
+#-----------
+time=1999503
+mem_heap_B=5056
+mem_heap_extra_B=2296
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=284
+#-----------
+time=1999555
+mem_heap_B=5072
+mem_heap_extra_B=2304
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=285
+#-----------
+time=1999607
+mem_heap_B=5088
+mem_heap_extra_B=2312
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=286
+#-----------
+time=1999659
+mem_heap_B=5104
+mem_heap_extra_B=2320
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=287
+#-----------
+time=1999711
+mem_heap_B=5120
+mem_heap_extra_B=2328
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=288
+#-----------
+time=1999763
+mem_heap_B=5136
+mem_heap_extra_B=2336
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=289
+#-----------
+time=1999815
+mem_heap_B=5152
+mem_heap_extra_B=2344
+mem_stacks_B=0
+heap_tree=detailed
+n3: 5152 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 4560 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 4560 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 4560 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 4560 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 4560 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 4560 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 4560 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=290
+#-----------
+time=1999867
+mem_heap_B=5168
+mem_heap_extra_B=2352
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=291
+#-----------
+time=1999919
+mem_heap_B=5184
+mem_heap_extra_B=2360
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=292
+#-----------
+time=1999971
+mem_heap_B=5200
+mem_heap_extra_B=2368
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=293
+#-----------
+time=2000023
+mem_heap_B=5216
+mem_heap_extra_B=2376
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=294
+#-----------
+time=2000075
+mem_heap_B=5232
+mem_heap_extra_B=2384
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=295
+#-----------
+time=2000127
+mem_heap_B=5248
+mem_heap_extra_B=2392
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=296
+#-----------
+time=2000179
+mem_heap_B=5264
+mem_heap_extra_B=2400
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=297
+#-----------
+time=2000231
+mem_heap_B=5280
+mem_heap_extra_B=2408
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=298
+#-----------
+time=2000283
+mem_heap_B=5296
+mem_heap_extra_B=2416
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=299
+#-----------
+time=2000335
+mem_heap_B=5312
+mem_heap_extra_B=2424
+mem_stacks_B=0
+heap_tree=detailed
+n3: 5312 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n1: 4720 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 4720 0x9CA7ED: cons (roots_nat.c:50)
+   n1: 4720 0x9CA7ED: caml_init_frame_descriptors (roots_nat.c:169)
+    n1: 4720 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+     n1: 4720 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 4720 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 4720 0x5662AB: main (main.c:41)
+ n1: 424 0x9EB39D: caml_init_domain (domain.c:30)
+  n1: 424 0x9C9E11: caml_startup_common (startup_nat.c:112)
+   n1: 424 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+    n1: 424 0x9CA04A: caml_startup (startup_nat.c:168)
+     n0: 424 0x5662AB: main (main.c:41)
+ n0: 168 in 3 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=300
+#-----------
+time=2000387
+mem_heap_B=5328
+mem_heap_extra_B=2432
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=301
+#-----------
+time=2000439
+mem_heap_B=5344
+mem_heap_extra_B=2440
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=302
+#-----------
+time=2000491
+mem_heap_B=5360
+mem_heap_extra_B=2448
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=303
+#-----------
+time=2000543
+mem_heap_B=5376
+mem_heap_extra_B=2456
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=304
+#-----------
+time=2000595
+mem_heap_B=5392
+mem_heap_extra_B=2464
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=305
+#-----------
+time=2000647
+mem_heap_B=5408
+mem_heap_extra_B=2472
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=306
+#-----------
+time=2000699
+mem_heap_B=5424
+mem_heap_extra_B=2480
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=307
+#-----------
+time=2000751
+mem_heap_B=5440
+mem_heap_extra_B=2488
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=308
+#-----------
+time=2005132
+mem_heap_B=2102592
+mem_heap_extra_B=2496
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=309
+#-----------
+time=5540411
+mem_heap_B=2102608
+mem_heap_extra_B=2504
+mem_stacks_B=0
+heap_tree=detailed
+n2: 2102608 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n2: 2102016 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n0: 4864 in 2 places, all below massif's threshold (1.00%)
+ n0: 592 in 4 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=310
+#-----------
+time=5540461
+mem_heap_B=2102624
+mem_heap_extra_B=2512
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=311
+#-----------
+time=5540511
+mem_heap_B=2102640
+mem_heap_extra_B=2520
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=312
+#-----------
+time=5540561
+mem_heap_B=2102656
+mem_heap_extra_B=2528
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=313
+#-----------
+time=5540724
+mem_heap_B=2119040
+mem_heap_extra_B=2536
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=314
+#-----------
+time=5557217
+mem_heap_B=4220288
+mem_heap_extra_B=2544
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=315
+#-----------
+time=5581988
+mem_heap_B=5240240
+mem_heap_extra_B=2552
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=316
+#-----------
+time=5594126
+mem_heap_B=5240264
+mem_heap_extra_B=2568
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=317
+#-----------
+time=5594169
+mem_heap_B=5273032
+mem_heap_extra_B=2576
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=318
+#-----------
+time=5594626
+mem_heap_B=5281224
+mem_heap_extra_B=2584
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=319
+#-----------
+time=5619711
+mem_heap_B=5313992
+mem_heap_extra_B=2592
+mem_stacks_B=0
+heap_tree=detailed
+n4: 5313992 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 2102064 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n0: 4912 in 5 places, all below massif's threshold (1.00%)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 82536 in 7 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=320
+#-----------
+time=5674776
+mem_heap_B=5313992
+mem_heap_extra_B=2592
+mem_stacks_B=0
+heap_tree=detailed
+n4: 5313992 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 2102064 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n0: 4912 in 5 places, all below massif's threshold (1.00%)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 82536 in 7 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=321
+#-----------
+time=5674776
+mem_heap_B=5297608
+mem_heap_extra_B=2584
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=322
+#-----------
+time=5699400
+mem_heap_B=5297648
+mem_heap_extra_B=2600
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=323
+#-----------
+time=5699502
+mem_heap_B=5297672
+mem_heap_extra_B=2616
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=324
+#-----------
+time=5699608
+mem_heap_B=5297696
+mem_heap_extra_B=2632
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=325
+#-----------
+time=5699690
+mem_heap_B=5297736
+mem_heap_extra_B=2648
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=326
+#-----------
+time=5699799
+mem_heap_B=5297760
+mem_heap_extra_B=2664
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=327
+#-----------
+time=5699912
+mem_heap_B=5297784
+mem_heap_extra_B=2680
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=328
+#-----------
+time=5700157
+mem_heap_B=5297808
+mem_heap_extra_B=2696
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=329
+#-----------
+time=5700239
+mem_heap_B=5298064
+mem_heap_extra_B=2704
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=330
+#-----------
+time=5700600
+mem_heap_B=5298088
+mem_heap_extra_B=2720
+mem_stacks_B=0
+heap_tree=detailed
+n4: 5298088 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 2102544 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n0: 5392 in 8 places, all below massif's threshold (1.00%)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66152 in 7 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=331
+#-----------
+time=5701065
+mem_heap_B=5298140
+mem_heap_extra_B=2740
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=332
+#-----------
+time=5701237
+mem_heap_B=5298180
+mem_heap_extra_B=2756
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=333
+#-----------
+time=5701518
+mem_heap_B=5363804
+mem_heap_extra_B=2772
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=334
+#-----------
+time=5702225
+mem_heap_B=6156380
+mem_heap_extra_B=2780
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=335
+#-----------
+time=5702365
+mem_heap_B=6222004
+mem_heap_extra_B=2796
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=336
+#-----------
+time=5703126
+mem_heap_B=6287628
+mem_heap_extra_B=2812
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=337
+#-----------
+time=5704190
+mem_heap_B=6287673
+mem_heap_extra_B=2823
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=338
+#-----------
+time=5710762
+mem_heap_B=6287731
+mem_heap_extra_B=2837
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=339
+#-----------
+time=5711759
+mem_heap_B=6287745
+mem_heap_extra_B=2847
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=340
+#-----------
+time=5712139
+mem_heap_B=6287745
+mem_heap_extra_B=2847
+mem_stacks_B=0
+heap_tree=detailed
+n5: 6287745 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2299611 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n2: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n1: 65624 0x958598: camlStdlib__entry (stdlib.ml:309)
+      n1: 65624 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+       n1: 65624 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+        n1: 65624 0x9CA003: caml_startup_common (startup_nat.c:158)
+         n1: 65624 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+          n1: 65624 0x9CA04A: caml_startup (startup_nat.c:168)
+           n0: 65624 0x5662AB: main (main.c:41)
+     n1: 65624 0x9585BA: camlStdlib__entry (stdlib.ml:310)
+      n1: 65624 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+       n1: 65624 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+        n1: 65624 0x9CA003: caml_startup_common (startup_nat.c:158)
+         n1: 65624 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+          n1: 65624 0x9CA04A: caml_startup (startup_nat.c:168)
+           n0: 65624 0x5662AB: main (main.c:41)
+   n1: 65624 0x9D7D58: caml_ml_open_descriptor_in (io.c:500)
+    n1: 65624 0x958576: camlStdlib__entry (stdlib.ml:308)
+     n1: 65624 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+      n1: 65624 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+       n1: 65624 0x9CA003: caml_startup_common (startup_nat.c:158)
+        n1: 65624 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+         n1: 65624 0x9CA04A: caml_startup (startup_nat.c:168)
+          n0: 65624 0x5662AB: main (main.c:41)
+  n0: 5587 in 10 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n1: 792576 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+ n0: 66166 in 8 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=341
+#-----------
+time=5712139
+mem_heap_B=6287731
+mem_heap_extra_B=2837
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=342
+#-----------
+time=5712312
+mem_heap_B=6287744
+mem_heap_extra_B=2848
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=343
+#-----------
+time=5712692
+mem_heap_B=6287731
+mem_heap_extra_B=2837
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=344
+#-----------
+time=5718036
+mem_heap_B=6287738
+mem_heap_extra_B=2854
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=345
+#-----------
+time=5718383
+mem_heap_B=6287731
+mem_heap_extra_B=2837
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=346
+#-----------
+time=5718654
+mem_heap_B=6287736
+mem_heap_extra_B=2856
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=347
+#-----------
+time=5719036
+mem_heap_B=6287731
+mem_heap_extra_B=2837
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=348
+#-----------
+time=5722130
+mem_heap_B=6816115
+mem_heap_extra_B=2845
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=349
+#-----------
+time=5740767
+mem_heap_B=6816154
+mem_heap_extra_B=2862
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=350
+#-----------
+time=5740920
+mem_heap_B=6816178
+mem_heap_extra_B=2878
+mem_stacks_B=0
+heap_tree=detailed
+n5: 6816178 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2299674 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 5650 in 10 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 1320960 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66152 in 8 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=351
+#-----------
+time=5743936
+mem_heap_B=6816210
+mem_heap_extra_B=2886
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=352
+#-----------
+time=5744186
+mem_heap_B=6816322
+mem_heap_extra_B=2894
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=353
+#-----------
+time=5744254
+mem_heap_B=6816418
+mem_heap_extra_B=2902
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=354
+#-----------
+time=5744827
+mem_heap_B=6816460
+mem_heap_extra_B=2916
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=355
+#-----------
+time=5745055
+mem_heap_B=6816500
+mem_heap_extra_B=2932
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=356
+#-----------
+time=5746880
+mem_heap_B=6816516
+mem_heap_extra_B=2940
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=357
+#-----------
+time=5763860
+mem_heap_B=6817236
+mem_heap_extra_B=2948
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=358
+#-----------
+time=5788229
+mem_heap_B=6817252
+mem_heap_extra_B=2956
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=359
+#-----------
+time=5788510
+mem_heap_B=6817289
+mem_heap_extra_B=2975
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=360
+#-----------
+time=5788672
+mem_heap_B=6817313
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=detailed
+n5: 6817313 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2300673 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 6649 in 13 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 1320960 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66288 in 10 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=361
+#-----------
+time=5789021
+mem_heap_B=6817322
+mem_heap_extra_B=3006
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=362
+#-----------
+time=5789397
+mem_heap_B=6817322
+mem_heap_extra_B=3006
+mem_stacks_B=0
+heap_tree=detailed
+n5: 6817322 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2300673 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 6649 in 13 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n2: 1320960 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66297 in 10 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=363
+#-----------
+time=5789397
+mem_heap_B=6817313
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=364
+#-----------
+time=5789592
+mem_heap_B=6817321
+mem_heap_extra_B=3007
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=365
+#-----------
+time=5789968
+mem_heap_B=6817313
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=366
+#-----------
+time=5943884
+mem_heap_B=6817336
+mem_heap_extra_B=3008
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=367
+#-----------
+time=5944258
+mem_heap_B=6817313
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=368
+#-----------
+time=6780937
+mem_heap_B=7081505
+mem_heap_extra_B=2999
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=369
+#-----------
+time=12911100
+mem_heap_B=7081529
+mem_heap_extra_B=3015
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=370
+#-----------
+time=12911217
+mem_heap_B=7081553
+mem_heap_extra_B=3031
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=371
+#-----------
+time=12911363
+mem_heap_B=7081585
+mem_heap_extra_B=3039
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=372
+#-----------
+time=12911502
+mem_heap_B=7081609
+mem_heap_extra_B=3055
+mem_stacks_B=0
+heap_tree=detailed
+n5: 7081609 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2300777 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 6753 in 13 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n3: 1585152 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+  n1: 264192 0x9D1227: add_to_ref_table (minor_gc.h:103)
+   n1: 264192 0x9D1227: caml_modify (memory.c:674)
+    n1: 264192 0x9D6DA1: caml_array_blit (array.c:448)
+     n1: 264192 0x963461: camlStdlib__array__blit_137 (array.ml:92)
+      n1: 264192 0x9A4AB5: camlCamlinternalOO__resize_882 (camlinternalOO.ml:149)
+       n1: 264192 0x9A5ED9: camlCamlinternalOO__make_class_1080 (camlinternalOO.ml:333)
+        n1: 264192 0x5B5A4A: camlPpxlib__Ast_traverse__entry (ast_traverse.ml:151)
+         n1: 264192 0x5673D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 264192 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 264192 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 264192 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 264192 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 264192 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66288 in 10 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=373
+#-----------
+time=12911573
+mem_heap_B=7081609
+mem_heap_extra_B=3055
+mem_stacks_B=0
+heap_tree=peak
+n5: 7081609 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2300777 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 6753 in 13 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n3: 1585152 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+  n1: 264192 0x9D1227: add_to_ref_table (minor_gc.h:103)
+   n1: 264192 0x9D1227: caml_modify (memory.c:674)
+    n1: 264192 0x9D6DA1: caml_array_blit (array.c:448)
+     n1: 264192 0x963461: camlStdlib__array__blit_137 (array.ml:92)
+      n1: 264192 0x9A4AB5: camlCamlinternalOO__resize_882 (camlinternalOO.ml:149)
+       n1: 264192 0x9A5ED9: camlCamlinternalOO__make_class_1080 (camlinternalOO.ml:333)
+        n1: 264192 0x5B5A4A: camlPpxlib__Ast_traverse__entry (ast_traverse.ml:151)
+         n1: 264192 0x5673D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 264192 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 264192 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 264192 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 264192 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 264192 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66288 in 10 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=374
+#-----------
+time=12911573
+mem_heap_B=7081585
+mem_heap_extra_B=3039
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=375
+#-----------
+time=12911608
+mem_heap_B=7081545
+mem_heap_extra_B=3023
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=376
+#-----------
+time=12911643
+mem_heap_B=7081521
+mem_heap_extra_B=3007
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=377
+#-----------
+time=12911678
+mem_heap_B=7081497
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=378
+#-----------
+time=19569402
+mem_heap_B=7081753
+mem_heap_extra_B=2999
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=379
+#-----------
+time=19569750
+mem_heap_B=7081497
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=380
+#-----------
+time=19578276
+mem_heap_B=7081753
+mem_heap_extra_B=2999
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=381
+#-----------
+time=19578624
+mem_heap_B=7081497
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=382
+#-----------
+time=25276770
+mem_heap_B=7081753
+mem_heap_extra_B=2999
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=383
+#-----------
+time=25277118
+mem_heap_B=7081497
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=detailed
+n5: 7081497 (heap allocation functions) malloc/new/new[], --alloc-fns, etc.
+ n3: 2300665 0x9D1498: caml_stat_alloc (memory.c:840)
+  n1: 2097152 0x9CA6DC: init_frame_descriptors (roots_nat.c:152)
+   n1: 2097152 0x9C9E5C: caml_startup_common (startup_nat.c:127)
+    n1: 2097152 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+     n1: 2097152 0x9CA04A: caml_startup (startup_nat.c:168)
+      n0: 2097152 0x5662AB: main (main.c:41)
+  n2: 196872 0x9D73D1: caml_open_descriptor_in (io.c:98)
+   n1: 131248 0x9D7D88: caml_open_descriptor_out (io.c:123)
+    n1: 131248 0x9D7D88: caml_ml_open_descriptor_out (io.c:507)
+     n0: 131248 in 2 places, all below massif's threshold (1.00%)
+   n0: 65624 in 1 place, below massif's threshold (1.00%)
+  n0: 6641 in 13 places, all below massif's threshold (1.00%)
+ n2: 2109440 0x9D1336: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 2101248 0x9D0AC4: caml_set_minor_heap_size (minor_gc.c:156)
+   n1: 2101248 0x9DFAC3: caml_init_gc (gc_ctrl.c:691)
+    n1: 2101248 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+     n1: 2101248 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+      n1: 2101248 0x9CA04A: caml_startup (startup_nat.c:168)
+       n0: 2101248 0x5662AB: main (main.c:41)
+  n0: 8192 in 1 place, below massif's threshold (1.00%)
+ n3: 1585152 0x9D005E: alloc_generic_table (minor_gc.c:95)
+  n1: 792576 0x9E5707: add_to_custom_table (minor_gc.h:128)
+   n1: 792576 0x9E5707: alloc_custom_gen (custom.c:58)
+    n1: 792576 0x9E5802: caml_alloc_custom_mem (custom.c:106)
+     n1: 792576 0x9D7D79: caml_alloc_channel (io.c:492)
+      n1: 792576 0x9D7D79: caml_ml_open_descriptor_in (io.c:502)
+       n1: 792576 0x958576: camlStdlib__entry (stdlib.ml:308)
+        n1: 792576 0x5663D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+         n1: 792576 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 792576 0x9CA003: caml_startup_common (startup_nat.c:158)
+           n1: 792576 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+            n1: 792576 0x9CA04A: caml_startup (startup_nat.c:168)
+             n0: 792576 0x5662AB: main (main.c:41)
+  n1: 528384 0x9E23D9: add_to_ephe_ref_table (minor_gc.h:114)
+   n1: 528384 0x9E23D9: do_set (weak.c:198)
+    n1: 528384 0x9E2A8B: caml_ephe_set_key (weak.c:217)
+     n1: 528384 0x962CB7: camlStdlib__obj__set_key_364 (obj.ml:165)
+      n1: 528384 0x9532AE: camlSexplib0__Sexp_conv__loop_3181 (ephemeron.ml:437)
+       n1: 528384 0x95AF10: camlStdlib__list__iter_261 (list.ml:110)
+        n1: 528384 0x9559A1: camlSexplib0__Sexp_conv__entry (sexp_conv.ml:347)
+         n1: 528384 0x566728: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 528384 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 528384 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 528384 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 528384 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 528384 0x5662AB: main (main.c:41)
+  n1: 264192 0x9D1227: add_to_ref_table (minor_gc.h:103)
+   n1: 264192 0x9D1227: caml_modify (memory.c:674)
+    n1: 264192 0x9D6DA1: caml_array_blit (array.c:448)
+     n1: 264192 0x963461: camlStdlib__array__blit_137 (array.ml:92)
+      n1: 264192 0x9A4AB5: camlCamlinternalOO__resize_882 (camlinternalOO.ml:149)
+       n1: 264192 0x9A5ED9: camlCamlinternalOO__make_class_1080 (camlinternalOO.ml:333)
+        n1: 264192 0x5B5A4A: camlPpxlib__Ast_traverse__entry (ast_traverse.ml:151)
+         n1: 264192 0x5673D8: caml_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+          n1: 264192 0x9EBEC3: caml_start_program (in /home/adharsh/certified-mrdts/experiments/orset/out/_build/default/test_opt.exe)
+           n1: 264192 0x9CA003: caml_startup_common (startup_nat.c:158)
+            n1: 264192 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+             n1: 264192 0x9CA04A: caml_startup (startup_nat.c:168)
+              n0: 264192 0x5662AB: main (main.c:41)
+ n1: 1019952 0x9D13E9: caml_stat_alloc_aligned_noexc (memory.c:782)
+  n1: 1019952 0x9D13E9: caml_alloc_for_heap (memory.c:276)
+   n1: 1019952 0x9CFD42: caml_init_major_heap (major_gc.c:1022)
+    n1: 1019952 0x9DFAF2: caml_init_gc (gc_ctrl.c:695)
+     n1: 1019952 0x9C9EBE: caml_startup_common (startup_nat.c:134)
+      n1: 1019952 0x9CA04A: caml_startup_exn (startup_nat.c:163)
+       n1: 1019952 0x9CA04A: caml_startup (startup_nat.c:168)
+        n0: 1019952 0x5662AB: main (main.c:41)
+ n0: 66288 in 11 places, all below massif's threshold (1.00%)
+#-----------
+snapshot=384
+#-----------
+time=25504479
+mem_heap_B=7081506
+mem_heap_extra_B=3022
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=385
+#-----------
+time=25504820
+mem_heap_B=7081497
+mem_heap_extra_B=2991
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=386
+#-----------
+time=202282068
+mem_heap_B=7577161
+mem_heap_extra_B=2999
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=387
+#-----------
+time=8755579928
+mem_heap_B=7577201
+mem_heap_extra_B=3015
+mem_stacks_B=0
+heap_tree=empty
+#-----------
+snapshot=388
+#-----------
+time=8755581204
+mem_heap_B=7577241
+mem_heap_extra_B=3031
+mem_stacks_B=0
+heap_tree=empty

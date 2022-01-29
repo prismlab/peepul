@@ -27,9 +27,9 @@ let rec gen_list acc x =
 
 let _ =
   Memtrace.trace_if_requested ();
-  let lca = Orset_bst.totree (gen_list [] 1000) in
+  let lca = Orset_bst.totree (gen_list [] 10000) in
   let a = lca in
   let b = lca in
-  test lca a b 10000
+  test lca a b 1000
 
 
