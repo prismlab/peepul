@@ -315,34 +315,12 @@ let prop_oper4 tr st op = assert(fst st = fst (app_op st op));
                           //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) - 1);
                           admit()
 
-// let prop_oper3 tr st op = match fst st - snd st = 0 with
-//   | true -> // let l = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//            //         (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) @ [op] in
-//            // let l1 = (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//            //          (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l) in
-//            // ax_dsum1 l l1;
-//            assert(snd st = snd (app_op st op));
-//            // assert(forall x. Dec? (snd x) /\ Some? (return x) /\ (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr)) ==>
-//            //              Dec? (snd x) /\ Some? (return x) /\
-//            // (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op))));
-//            assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//                      (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) ==>
-//                       mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//                  (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
+// We need a way to indicate which incr and decr are matched without using the abs. exec.
+// In FQueue, we stored the IDs in the state so we knew which enqueue is being matched with this dequeue
+// But here we don't store it anywhere. We *could* find the oldest unmatched incr
 
-//            assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//                      (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l)
-//                            ==> (mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//                   (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l)));
-
-//            admit(); ()
-//   | false -> // assert(snd st + 1 = snd (app_op st op));
-//            // assert(forall d. mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//            //           (exists_mem tr.l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x tr))) tr.l) ==>
-//            //            mem d (filter_op (fun x -> Dec? (snd x) && Some? (return x) &&
-//            //       (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Inc? (snd y) && matched y x (append tr op)))) (append tr op).l));
-//            //  assert(exists i. mem i tr.l /\ Inc? (snd i) /\ matched i op (append tr op));
-//             admit(); ()
+// What if we find *any* unmatched increment instead of the oldest unmatched increment?
+// All the increments caused addition by 1, so essentially there is no difference between the 1s added by two different increments
 
 val ax_dsum : l:(list o){forall i. mem i l ==> Dec? (snd i)}
             -> Lemma (ensures (length l = dsum l))
