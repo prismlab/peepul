@@ -51,6 +51,17 @@ assume val axiom : #op:eqtype
                               (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)))
                               [SMTPat (unique l.l)]
 
+val get_op_id : #op:eqtype
+              -> id:nat
+              -> tr:ae op
+              -> Pure op
+                     (requires (unique tr.l) /\ member id tr.l)
+                     (ensures (fun r -> mem (id, r) tr.l))
+                     (decreases tr.l)
+let rec get_op_id id l =
+  match l.l with
+  |(id1, op)::xs -> if id = id1 then op else get_op_id id (A l.vis xs)
+
 val append : #op:eqtype 
            -> tr:ae op
            -> op1:(nat *op)
@@ -103,6 +114,19 @@ let visib #op id id1 l =
   if (existsb (fun e -> get_id e = id && (existsb (fun e1 -> get_id e1 = id1 && l.vis e e1) l.l)) l.l)
     then true else false
 
+(*)val visib : #op:eqtype 
+            -> id:nat 
+            -> id1:nat {id <> id1}
+            -> l:ae op {member id l.l /\ member id1 l.l}
+            -> Tot (b:bool {b = true <==> mem (id, (get_op (get_eve id l.l))) l.l /\
+                                       mem (id1, (get_op (get_eve id1 l.l))) l.l /\
+                                       l.vis (id, (get_op (get_eve id l.l))) (id1, (get_op (get_eve id1 l.l)))})
+
+let visib #op id id1 l =
+    mem (id, (get_op (get_eve id l.l))) l.l &&
+             mem (id1, (get_op (get_eve id1 l.l))) l.l &&
+             l.vis (id, (get_op (get_eve id l.l))) (id1, (get_op (get_eve id1 l.l)))*)
+      
 val union1 : #op:eqtype
            -> l:ae op
            -> a:ae op
