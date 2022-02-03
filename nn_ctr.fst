@@ -321,6 +321,7 @@ let prop_oper4 tr st op = assert(fst st = fst (app_op st op));
 // In FQueue, we stored the IDs in the state so we knew which enqueue is being matched with this dequeue
 // But here we don't store it anywhere. We *could* find the oldest unmatched incr to match FQueue semantics
 
+
 val ax_dsum : l:(list o){forall i. mem i l ==> Dec? (snd i)}
             -> Lemma (ensures (length l = dsum l))
 let rec ax_dsum l = match l with
@@ -340,6 +341,112 @@ let prop_oper tr st op =
                  | true -> prop_oper1 tr st op; prop_oper4 tr st op
                  | false -> prop_oper1 tr st op; prop_oper3 tr st op
 
+val num_decr: l:s -> a:s{fst a >= fst l /\ snd a >= snd l} -> Tot (n:nat{((fst l - snd l) < (snd a - snd l) ==> n = (fst l - snd l)) /\
+                                                                        ((fst l - snd l) >= (snd a - snd l) ==> n = (snd a - snd l))})
+let num_decr l a = match (fst l - snd l) < (snd a - snd l) with
+| false -> (snd a - snd l)
+| true -> (fst l - snd l)
+
+val common_decr: l:s -> a:s{fst a >= fst l /\ snd a >= snd l} -> b:s{fst b >= fst l /\ snd b >= snd l}
+                 -> Tot (n:nat{n = min (num_decr l a) (num_decr l b)})
+let common_decr l a b = min (num_decr l a) (num_decr l b)
+
+val merge_s: l:s -> a:s{fst a >= fst l /\ snd a >= snd l} -> b:s{fst b >= fst l /\ snd b >= snd l} ->
+             Tot (res:s{res = (fst a + fst b - fst l, snd a + snd b - snd l - common_decr l a b)})
+let merge_s l a b =
+  let cd = common_decr l a b in
+  let fst_r = fst a + fst b - fst l in
+  let snd_r = snd a + snd b - snd l in
+  (fst_r, snd_r - cd)
+
+val union_list_ae : l:ae
+                  -> a:ae
+                  -> Pure (list o)
+                         (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))) /\ (forall e e1. mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1))
+                         (ensures (fun u -> (forall e. mem e u <==> mem e l.l \/ mem e a.l) /\ (unique u))) (decreases %[l.l;a.l])
+let rec union_list_ae l a =
+  match l,a with
+  |(A _ []), (A _ []) -> []
+  |(A _ (x::xs)), _ -> x::(union_list_ae (A l.vis xs) a)
+  |(A _ []), (A _ (x::xs)) -> x::(union_list_ae l (A a.vis xs))
+
+val union : l:ae
+          -> a:ae
+          -> Pure ae
+            (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))) /\ (forall e e1. (mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1)))
+            (ensures (fun u -> (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1) <==>
+                                     ((mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1) \/
+                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ a.vis e e1) \/
+                                     (mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1))) /\
+                             (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ ~(u.vis e e1 \/ u.vis e1 e)) <==>
+                                     ((mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e)) \/
+                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e))))//  /\
+                             // (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
+                             //            ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
+                             //             (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
+                             //             (Inc? (snd e) && Dec? (snd d) && mem e l.l && mem d a.l && return d = Some (get_id e, get_ele e)) && (u.vis e d))
+                             //            )
+    ))
+
+let union l a =
+    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+                 (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
+                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1)) (union_list_ae l a))
+
+val absmerge_list_ae : l:ae
+                     -> a:ae
+                     -> b:ae
+                     -> Pure (list o)
+                            (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)) /\
+                                      (forall e. mem e a.l ==> not (member (get_id e) b.l)) /\
+                                      (forall e. mem e l.l ==> not (member (get_id e) b.l)) /\
+                                      (forall e e1. (mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1)) /\
+                                      (forall e e1. (mem e l.l /\ mem e1 b.l ==> get_id e < get_id e1)))
+                            (ensures (fun u -> (forall e. mem e u <==> mem e a.l \/ mem e b.l \/ mem e l.l) /\ (unique u))) (decreases %[l.l;a.l;b.l])
+
+let rec absmerge_list_ae l a b =
+  match l,a,b with
+  |(A _ []), (A _ []), (A _ []) -> []
+  |(A _ (x::xs)), _, _ -> x::(absmerge_list_ae (A l.vis xs) a b)
+  |(A _ []), (A _ (x::xs)), _ -> x::(absmerge_list_ae l (A a.vis xs) b)
+  |(A _ []), (A _ []), (A _ (x::xs)) -> x::(absmerge_list_ae l a (A b.vis xs))
+
+val absmerge : l:ae
+             -> a:ae
+             -> b:ae
+             -> Pure ae
+               (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)) /\
+                         (forall e. mem e a.l ==> not (member (get_id e) b.l)) /\
+                         (forall e. mem e l.l ==> not (member (get_id e) b.l)) /\
+                         (forall e e1. (mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1)) /\
+                         (forall e e1. (mem e l.l /\ mem e1 b.l ==> get_id e < get_id e1)))
+               (ensures (fun u -> (forall e. mem e u.l <==> mem e l.l \/ mem e a.l \/ mem e b.l) /\
+                               (forall e1 e2. (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2) <==>
+                                         ((mem e1 l.l /\ mem e2 l.l /\ get_id e1 <> get_id e2 /\ l.vis e1 e2) \/
+                                         (mem e1 a.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ a.vis e1 e2) \/
+                                         (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) \/
+                                         (mem e1 l.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ (union l a).vis e1 e2) \/
+                                         (mem e1 l.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ (union l b).vis e1 e2))) /\
+                                (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ ~(u.vis e e1 \/ u.vis e1 e)) <==>
+                                         ((((mem e a.l /\ mem e1 b.l) \/ (mem e1 a.l /\ mem e b.l)) /\ (get_id e <> get_id e1)) \/
+                                         (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e)) \/
+                                         (mem e b.l /\ mem e1 b.l /\ get_id e <> get_id e1 /\ ~(b.vis e e1 \/ b.vis e1 e)) \/
+                                         (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e)))) /\
+                                (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
+                                        ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
+                                         (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
+                                         (mem e b.l /\ mem d b.l /\ get_id e <> get_id d /\ matched e d b) \/
+                                         (mem e l.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d (union l a)) \/
+                                         (mem e l.l /\ mem d b.l /\ get_id e <> get_id d /\ matched e d (union l b))))
+                                         ))
+
+let absmerge l a b =
+    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+                 (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
+                 (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
+                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
+                 (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
+
 val merge: ltr:ae
            -> l:s
            -> atr:ae
@@ -349,9 +456,8 @@ val merge: ltr:ae
            -> Pure s (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                             (fst a >= fst l /\ snd a >= snd l /\ fst b >= fst l /\ snd b >= snd l) /\
                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                     (ensures (fun res -> true))
 
-let merge lca a b =
-  let i = (fst a) + (fst b) - (fst l) in
-  let d = (snd a) + (snd b) - (snd l) in ()
+let merge ltr l atr a btr b = merge_s l a b
