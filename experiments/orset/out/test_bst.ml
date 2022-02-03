@@ -2,8 +2,8 @@ let _ = Random.self_init ()
 
 let random x = Z.of_int (Random.int x)
 
-let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt.Add (random 100))
-  else (random 1000000, Orset_opt.Rem (random 100))
+let random_ops r = if (Random.int 100 < r) then (random 1000000, Orset_opt.Add (random 25))
+  else (random 1000000, Orset_opt.Rem (random 25))
 
 let pick_r r r1 r2 = if (Random.int 100 < r) then r1 else r2
 
@@ -27,9 +27,9 @@ let rec gen_list acc x =
 
 let _ =
   Memtrace.trace_if_requested ();
-  let lca = Orset_bst.totree (gen_list [] 1000) in
+  let lca = Orset_bst.totree (gen_list [] 10000) in
   let a = lca in
   let b = lca in
-  test lca a b 10000
+  test lca a b 1000
 
 
