@@ -494,11 +494,7 @@ val lemma8 : ltr:ae op
                    (project i (union ltr atr)).vis e e1))))
 
 #set-options "--z3rlimit 10000000"
-let lemma8 ltr atr = 
-  assert (forall i. (forall e e1. (mem e (union (project i ltr) (project i atr)).l /\ mem e1 (union (project i ltr) (project i atr)).l /\ get_id e <> get_id e1 /\ (union (project i ltr) (project i atr)).vis e e1) <==>
-          (mem e (project i ltr).l /\ mem e1 (project i ltr).l /\ get_id e <> get_id e1 /\ (project i ltr).vis e e1) \/
-          (mem e (project i atr).l /\ mem e1 (project i atr).l /\ get_id e <> get_id e1 /\ (project i atr).vis e e1) \/ 
-          (mem e (project i ltr).l /\ mem e1 (project i atr).l /\ get_id e <> get_id e1 /\ (union (project i ltr) (project i atr)).vis e e1))); ()
+let lemma8 ltr atr = ()
 
 val lemma9 : ltr:ae op 
            -> atr:ae op 
@@ -517,7 +513,7 @@ val lemma9 : ltr:ae op
                                 mem e (project i (absmerge ltr atr btr)).l /\ mem e1 (project i (absmerge ltr atr btr)).l /\ get_id e <> get_id e1 /\ (project i (absmerge ltr atr btr)).vis e e1)))
 
 #set-options "--z3rlimit 10000000"
-let rec lemma9 ltr atr btr = ()
+let lemma9 ltr atr btr = ()
 
 val prop_merge1 : ltr:ae op
                  -> l:s
