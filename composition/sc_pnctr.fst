@@ -4,6 +4,8 @@ open FStar.List.Tot
 open Library
 module C = Pnctr
 
+#set-options "--query_stats"
+
 type op = (C.op * string)
 
 val get_item : op1:op -> Tot (s:string {(exists op2. op1 = (op2, s))})
@@ -93,18 +95,12 @@ val project1 : i:string
              -> Pure (list (nat * C.op))
                     (requires true)
                     (ensures (fun r -> (forall id. member id r <==> (member id l.l /\ (get_op (get_eve id l.l) = (C.Add,i) \/ 
-                               get_op (get_eve id l.l) = (C.Rem,i)))) (*)/\
-                             (forall e. mem e l.l /\ get_id e = id ==> get_item e = i*) /\ unique r /\
-                         (forall e. mem e l.l /\ (get_op e = (C.Add,i) \/ get_op e = (C.Rem,i)) ==> mem (project_op e) r) /\
+                               get_op (get_eve id l.l) = (C.Rem,i)))) /\ unique r /\
+                 (forall id. member id r <==> (member id l.l /\ (get_item (get_op (get_eve id l.l)) = i))) /\
+                    (forall e. mem e r <==> (mem ((get_id e), (get_op e, i)) l.l)) /\
+                    (forall e. mem e l.l /\ get_item (get_op e) = i ==> mem (project_op e) r) /\
                             (C.sum r = List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l) -
-                                       List.Tot.length (filter (fun a -> get_op a = (C.Rem,i)) l.l)) /\
-                            (forall e. mem e r ==> (mem ((get_id e), (C.Add, i)) l.l \/ mem ((get_id e), (C.Rem, i)) l.l) /\
-                                              (mem_op (C.Add,i) l.l \/ mem_op (C.Rem, i) l.l)) /\
-                (forall e. mem e l.l /\ opa e /\ get_op e = (C.Add,i) ==> mem (project_op e) r /\ C.opa (project_op e) /\ (project_op e = (get_id e, C.Add))) /\
-                (forall e. mem e l.l /\ opr e /\ get_op e = (C.Rem,i) ==> mem (project_op e) r /\ C.opr (project_op e) /\ (project_op e = (get_id e, C.Rem))) /\
-                (forall e. mem e r /\ C.opa e ==> (mem ((get_id e), (C.Add, i)) l.l /\ mem_op (C.Add,i) l.l) /\ opa ((get_id e), (C.Add, i))) /\
-                (forall e. mem e r /\ C.opr e ==> (mem ((get_id e), (C.Rem, i)) l.l /\ mem_op (C.Rem,i) l.l) /\ opr ((get_id e), (C.Rem, i))) /\
-                (forall e. mem e r ==> (mem ((get_id e), (get_op e, i)) l.l))))
+                                       List.Tot.length (filter (fun a -> get_op a = (C.Rem,i)) l.l))))
             (decreases List.Tot.length l.l)
 
 #set-options "--z3rlimit 10000000"
@@ -119,28 +115,18 @@ val project : i:string
             -> Pure (ae C.op)
                    (requires true)
                    (ensures (fun r -> (forall id. member id r.l <==> (member id l.l /\ (get_op (get_eve id l.l) = (C.Add,i) \/ 
-                               get_op (get_eve id l.l) = (C.Rem,i)))) (*)/\
-                             (forall e. mem e l.l /\ get_id e = id ==> get_item e = i*) /\ unique r.l /\
-                         (forall e. mem e l.l /\ (get_op e = (C.Add,i) \/ get_op e = (C.Rem,i)) ==> mem (project_op e) r.l) /\
-                            (C.sum r.l = List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l) -
-                                       List.Tot.length (filter (fun a -> get_op a = (C.Rem,i)) l.l)) /\
-                         (forall e. mem e r.l ==> (mem ((get_id e), (C.Add, i)) l.l \/ mem ((get_id e), (C.Rem, i)) l.l) /\
-                                              (mem_op (C.Add,i) l.l \/ mem_op (C.Rem, i) l.l)) /\
-                (forall e. mem e l.l /\ opa e /\ get_op e = (C.Add,i) ==> mem (project_op e) r.l /\ C.opa (project_op e) /\ (project_op e = (get_id e, C.Add))) /\
-                (forall e. mem e l.l /\ opr e /\ get_op e = (C.Rem,i) ==> mem (project_op e) r.l /\ C.opr (project_op e) /\ (project_op e = (get_id e, C.Rem))) /\
-                (forall e. mem e r.l /\ C.opa e ==> (mem ((get_id e), (C.Add, i)) l.l /\ mem_op (C.Add,i) l.l) /\ opa ((get_id e), (C.Add, i))) /\
-                (forall e. mem e r.l /\ C.opr e ==> (mem ((get_id e), (C.Rem, i)) l.l /\ mem_op (C.Rem,i) l.l) /\ opr ((get_id e), (C.Rem, i))) /\
-                (forall e. mem e r.l ==> (mem ((get_id e), (get_op e, i)) l.l)) /\
-                (forall id id1. id <> id1 /\ member id r.l /\ member id1 r.l /\ (visib id id1 r) <==> 
-                                                    id <> id1 /\ member id l.l /\ member id1 l.l /\ 
-                get_item (get_op (get_eve id l.l)) = i /\ get_item (get_op (get_eve id1 l.l)) = i /\ (visib id id1 l))))
+                                 get_op (get_eve id l.l) = (C.Rem,i)))) /\ unique r.l /\
+                   (forall id. member id r.l <==> (member id l.l /\ (get_item (get_op (get_eve id l.l)) = i))) /\
+                     (forall e. mem e r.l <==> (mem ((get_id e), (get_op e, i)) l.l)) /\
+                     (forall e. mem e l.l /\ get_item (get_op e) = i ==> mem (project_op e) r.l) /\
+                               (C.sum r.l = List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l) -
+                                            List.Tot.length (filter (fun a -> get_op a = (C.Rem,i)) l.l))))
                (decreases length l.l)
 
 let project i l =
   (A (fun o o1 -> mem o (project1 i l) && mem o1 (project1 i l) && get_id o <> get_id o1 &&
     get_item (get_op (get_eve (get_id o) l.l)) = i && get_item (get_op (get_eve (get_id o1) l.l)) = i &&
                (visib (get_id o) (get_id o1) l)) (project1 i l))
-               
 
 val lemma1 : l:ae op
              -> Lemma (ensures (forall i. not (mem_op (C.Add,i) l.l) /\ not (mem_op (C.Rem,i) l.l) ==> 
@@ -148,8 +134,8 @@ val lemma1 : l:ae op
                                (forall i. mem_op (C.Add,i) l.l \/ mem_op (C.Rem,i) l.l ==> C.sum (project i l).l = 
                                        List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l) -
                                        List.Tot.length (filter (fun a -> get_op a = (C.Rem,i)) l.l)) /\
-                               (forall e. C.sum (project e l).l = List.Tot.length (filter (fun a -> get_op a = (C.Add,e)) l.l) -
-                                                           List.Tot.length (filter (fun a -> get_op a = (C.Rem,e)) l.l)))
+                            (forall e. C.sum (project e l).l = List.Tot.length (filter (fun a -> get_op a = (C.Add,e)) l.l) -
+                                                          List.Tot.length (filter (fun a -> get_op a = (C.Rem,e)) l.l)))
                                (decreases l.l)
                                [SMTPat (unique l.l)]
 
@@ -229,8 +215,7 @@ let rec lemma2  s1 =
     match s1 with
     |[] -> ()
     |x::xs -> lemma2 xs 
-
-#set-options "--query_stats"
+    
 val sim : tr:ae op
             -> s1:s
             -> Tot (b:bool {(b = true) <==> 
