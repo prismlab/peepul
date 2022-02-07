@@ -164,24 +164,187 @@ let append tr op =
     |(A _ ops) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                               (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::ops))
 
+val sorted: (o -> o -> Tot bool) -> list o -> Tot bool
+let rec sorted f = function
+  | x::y::xs -> f x y && sorted f (y::xs)
+  | _ -> true
+
+type total_order (a:eqtype) =
+  f:(a -> a -> Tot bool) { (forall a1 a2. f a1 a2 \/ f a2 a1) // total
+  }
+
+val count: o -> list o -> Tot nat
+let rec count x = function
+  | hd::tl -> (if hd = x then 1 else 0) + count x tl
+  | [] -> 0
+
+
+val mem_count: x:o -> l:list o ->
+  Lemma (requires True)
+	(ensures (mem x l = (count x l > 0)))
+	(decreases l)
+  [SMTPat (mem x l)]
+let rec mem_count x = function
+  | [] -> ()
+  | _::tl -> mem_count x tl
+
+val partition: (o -> Tot bool) -> list o -> Tot (list o * list o)
+let rec partition f = function
+  | [] -> [], []
+  | hd::tl ->
+    let l1, l2 = partition f tl in
+    if f hd then (hd::l1, l2) else (l1, hd::l2)
+
+
+val partition_lemma: f:(o -> Tot bool) -> l:list o ->
+  Lemma (requires True)
+        (ensures (let (hi, lo) = partition f l in
+                  length l = length hi + length lo
+                  /\ (forall x.{:pattern f x} (mem x hi ==>   f x)
+                                      /\ (mem x lo ==> ~(f x)))
+                  /\ (forall x.{:pattern (count x hi) \/ (count x lo)}
+                                   (count x l = count x hi + count x lo))))
+  [SMTPat (partition f l)]
+let rec partition_lemma f l = match l with
+  | [] -> ()
+  | hd::tl ->  partition_lemma f tl
+
+val sorted_app_lemma: f:total_order o
+  -> l1:list o{sorted f l1} -> l2:list o{sorted f l2} -> pivot:o
+  -> Lemma (requires (forall y. (mem y l1 ==> ~(f pivot y))
+		        /\ (mem y l2 ==>   f pivot y)))
+          (ensures (sorted f (l1 @ pivot :: l2)))
+  [SMTPat (sorted f (l1 @ pivot::l2))]
+let rec sorted_app_lemma f l1 l2 pivot =
+  match l1 with
+  | hd::tl -> sorted_app_lemma f tl l2 pivot
+  | _ -> ()
+
+type is_permutation (l:list o) (m:list o) =
+  forall x. count x l = count x m
+
+val append_count: l:list o -> m:list o -> x:o ->
+  Lemma (requires True)
+        (ensures (count x (l @ m) = (count x l + count x m)))
+  [SMTPat (count x (l @ m))]
+let rec append_count l m x =
+  match l with
+  | [] -> ()
+  | hd::tl -> append_count tl m x
+
+let permutation_app_lemma (hd:o) (tl:list o)
+                          (l1:list o) (l2:list o)
+   : Lemma (requires (is_permutation tl (l1 @ l2)))
+           (ensures (is_permutation (hd::tl) (l1 @ (hd::l2))))
+   = //NS: 05/15/2017
+     //This proof required an interesting change following issue #1028
+     //From append_count, we can automatically prove what the assert below says
+     //However, what we get from append_count is
+     //    count' ZFuel x (l1 @ (hd :: l2)) = count' ZFuel x l1 + count' ZFuel x (hd :: l2))
+     //where count' is the fuel-instrumented variant of count
+     //But, this variant prevents further progress, since we can't unfold the last term in the sum
+     //By assertion the equality, we explicitly introduce `count x (hd::l2)`
+     //which can then be unfolded as needed.
+     //This is rather counterintuitive.
+    assert (forall x. count x (l1 @ (hd :: l2)) = count x l1 + count x (hd :: l2))
+
+
+val quicksort: f:total_order o -> l:list o ->
+  Tot (m:list o{sorted f m /\ is_permutation l m})
+  (decreases (length l))
+let rec quicksort f l =
+  match l with
+  | [] -> []
+  | pivot::tl ->
+    let hi, lo = partition (f pivot) tl in
+    let m = quicksort f lo @ pivot :: quicksort f hi in
+    permutation_app_lemma pivot tl (quicksort f lo) (quicksort f hi);
+    m
+
+
+// val sorted: list o -> Tot bool
+// let rec sorted l = match l with
+//     | [] | [_] -> true
+//     | x::y::xs -> (fst x <= fst y) && (sorted (y::xs))
+
+// val test_sorted: x:o -> l:list o ->
+//       Lemma ((sorted (x::l) /\ Cons? l) ==> fst x <= fst (Cons?.hd l))
+// let test_sorted x l = ()
+
+// val test_sorted2: unit -> Tot (m:list o{sorted m})
+// let test_sorted2 () = Nil
+
+// (* Fact about sorted *)
+// val sorted_smaller: x:o
+//                 ->  y:o
+//                 ->  l:list o
+//                 ->  Lemma (requires (sorted (x::l) /\ mem y l))
+//                           (ensures (fst x <= fst y))
+//                           [SMTPat (sorted (x::l)); SMTPat (mem y l)]
+// let rec sorted_smaller x y l = match l with
+//     | [] -> ()
+//     | z::zs -> if z=y then () else sorted_smaller x y zs
+
+
+// type permutation (l1:list o) (l2:list o) =
+//     length l1 = length l2 /\ (forall n. mem n l1 = mem n l2)
+
+// type permutation_2 (l:list o) (l1:list o) (l2:list o) =
+//     (forall n. mem n l = (mem n l1 || mem n l2)) /\
+//     length l = length l1 + length l2
+
+// val insert : i:o -> l:list o{sorted l} ->
+//       Tot (m:list o{sorted m /\ permutation (i::l) m})
+// let rec insert i l = match l with
+//   | [] -> [i]
+//   | hd::tl ->
+//      if fst i <= fst hd then i::l
+//      else let i_tl = insert i tl in
+//           let (z::_) = i_tl in
+//           if mem z tl then sorted_smaller hd z tl;
+//           hd::i_tl
+
+// (* Insertion sort *)
+// val sort : l:list o -> Tot (m:list o{sorted m /\ permutation l m})
+// let rec sort l = match l with
+//     | [] -> []
+//     | x::xs -> insert x (sort xs)
+
 val oldest_incr : tr:ae
-                -> Tot (op:option o{(Some? op ==> (forall e. Inc? (snd e) /\ mem e tr.l /\ (forall d. get_id e <> get_id d /\ Dec? (snd d) /\ mem d tr.l ==> not(matched e d tr)) ==>
+                -> Tot (op:option o{(Some? op ==> (forall e. Inc? (snd e) /\ mem e tr.l /\
+                                 (forall d. get_id e <> get_id d /\ Dec? (snd d) /\ mem d tr.l ==> not(matched e d tr)) /\ (fst (unopt op) <> fst e) ==>
                                        tr.vis (unopt op) e \/ (fst (unopt op) < fst e)) /\ mem (unopt op) tr.l /\ Inc? (snd (unopt op))) /\
-                                 (None? op ==> (forall i. Inc? (snd i) /\ mem i tr.l ==> (exists d. Dec? (snd d) /\ mem d tr.l /\ get_id d <> get_id i /\ matched i d tr)))})
+                        (None? op ==> (forall i. Inc? (snd i) /\ mem i tr.l ==> (exists d. Dec? (snd d) /\ mem d tr.l /\ get_id d <> get_id i /\ matched i d tr)))})
 
 let oldest_incr tr =
-  let unmatched_incr = filter_op (fun i -> Inc? (snd i) && not (exists_mem tr.l (fun d -> get_id i <> get_id d && Dec? (get_op d) && matched i d tr))) tr.l in
-  let old_incr = filter_op (fun i -> not (exists_mem unmatched_incr (fun i1 -> tr.vis i1 i))) unmatched_incr in
-  admit();
-  let oldest = List.Tot.Base.sortWith (fun x y -> get_id y - get_id x) old_incr in
-  match oldest with
-  | [] -> None
-  | x::xs -> Some x
+  let unmatched_incr = filter_op (fun i -> Inc? (snd i) && not (exists_mem tr.l
+                                        (fun d -> get_id i <> get_id d && Dec? (snd d) && matched i d tr))) tr.l in
+  let old_incr = filter_op (fun i -> Inc? (snd i) && forall_mem unmatched_incr (fun i1 -> Inc? (snd i1) && (tr.vis i i1 ||
+                                (not (tr.vis i i1) && not (tr.vis i1 i))))) unmatched_incr in
+  match old_incr with
+  | [] -> admit(); None
+  | xs -> assert(exists i. Inc? (snd i) /\ mem i tr.l /\ (forall d. Dec? (snd d) /\ mem d tr.l /\ get_id i <> get_id d ==> not(matched i d tr)));
+         assert(exists i. Inc? (snd i) /\ mem i tr.l /\ forall_mem unmatched_incr (fun i1 -> Inc? (snd i1) && (tr.vis i i1 ||
+                               (not (tr.vis i i1) && not (tr.vis i1 i)))));
+         let op_l = (quicksort (fun x y -> fst x <= fst y) old_incr) in
+         let op = (hd op_l) in
+         // assert(length xs >= 1);
+         // assert(unique (quicksort (fun x y -> fst x <= fst y) old_incr));
+         // assert(unique old_incr);
+         // assert(unique op_l);
+         // assert(forall f x. unique x ==> unique (quicksort f x));
+         // assert(forall e. Inc? (snd e) /\ mem e tr.l /\
+         //                         (forall d. get_id e <> get_id d /\ Dec? (snd d) /\ mem d tr.l ==> not(matched e d tr)) ==>
+         //                               mem e unmatched_incr);
+         // assert(forall e. mem e old_incr ==> (not (tr.vis (unopt op) e) /\ not (tr.vis e (unopt op))));
+         // assert(forall e. mem e old_incr /\ fst op <> fst e ==> fst op < fst e);
+         admit(); Some (hd (quicksort (fun x y -> fst x < fst y) old_incr))
+
 
 val prop_oper0 : tr:ae
-              -> st:s
-              -> op:o
-              -> Lemma (requires (sim tr st) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
+               -> st:s
+               -> op:o
+               -> Lemma (requires (sim tr st) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
                                 (not (member (get_id op) tr.l)))
                       (ensures ((Inc? (snd op)) ==> sim0 (append tr op) (app_op st op)))
 
@@ -312,7 +475,7 @@ val prop_oper3 : tr:ae
 
 let prop_oper3 tr st op = admit(); ()
 
-#set-options "--query_stats --initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 100000000"
+#set-options "--query_stats --initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
 
 val prop_oper4 : tr:ae
                -> st:s
@@ -325,14 +488,15 @@ val prop_oper4 : tr:ae
 let prop_oper4 tr st op = assert(fst st = fst (app_op st op));
                           assert(snd st + 1 = snd (app_op st op));
                           assert(exists i. Inc? (snd i) /\ mem i tr.l /\ i = (unopt (oldest_incr tr)));
-                          // assert(exists i. mem i (append tr op).l /\ mem op (append tr op).l /\ Inc? (snd i) /\ Dec? (snd op) /\ get_id op <> get_id i /\
-                          //             matched i op (append tr op));
+                          assert(exists i. mem i (append tr op).l /\ mem op (append tr op).l /\ Inc? (snd i) /\ Dec? (snd op) /\ get_id op <> get_id i /\
+                                      matched i op (append tr op));
                           // assert(isum (filter_op (fun x -> Inc? (snd x) &&
                           //              not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
                           //              matched x y (append tr op)))) (append tr op).l) =
                           //         isum (filter_op (fun x -> Inc? (snd x) &&
                           //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) - 1);
                           admit()
+
 
 val ax_dsum : l:(list o){forall i. mem i l ==> Dec? (snd i)}
             -> Lemma (ensures (length l = dsum l))
@@ -343,7 +507,9 @@ let rec ax_dsum l = match l with
 val prop_oper : tr:ae
                -> st:s
                -> op:o
-               -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\ (forall e. mem e tr.l ==> get_id e < get_id op))
+               -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
+                                 ((Dec? (snd op)) /\ (fst st - snd st > 0) ==> (return op = Some (get_id (unopt (oldest_incr tr))))) /\
+                                 (((Dec? (snd op)) /\ fst st - snd st <= 0) ==> (return op = None)))
                        (ensures (sim (append tr op) (app_op st op)))
 
 let prop_oper tr st op =
@@ -365,6 +531,7 @@ let common_decr l a b = min (num_decr l a) (num_decr l b)
 
 val merge_s: l:s -> a:s{fst a >= fst l /\ snd a >= snd l} -> b:s{fst b >= fst l /\ snd b >= snd l} ->
              Tot (res:s{res = (fst a + fst b - fst l, snd a + snd b - snd l - common_decr l a b)})
+
 let merge_s l a b =
   let cd = common_decr l a b in
   let fst_r = fst a + fst b - fst l in
@@ -392,13 +559,13 @@ val union : l:ae
                                      (mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1))) /\
                              (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ ~(u.vis e e1 \/ u.vis e1 e)) <==>
                                      ((mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ ~(l.vis e e1 \/ l.vis e1 e)) \/
-                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e))))//  /\
-                             // (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
-                             //            ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
-                             //             (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
-                             //             (Inc? (snd e) && Dec? (snd d) && mem e l.l && mem d a.l && return d = Some (get_id e, get_ele e)) && (u.vis e d))
-                             //            )
-    ))
+                                     (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ ~(a.vis e e1 \/ a.vis e1 e)))) /\
+                             (forall e d. (mem e u.l /\ mem d u.l /\ get_id e <> get_id d /\ matched e d u) <==>
+                                        ((mem e l.l /\ mem d l.l /\ get_id e <> get_id d /\ matched e d l) \/
+                                         (mem e a.l /\ mem d a.l /\ get_id e <> get_id d /\ matched e d a) \/
+                                         (Inc? (snd e) /\ Dec? (snd d) /\ mem e l.l /\ mem d a.l /\ (Some? (return d)) /\
+                                               (return d = Some (fst e)) /\ (u.vis e d)))
+    )))
 
 let union l a =
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
@@ -452,12 +619,12 @@ val absmerge : l:ae
                                          (mem e l.l /\ mem d b.l /\ get_id e <> get_id d /\ matched e d (union l b))))
                                          ))
 
-// let absmerge l a b =
-//     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
-//                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
-//                  (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
-//                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
-//                  (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
+let absmerge l a b =
+    (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
+                 (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
+                 (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
+                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
+                 (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
 
 // val merge: ltr:ae
 //            -> l:s
