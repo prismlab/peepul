@@ -671,8 +671,31 @@ let prop_merge0 ltr l atr a btr b =
     assert(isum (filter_op (fun x -> Inc? (snd x)) ltr.l) = fst l);
     assert(forall i. Inc? (snd i) /\ mem i tr.l ==> mem i ltr.l \/ mem i (union ltr atr).l \/ mem i (union ltr btr).l);
     assert(forall i. Inc? (snd i) /\ mem i (union ltr atr).l ==> mem i ltr.l \/ mem i atr.l);
+    // assert((filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = (List.Tot.append (filter_op (fun x -> Inc? (snd x)) ltr.l) (filter_op (fun x -> Inc? (snd x)) atr.l)));
     // assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = isum (filter_op (fun x -> Inc? (snd x)) ltr.l) +
     //                                    isum (filter_op (fun x -> Inc? (snd x)) atr.l));
     admit(); ()
+
+val prop_merge1 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (prop_merge_requires ltr l atr a btr b))
+                       (ensures (sim1 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+
+let prop_merge1 ltr l atr a btr b =
+    let tr = (absmerge ltr atr btr) in
+    let res = (merge ltr l atr a btr b) in
+    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = fst a);
+    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr btr).l) = fst b);
+    assert(isum (filter_op (fun x -> Inc? (snd x)) ltr.l) = fst l);
+    assert(forall i. Inc? (snd i) /\ mem i tr.l ==> mem i ltr.l \/ mem i (union ltr atr).l \/ mem i (union ltr btr).l);
+    assert(forall i. Inc? (snd i) /\ mem i (union ltr atr).l ==> mem i ltr.l \/ mem i atr.l);
+    // assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = isum (filter_op (fun x -> Inc? (snd x)) ltr.l) +
+    //                                    isum (filter_op (fun x -> Inc? (snd x)) atr.l));
+    admit(); ()
+
 
 
