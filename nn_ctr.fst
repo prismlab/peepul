@@ -626,21 +626,53 @@ let absmerge l a b =
                  (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) ||
                  (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge_list_ae l a b))
 
-// val merge: ltr:ae
-//            -> l:s
-//            -> atr:ae
-//            -> a:s
-//            -> btr:ae
-//            -> b:s
-//            -> Pure s (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-//                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-//                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-//                               (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
-//                               (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
-//                              (fst a >= fst l /\ snd a >= snd l /\ fst b >= fst l /\ snd b >= snd l) /\
-//                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-//                     (ensures (fun res -> true))
+val merge: ltr:ae
+           -> l:s
+           -> atr:ae
+           -> a:s
+           -> btr:ae
+           -> b:s
+           -> Pure s (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                             (fst a >= fst l /\ snd a >= snd l /\ fst b >= fst l /\ snd b >= snd l) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                    (ensures (fun res -> res = (fst a + fst b - fst l, snd a + snd b - snd l - common_decr l a b)))
 
-// let merge ltr l atr a btr b = merge_s l a b
+let merge ltr l atr a btr b = merge_s l a b
+
+
+type prop_merge_requires (ltr: ae) (l:s) (atr:ae) (a:s) (btr:ae) (b:s)
+                         = ((forall e. mem e ltr.l ==> ~(member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> ~(member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> ~(member (get_id e) btr.l)) /\
+                              (fst a >= fst l /\ snd a >= snd l /\ fst b >= fst l /\ snd b >= snd l) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
+                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+
+
+val prop_merge0 : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (prop_merge_requires ltr l atr a btr b))
+                       (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+
+let prop_merge0 ltr l atr a btr b =
+    let tr = (absmerge ltr atr btr) in
+    let res = (merge ltr l atr a btr b) in
+    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = fst a);
+    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr btr).l) = fst b);
+    assert(isum (filter_op (fun x -> Inc? (snd x)) ltr.l) = fst l);
+    assert(forall i. Inc? (snd i) /\ mem i tr.l ==> mem i ltr.l \/ mem i (union ltr atr).l \/ mem i (union ltr btr).l);
+    assert(forall i. Inc? (snd i) /\ mem i (union ltr atr).l ==> mem i ltr.l \/ mem i atr.l);
+    // assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = isum (filter_op (fun x -> Inc? (snd x)) ltr.l) +
+    //                                    isum (filter_op (fun x -> Inc? (snd x)) atr.l));
+    admit(); ()
 
 
