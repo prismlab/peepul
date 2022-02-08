@@ -359,6 +359,18 @@ val prop_oper1 : tr:ae
 
 let prop_oper1 tr st op = ()
 
+val prop_oper3 : tr:ae
+               -> st:s
+               -> op:o
+               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\ (fst st - snd st <= 0) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
+                                 (return op = None) /\
+                                 (not (member (get_id op) tr.l)))
+                       (ensures (sim1 (append tr op) (app_op st op)))
+
+#set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 10000000"
+
+let prop_oper3 tr st op = admit(); ()
+
 val filter_op0 : f:(o -> bool)
            -> l:list o{unique l}
            -> Lemma (requires (forall x. mem x l ==> ~(f x))) (ensures (filter_op f l = [])) [SMTPat (filter_op f l)]
@@ -376,6 +388,26 @@ let rec ax_dsum1 l l1 = match l, l1 with
   | x::xs, [] -> admit()
   | [], y::ys -> admit()
   | [], [] -> ()
+
+val prop_oper02 : l:list o{(forall i. mem i l ==> Inc? (snd i)) /\ (unique l)} -> l1:list o{(forall i. mem i l1 ==> Inc? (snd i)) /\ (forall i. mem i l1 ==> mem i l) /\ (unique l1)}
+                ->  op:o{Inc? (snd op) /\ mem op l /\ (forall e. mem e l1 ==> fst e < fst op)}
+                -> Lemma (requires (forall i. mem i l <==> mem i l1 \/ i = op))
+                        (ensures (isum l = isum l1 + 1))
+
+let prop_oper02 l l1 op =
+  let f = (fun (x:o) (y:o) -> fst x <= fst y) in
+  let l = quicksort f l in
+  let l1 = quicksort f l1 in
+  let is = isum l in
+  let is1 = isum l1 in
+  assert(mem op l);
+  assert(forall x. mem x l1 ==> mem x l);
+  // assert(forall x y. mem x l1 /\ mem y l1 /\ fst x <> fst y /\ ord x y l1 ==> fst x < fst y);
+  // assert(forall x y. mem x l /\ mem y l /\ fst x <> fst y /\ ord x y l ==> fst x < fst y);
+  // assert(l = l1 @ [op]);
+  // assert(length l = length l1 + 1);
+  // assert(is = is1 + 1);
+  admit(); ()
 
 val prop_oper2 : tr:ae
                -> st:s
@@ -395,7 +427,7 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
                           // assert(fst st + 1 = fst (app_op st op));
                           // assert(snd st = snd (app_op st op));
 
-                          admit(); assert(isum (filter_op (fun x -> Inc? (snd x) &&
+                          assert(isum (filter_op (fun x -> Inc? (snd x) &&
                                        not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) = (fst st - snd st));
 
                           assert(forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
@@ -415,6 +447,13 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
                                     matched x y (append tr op)))) (append tr op).l))
                                 <==> (mem i (filter_op (fun x -> Inc? (snd x) &&
                                        not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) \/ i = op));
+
+                          assert((append tr op).l = op::(tr.l));
+
+                          // assert((filter_op (fun x -> Inc? (snd x) &&
+                          //       not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
+                          //           matched x y (append tr op)))) (append tr op).l) = op::(filter_op (fun x -> Inc? (snd x) &&
+                          //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l));
 
                           // assert(isum (filter_op (fun x -> Inc? (snd x) &&
                           //       not (exists_mem (append tr op).l (fun y -> get_id x <> get_id y && Dec? (snd y) &&
@@ -463,18 +502,6 @@ let prop_oper2 tr st op = // let l = (filter_op (fun x -> Dec? (snd x) && Some? 
                           // assert(sim1 (append tr op) (app_op st op));
                           ()
 
-val prop_oper3 : tr:ae
-               -> st:s
-               -> op:o
-               -> Lemma (requires (sim tr st) /\ (Dec? (snd op)) /\ (fst st - snd st <= 0) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
-                                 (return op = None) /\
-                                 (not (member (get_id op) tr.l)))
-                       (ensures (sim1 (append tr op) (app_op st op)))
-
-#set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 10000000"
-
-let prop_oper3 tr st op = admit(); ()
-
 #set-options "--query_stats --initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
 
 val prop_oper4 : tr:ae
@@ -495,7 +522,7 @@ let prop_oper4 tr st op = assert(fst st = fst (app_op st op));
                           //              matched x y (append tr op)))) (append tr op).l) =
                           //         isum (filter_op (fun x -> Inc? (snd x) &&
                           //              not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l) - 1);
-                          admit()
+                          admit(); ()
 
 
 val ax_dsum : l:(list o){forall i. mem i l ==> Dec? (snd i)}
@@ -653,6 +680,64 @@ type prop_merge_requires (ltr: ae) (l:s) (atr:ae) (a:s) (btr:ae) (b:s)
                               (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
 
+val incrsum : l:list o{unique l} -> Tot (res:nat{isum (filter_op (fun x -> Inc? (snd x)) l)  = res})
+let incrsum l = isum (filter_op (fun x -> Inc? (snd x)) l)
+
+val lemma0 : l:ae
+           -> a:ae
+           -> b:ae
+           -> Lemma
+             (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)) /\
+                       (forall e. mem e a.l ==> not (member (get_id e) b.l)) /\
+                       (forall e. mem e l.l ==> not (member (get_id e) b.l)) /\
+                       (forall e e1. (mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1)) /\
+                       (forall e e1. (mem e l.l /\ mem e1 b.l ==> get_id e < get_id e1)))
+             (ensures (forall e. mem e (absmerge_list_ae l a b) <==> mem e l.l \/ mem e a.l \/ mem e b.l) /\
+                      ((isum (filter_op (fun x -> Inc? (snd x)) (absmerge_list_ae l a b))) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) a.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) b.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l))) /\
+                        ((isum (filter_op (fun x -> Inc? (snd x)) (absmerge l a b).l)) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) a.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) b.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l)))) (decreases %[l.l;a.l;b.l])
+
+let rec lemma0 l a b =
+    match l,a,b with
+    |(A _ []), (A _ []), (A _ []) -> ()
+    |(A _ (x::xs)), _, _ -> lemma0 (A l.vis xs) a b
+    |(A _ []), (A _ (x::xs)), _ -> lemma0 l (A a.vis xs) b
+    |(A _ []), (A _ []), (A _ (x::xs)) -> lemma0 l a (A b.vis xs)
+
+val lemma1 : l:ae
+           -> a:ae
+           -> Lemma
+             (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))) /\ (forall e e1. mem e l.l /\ mem e1 a.l ==> get_id e < get_id e1))
+             (ensures (forall e. mem e (union_list_ae l a) <==> mem e l.l \/ mem e a.l) /\
+                      ((isum (filter_op (fun x -> Inc? (snd x)) (union_list_ae l a))) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) a.l))) /\
+                       ((isum (filter_op (fun x -> Inc? (snd x)) (union l a).l)) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l)) +
+                             (isum (filter_op (fun x -> Inc? (snd x)) a.l))) /\
+                      ((isum (filter_op (fun x -> Inc? (snd x)) a.l)) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) (union_list_ae l a))) -
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l))) /\
+                      ((isum (filter_op (fun x -> Inc? (snd x)) a.l)) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) (union l a).l)) -
+                             (isum (filter_op (fun x -> Inc? (snd x)) l.l))) /\
+                      ((isum (filter_op (fun x -> Inc? (snd x)) l.l)) =
+                             (isum (filter_op (fun x -> Inc? (snd x)) (union_list_ae l a))) -
+                             (isum (filter_op (fun x -> Inc? (snd x)) a.l))) /\
+                       ((isum (filter_op (fun x -> Inc? (snd x)) l.l)) =
+                              (isum (filter_op (fun x -> Inc? (snd x)) (union l a).l)) -
+                              (isum (filter_op (fun x -> Inc? (snd x)) a.l)))) (decreases %[l.l;a.l])
+
+let rec lemma1 l a =
+  match l,a with
+  |(A _ []), (A _ []) -> ()
+  |(A _ (x::xs)), _ -> lemma1 (A l.vis xs) a
+  |(A _ []), (A _ (x::xs)) -> lemma1 l (A a.vis xs)
 
 val prop_merge0 : ltr: ae
                 -> l:s
@@ -664,17 +749,9 @@ val prop_merge0 : ltr: ae
                        (ensures (sim0 (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
 let prop_merge0 ltr l atr a btr b =
-    let tr = (absmerge ltr atr btr) in
-    let res = (merge ltr l atr a btr b) in
-    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = fst a);
-    assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr btr).l) = fst b);
-    assert(isum (filter_op (fun x -> Inc? (snd x)) ltr.l) = fst l);
-    assert(forall i. Inc? (snd i) /\ mem i tr.l ==> mem i ltr.l \/ mem i (union ltr atr).l \/ mem i (union ltr btr).l);
-    assert(forall i. Inc? (snd i) /\ mem i (union ltr atr).l ==> mem i ltr.l \/ mem i atr.l);
-    // assert((filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = (List.Tot.append (filter_op (fun x -> Inc? (snd x)) ltr.l) (filter_op (fun x -> Inc? (snd x)) atr.l)));
-    // assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = isum (filter_op (fun x -> Inc? (snd x)) ltr.l) +
-    //                                    isum (filter_op (fun x -> Inc? (snd x)) atr.l));
-    admit(); ()
+    lemma1 ltr atr;
+    lemma1 ltr btr;
+    lemma0 ltr atr btr; ()
 
 val prop_merge1 : ltr: ae
                 -> l:s
@@ -697,5 +774,16 @@ let prop_merge1 ltr l atr a btr b =
     //                                    isum (filter_op (fun x -> Inc? (snd x)) atr.l));
     admit(); ()
 
+val prop_merge : ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (prop_merge_requires ltr l atr a btr b))
+                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+
+let prop_merge ltr l atr a btr b =
+  prop_merge0 ltr l atr a btr b; prop_merge1 ltr l atr a btr b; ()
 
 
