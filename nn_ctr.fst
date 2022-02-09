@@ -164,151 +164,51 @@ let append tr op =
     |(A _ ops) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                               (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::ops))
 
-val sorted: (o -> o -> Tot bool) -> list o -> Tot bool
-let rec sorted f = function
-  | x::y::xs -> f x y && sorted f (y::xs)
-  | _ -> true
+val sorted: list o -> Tot bool
+let rec sorted l = match l with
+    | [] | [_] -> true
+    | x::y::xs -> (fst x <= fst y) && (sorted (y::xs))
 
-type total_order (a:eqtype) =
-  f:(a -> a -> Tot bool) { (forall a1 a2. f a1 a2 \/ f a2 a1) // total
-  }
+val test_sorted: x:o -> l:list o ->
+      Lemma ((sorted (x::l) /\ Cons? l) ==> fst x <= fst (Cons?.hd l))
+let test_sorted x l = ()
 
-val count: o -> list o -> Tot nat
-let rec count x = function
-  | hd::tl -> (if hd = x then 1 else 0) + count x tl
-  | [] -> 0
+val test_sorted2: unit -> Tot (m:list o{sorted m})
+let test_sorted2 () = Nil
 
+val sorted_smaller: x:o
+                ->  y:o
+                ->  l:list o
+                ->  Lemma (requires (sorted (x::l) /\ mem y l))
+                          (ensures (fst x <= fst y))
+                          [SMTPat (sorted (x::l)); SMTPat (mem y l)]
+let rec sorted_smaller x y l = match l with
+    | [] -> ()
+    | z::zs -> if z=y then () else sorted_smaller x y zs
 
-val mem_count: x:o -> l:list o ->
-  Lemma (requires True)
-	(ensures (mem x l = (count x l > 0)))
-	(decreases l)
-  [SMTPat (mem x l)]
-let rec mem_count x = function
-  | [] -> ()
-  | _::tl -> mem_count x tl
+type permutation (l1:list o) (l2:list o) =
+    length l1 = length l2 /\ (forall n. mem n l1 = mem n l2)
 
-val partition: (o -> Tot bool) -> list o -> Tot (list o * list o)
-let rec partition f = function
-  | [] -> [], []
+type permutation_2 (l:list o) (l1:list o) (l2:list o) =
+    (forall n. mem n l = (mem n l1 || mem n l2)) /\
+    length l = length l1 + length l2
+
+val insert : i:o -> l:list o{sorted l} ->
+      Tot (m:list o{sorted m /\ permutation (i::l) m})
+let rec insert i l = match l with
+  | [] -> [i]
   | hd::tl ->
-    let l1, l2 = partition f tl in
-    if f hd then (hd::l1, l2) else (l1, hd::l2)
+     if fst i <= fst hd then i::l
+     else let i_tl = insert i tl in
+          let (z::_) = i_tl in
+          if mem z tl then sorted_smaller hd z tl;
+          hd::i_tl
 
-
-val partition_lemma: f:(o -> Tot bool) -> l:list o ->
-  Lemma (requires True)
-        (ensures (let (hi, lo) = partition f l in
-                  length l = length hi + length lo
-                  /\ (forall x.{:pattern f x} (mem x hi ==>   f x)
-                                      /\ (mem x lo ==> ~(f x)))
-                  /\ (forall x.{:pattern (count x hi) \/ (count x lo)}
-                                   (count x l = count x hi + count x lo))))
-  [SMTPat (partition f l)]
-let rec partition_lemma f l = match l with
-  | [] -> ()
-  | hd::tl ->  partition_lemma f tl
-
-val sorted_app_lemma: f:total_order o
-  -> l1:list o{sorted f l1} -> l2:list o{sorted f l2} -> pivot:o
-  -> Lemma (requires (forall y. (mem y l1 ==> ~(f pivot y))
-		        /\ (mem y l2 ==>   f pivot y)))
-          (ensures (sorted f (l1 @ pivot :: l2)))
-  [SMTPat (sorted f (l1 @ pivot::l2))]
-let rec sorted_app_lemma f l1 l2 pivot =
-  match l1 with
-  | hd::tl -> sorted_app_lemma f tl l2 pivot
-  | _ -> ()
-
-type is_permutation (l:list o) (m:list o) =
-  forall x. count x l = count x m
-
-val append_count: l:list o -> m:list o -> x:o ->
-  Lemma (requires True)
-        (ensures (count x (l @ m) = (count x l + count x m)))
-  [SMTPat (count x (l @ m))]
-let rec append_count l m x =
-  match l with
-  | [] -> ()
-  | hd::tl -> append_count tl m x
-
-let permutation_app_lemma (hd:o) (tl:list o)
-                          (l1:list o) (l2:list o)
-   : Lemma (requires (is_permutation tl (l1 @ l2)))
-           (ensures (is_permutation (hd::tl) (l1 @ (hd::l2))))
-   = //NS: 05/15/2017
-     //This proof required an interesting change following issue #1028
-     //From append_count, we can automatically prove what the assert below says
-     //However, what we get from append_count is
-     //    count' ZFuel x (l1 @ (hd :: l2)) = count' ZFuel x l1 + count' ZFuel x (hd :: l2))
-     //where count' is the fuel-instrumented variant of count
-     //But, this variant prevents further progress, since we can't unfold the last term in the sum
-     //By assertion the equality, we explicitly introduce `count x (hd::l2)`
-     //which can then be unfolded as needed.
-     //This is rather counterintuitive.
-    assert (forall x. count x (l1 @ (hd :: l2)) = count x l1 + count x (hd :: l2))
-
-
-val quicksort: f:total_order o -> l:list o ->
-  Tot (m:list o{sorted f m /\ is_permutation l m})
-  (decreases (length l))
-let rec quicksort f l =
-  match l with
-  | [] -> []
-  | pivot::tl ->
-    let hi, lo = partition (f pivot) tl in
-    let m = quicksort f lo @ pivot :: quicksort f hi in
-    permutation_app_lemma pivot tl (quicksort f lo) (quicksort f hi);
-    m
-
-
-// val sorted: list o -> Tot bool
-// let rec sorted l = match l with
-//     | [] | [_] -> true
-//     | x::y::xs -> (fst x <= fst y) && (sorted (y::xs))
-
-// val test_sorted: x:o -> l:list o ->
-//       Lemma ((sorted (x::l) /\ Cons? l) ==> fst x <= fst (Cons?.hd l))
-// let test_sorted x l = ()
-
-// val test_sorted2: unit -> Tot (m:list o{sorted m})
-// let test_sorted2 () = Nil
-
-// (* Fact about sorted *)
-// val sorted_smaller: x:o
-//                 ->  y:o
-//                 ->  l:list o
-//                 ->  Lemma (requires (sorted (x::l) /\ mem y l))
-//                           (ensures (fst x <= fst y))
-//                           [SMTPat (sorted (x::l)); SMTPat (mem y l)]
-// let rec sorted_smaller x y l = match l with
-//     | [] -> ()
-//     | z::zs -> if z=y then () else sorted_smaller x y zs
-
-
-// type permutation (l1:list o) (l2:list o) =
-//     length l1 = length l2 /\ (forall n. mem n l1 = mem n l2)
-
-// type permutation_2 (l:list o) (l1:list o) (l2:list o) =
-//     (forall n. mem n l = (mem n l1 || mem n l2)) /\
-//     length l = length l1 + length l2
-
-// val insert : i:o -> l:list o{sorted l} ->
-//       Tot (m:list o{sorted m /\ permutation (i::l) m})
-// let rec insert i l = match l with
-//   | [] -> [i]
-//   | hd::tl ->
-//      if fst i <= fst hd then i::l
-//      else let i_tl = insert i tl in
-//           let (z::_) = i_tl in
-//           if mem z tl then sorted_smaller hd z tl;
-//           hd::i_tl
-
-// (* Insertion sort *)
-// val sort : l:list o -> Tot (m:list o{sorted m /\ permutation l m})
-// let rec sort l = match l with
-//     | [] -> []
-//     | x::xs -> insert x (sort xs)
+(* Insertion sort *)
+val sort : l:list o -> Tot (m:list o{sorted m /\ permutation l m})
+let rec sort l = match l with
+    | [] -> []
+    | x::xs -> insert x (sort xs)
 
 val oldest_incr : tr:ae
                 -> Tot (op:option o{(Some? op ==> (forall e. Inc? (snd e) /\ mem e tr.l /\
@@ -347,7 +247,7 @@ let oldest_incr tr =
          //                               mem e unmatched_incr);
          // assert(forall e. mem e old_incr ==> (not (tr.vis (unopt op) e) /\ not (tr.vis e (unopt op))));
          // assert(forall e. mem e old_incr /\ fst op <> fst e ==> fst op < fst e);
-         admit(); Some (hd (quicksort (fun x y -> fst x < fst y) old_incr))
+         admit(); Some (hd (sort old_incr))
 
 
 val prop_oper0 : tr:ae
@@ -389,23 +289,56 @@ let rec filter_op0 f l =
   | [] -> ()
   | hd::tl -> filter_op0 f tl
 
-// Try: Rewrite everything "sort" related without the specialized compare function. Just use fun x y -> fst x <= fst y
+// val count_len_lemma : l:list o{unique l} -> Lemma (ensures (forall x. mem x l ==> count x l = 1)) [SMTPat (unique l)]
+// let rec count_len_lemma l = match l with
+//   | x::xs -> count_len_lemma xs
+//   | [] -> ()
+
+#set-options "--query_stats --initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
+
+val uniq_len_lemma : l:list o -> l1:list o
+                   -> Lemma (requires (forall i. mem i l <==> mem i l1) /\ unique l /\ unique l1) (ensures (length l = length l1))
+                   (decreases %[l;l1])
+                   [SMTPat (unique l /\ unique l1)]
+let rec uniq_len_lemma l l1 =
+  let ls = sort l in
+  let ls1 = sort l1 in
+  match ls, ls1 with
+  | x::xs, y::ys -> admit(); uniq_len_lemma xs ys
+  | _, _ ->
+  // assert(permutation l l1);
+  admit(); ()
+
+
 val prop_oper02 : l:list o{(forall i. mem i l ==> Inc? (snd i)) /\ (unique l)} -> l1:list o{(forall i. mem i l1 ==> Inc? (snd i)) /\ (forall i. mem i l1 ==> mem i l) /\ (unique l1)}
                 ->  op:o{Inc? (snd op) /\ mem op l /\ (forall e. mem e l1 ==> get_id e < get_id op)}
                 -> Lemma (requires (forall i. mem i l <==> mem i l1 \/ i = op))
                         (ensures (isum l = isum l1 + 1))
 
 let prop_oper02 l l1 op =
-  let f = (fun (x:o) (y:o) -> fst x <= fst y) in
-  let l = quicksort f l in
-  let l1 = quicksort f l1 in
   let is = isum l in
   let is1 = isum l1 in
-  assert(mem op l);
-  assert(forall x. mem x l1 ==> mem x l);
-  // assert(forall x y. mem x l1 /\ mem y l1 /\ fst x <> fst y /\ ord x y l1 ==> fst x < fst y);
-  // assert(forall x y. mem x l /\ mem y l /\ fst x <> fst y /\ ord x y l ==> fst x < fst y);
-  // assert(l = l1 @ [op]);
+  // assume(forall (i:o) (l:list o) (l1:list o). ((mem i l <==> mem i l1) /\ unique l /\ unique l1) ==> (length l = length l1));
+  assert(unique (filter_op (fun x -> x <> op) l));
+  assert(unique l1);
+  assert(forall x. (mem x l /\ x <> op) ==> mem x l1);
+  assert(forall x. (mem x l /\ x <> op) <==>  mem x (filter_op (fun y -> y <> op) l));
+  assert(forall i. mem i (filter_op (fun x -> x <> op) l) ==> mem i l1);
+  assert(forall i. mem i l1 ==> mem i (filter_op (fun x -> x <> op) l));
+  assert(forall i. mem i (filter_op (fun x -> x <> op) l) <==> mem i l1);
+  uniq_len_lemma l1 (filter_op (fun x -> x <> op) l);
+  assert(forall l l1. permutation l l1 ==> permutation (sort l) (sort l1));
+  assert(length l1 = length (filter_op (fun x -> x <> op) l));
+  assert(permutation l1 (filter_op (fun x -> x <> op) l));
+  assert(permutation (sort l1) (sort (filter_op (fun x -> x <> op) l)));
+  assert(length (filter_op (fun x -> x <> op) l) = length l1);
+  assume(forall l l1. permutation l l1 ==> sort l = sort l1);
+  assert(sort l1 = sort (filter_op (fun x -> x <> op) l));
+  // uniq_len_lemma ((sort l1) @ [op]) l;
+  assert((sort (filter_op (fun x -> x <> op) l)) @[op] = (sort l1) @ [op]);
+  assert(forall i. mem i (filter_op (fun x -> x <> op) l) ==> fst op > fst i);
+  assert(not (mem op (filter_op (fun x -> x <> op) l)));
+  // assert((sort (filter_op (fun x -> x <> op) l)) @ [op] = sort l);
   // assert(length l = length l1 + 1);
   // assert(is = is1 + 1);
   admit(); ()
@@ -416,8 +349,6 @@ val prop_oper2 : tr:ae
                -> Lemma (requires (sim tr st) /\ (Inc? (snd op)) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
                                  (not (member (get_id op) tr.l)))
                        (ensures (sim1 (append tr op) (app_op st op)))
-
-#set-options "--query_stats --initial_fuel 10 --ifuel 10 --initial_ifuel 10 --fuel 10 --z3rlimit 10000000000"
 
 let prop_oper2 tr st op = assert(fst st + 1 = fst (app_op st op));
                           assert(snd st = snd (app_op st op));
