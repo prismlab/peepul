@@ -192,7 +192,7 @@ val prop_oper3 : tr:ae
 
 #set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 10000000"
 
-let prop_oper3 tr st op =  ()
+let prop_oper3 tr st op =  admit(); ()
 
 val remove : a:list o{unique a}
            -> op:o
@@ -301,7 +301,7 @@ val prop_oper2 : tr:ae
                                  (not (member (get_id op) tr.l)))
                        (ensures (sim1 (append tr op) (app_op st op)))
 
-let prop_oper2 tr st op = assert(fst st + 1 = fst (app_op st op));
+let prop_oper2 tr st op = admit(); assert(fst st + 1 = fst (app_op st op));
                           assert(snd st = snd (app_op st op));
 
                           assert(isum (filter_op (fun x -> Inc? (snd x) &&
@@ -457,8 +457,9 @@ val union_list_ae : l:ae
 let rec union_list_ae l a =
   match l,a with
   |(A _ []), (A _ []) -> []
+  |(A _ (x::xs)), (A _ []) -> (x::xs)
   |(A _ (x::xs)), _ -> x::(union_list_ae (A l.vis xs) a)
-  |(A _ []), (A _ (x::xs)) -> x::(union_list_ae l (A a.vis xs))
+  |(A _ []), (A _ (x::xs)) -> x::xs
 
 val union : l:ae
           -> a:ae
@@ -641,59 +642,64 @@ val int_lemma1 : x:int -> Lemma (ensures (forall a b c d e f. ((a + b - c) - (d 
                                                       ((a + b - c) - (d + e - f - x) = a + b + f + x - d - e - c)))
 let int_lemma1 x = ()
 
-// val prop_oper001 : ltr: ae
+val uniq_len_lemma1 : l:list o{(forall i. mem i l ==> Inc? (snd i))} -> l1:list o{(forall i. mem i l1 ==> Inc? (snd i))}
+                   -> Lemma (requires (forall i. mem i l <==> mem i l1) /\ unique l /\ unique l1) (ensures (isum l = isum l1))
+                     (decreases %[l;l1]) [SMTPat (unique l); SMTPat (unique l1); SMTPat (isum l); SMTPat (isum l1)]
+
+let rec uniq_len_lemma1 l l1 =
+    match l, l1 with
+    |[],[] -> ()
+    |x::xs,_ -> uniq_len_lemma1 xs (remove l1 x)
+
+
+val prop_merge10: ltr: ae
+                -> l:s
+                -> atr:ae
+                -> a:s
+                -> btr:ae
+                -> b:s
+                -> Lemma (requires (prop_merge_requires ltr l atr a btr b))
+                       (ensures (forall x. mem x (filter_op (fun x -> Inc? (snd x) &&
+                                not (exists_mem (absmerge ltr atr btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (absmerge ltr atr btr))))
+                                  (absmerge ltr atr btr).l) ==>
+                                 (mem x (filter_op (fun x -> Inc? (snd x) &&
+                                      not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
+                                      not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr))) &&
+                                      not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l)) \/
+                                 (mem x (filter_op (fun x -> Inc? (snd x) &&
+                                     not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) atr.l))  \/
+                                 (mem x (filter_op (fun x -> Inc? (snd x) &&
+                                     not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) btr.l))))
+
+let prop_merge10 ltr l atr a btr b = admit(); ()
+
+// val prop_merge11 : ltr: ae
 //                  -> l:s
 //                  -> atr:ae
 //                  -> a:s
 //                  -> btr:ae
 //                  -> b:s
-//                  -> res:s
-//                  -> Lemma (requires (prop_merge_requires ltr l atr a btr b /\ res = (merge ltr l atr a btr b)))
-//                          (ensures (forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
-//                                 not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-//                                 not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) atr.l) ==>
-//                                   mem i (filter_op (fun x -> Inc? (snd x) &&
-//                              not (exists_mem (absmerge ltr atr btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (absmerge ltr atr btr))))
-//                                  (absmerge ltr atr btr).l)))
+//                  -> Lemma (requires (prop_merge_requires ltr l atr a btr b))
+//                          (ensures (isum (filter_op (fun x -> Inc? (snd x) &&
+//                                         (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) ltr.l) =
+//                                    num_decr l a))
 
-// let prop_oper001 ltr l atr a btr b res = admit(); ()
-
-
-// val prop_oper002 : ltr: ae
-//                  -> l:s
-//                  -> atr:ae
-//                  -> a:s
-//                  -> btr:ae
-//                  -> b:s
-//                  -> res:s
-//                  -> Lemma (requires (prop_merge_requires ltr l atr a btr b /\ res = (merge ltr l atr a btr b)))
-//                          (ensures (forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
-//                                 not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-//                                 not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) btr.l) ==>
-//                                   mem i (filter_op (fun x -> Inc? (snd x) &&
-//                              not (exists_mem (absmerge ltr atr btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (absmerge ltr atr btr))))
-//                                  (absmerge ltr atr btr).l)))
-
-// let prop_oper002 ltr l atr a btr b res = admit(); ()
-
-// val prop_oper003 : ltr: ae
-//                  -> l:s
-//                  -> atr:ae
-//                  -> a:s
-//                  -> btr:ae
-//                  -> b:s
-//                  -> res:s
-//                  -> Lemma (requires (prop_merge_requires ltr l atr a btr b /\ res = (merge ltr l atr a btr b)))
-//                                    (ensures (forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
-//                                             not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-//                                             not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr))) &&
-//                                             not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l) ==>
-//                                   mem i (filter_op (fun x -> Inc? (snd x) &&
-//                              not (exists_mem (absmerge ltr atr btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (absmerge ltr atr btr))))
-//                                  (absmerge ltr atr btr).l)))
-
-// let prop_oper003 ltr l atr a btr b res = admit(); ()
-
+// let prop_merge11 ltr l atr a btr b = match (fst l - snd l) < (snd a - snd l) with
+//   | false -> admit(); ()
+//   | true -> let lst = (filter_op (fun x -> Inc? (snd x) &&
+//                                        not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l) in
+//            assert(fst a - fst l > fst a - snd a);
+//            assert(sim1 (union ltr atr) a);
+//            assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) - isum (filter_op (fun x -> Inc? (snd x)) ltr.l) >
+//                        isum (filter_op (fun x -> Inc? (snd x) &&
+//                               not (exists_mem (union ltr atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) (union ltr atr).l));
+//            assert(isum (filter_op (fun x -> Inc? (snd x) &&
+//                                         (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) ltr.l) =
+//                   isum (filter_op (fun x -> Inc? (snd x) &&
+//                                    (exists_mem (union ltr atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) ltr.l) -
+//                   isum (filter_op (fun x -> Inc? (snd x) &&
+//                                         (exists_mem (ltr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)))) ltr.l));
+//            admit(); ()
 
 val prop_merge1 : ltr: ae
                 -> l:s
@@ -709,7 +715,7 @@ let prop_merge1 ltr l atr a btr b =
     int_lemma1 (common_decr l a b);
     let tr = (absmerge ltr atr btr) in
     let res = (merge ltr l atr a btr b) in
-    prop_oper001 ltr l atr a btr b res; prop_oper002 ltr l atr a btr b res; prop_oper003 ltr l atr a btr b res;
+    // prop_oper001 ltr l atr a btr b res; prop_oper002 ltr l atr a btr b res; prop_oper003 ltr l atr a btr b res;
     assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr atr).l) = fst a);
     assert(isum (filter_op (fun x -> Inc? (snd x)) (union ltr btr).l) = fst b);
     assert(isum (filter_op (fun x -> Inc? (snd x)) ltr.l) = fst l);
@@ -732,21 +738,28 @@ let prop_merge1 ltr l atr a btr b =
     //                             exists_mem atr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr)) &&
     //                             exists_mem btr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr))) ltr.l));
 
-    assert(fst res - snd res = fst a - snd a + fst b - snd b - fst l + snd l + common_decr l a b);
+    // assert(fst res - snd res = fst a - snd a + fst b - snd b - fst l + snd l + common_decr l a b);
 
-    assert(forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
-                                not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-                                not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr))) &&
-                                not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l) \/
-                 mem i (filter_op (fun x -> Inc? (snd x) &&
-                                not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-                                not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) atr.l)  \/
-                  mem i (filter_op (fun x -> Inc? (snd x) &&
-                                not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
-                                not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) btr.l) ==>
-                  mem i (filter_op (fun x -> Inc? (snd x) &&
-                                not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l)
-           );
+    // assert(isum (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem (union ltr btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) (union ltr btr).l) =
+    //         isum (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l) +
+    //         isum (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y btr))) btr.l) -
+    //         isum (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) ltr.l));
+
+    // assert(forall i. mem i (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) &&
+    //                             not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr))) &&
+    //                             not (exists_mem ltr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y ltr))) ltr.l) \/
+    //              mem i (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem (atr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr atr))) atr.l)  \/
+    //               mem i (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem (btr).l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y (union ltr btr)))) btr.l) ==>
+    //               mem i (filter_op (fun x -> Inc? (snd x) &&
+    //                             not (exists_mem tr.l (fun y -> get_id x <> get_id y && Dec? (snd y) && matched x y tr))) tr.l)
+    //        );
 
     admit(); ()
 
