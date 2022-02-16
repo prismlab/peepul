@@ -71,6 +71,16 @@ let rec filter_uni f l = admit();
     |[] -> ()
     |x::xs -> filter_uni f xs
 
+val filter_uni1 : f:((nat * op) -> bool)
+                   -> l:list (nat * op) 
+                   -> Lemma (requires (unique l))
+                           (ensures (unique (filter f l)))
+                           [SMTPat (filter f l)]
+let rec filter_uni1 f l = 
+      match l with
+      |[] -> ()
+      |x::xs -> filter_uni1 f xs
+      
 (*)instance log : datatype s op = {
   Library.app_op = app_op
 }*)
@@ -80,18 +90,24 @@ val sim : tr:ae op
         -> s1:s
         -> Tot (b:bool {b = true <==> (forall e. mem e s1 <==> mem (fst e, (Append (snd e))) tr.l) /\
                                    (forall e e1. mem e s1 /\ mem e1 s1 /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 s1 <==>
-                                      mem (fst e, (Append (snd e))) tr.l /\ mem (fst e1, (Append (snd e1))) tr.l /\
-                             fst e <> fst e1 /\ fst e > fst e1 /\ tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))))})
+                                      (mem (fst e, (Append (snd e))) tr.l /\ mem (fst e1, (Append (snd e1))) tr.l /\
+               fst e <> fst e1 /\ fst e > fst e1 /\ tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e)))) \/
+                   (mem (fst e, (Append (snd e))) tr.l /\ mem (fst e1, (Append (snd e1))) tr.l /\
+                   not (tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))) ||
+              tr.vis (fst e, (Append (snd e))) (fst e1, (Append (snd e1)))) /\ fst e <> fst e1 /\ fst e > fst e1))})
 
 #set-options "--z3rlimit 1000000"
 let sim tr s1 =
   forallb (fun e -> mem (fst e, (Append (snd e))) tr.l) s1 &&
   forallb (fun e -> mem (get_id e, get_msg e) s1) tr.l &&
-  forallb (fun e -> (forallb (fun e1 ->  mem (fst e, (Append (snd e))) tr.l && mem (fst e1, (Append (snd e1))) tr.l &&
-              fst e <> fst e1 && fst e > fst e1 && tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))))
+  forallb (fun e -> (forallb (fun e1 -> (mem (fst e, (Append (snd e))) tr.l && mem (fst e1, (Append (snd e1))) tr.l &&
+              fst e <> fst e1 && fst e > fst e1 && tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e)))) ||
+             (not (tr.vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))) ||
+               tr.vis (fst e, (Append (snd e))) (fst e1, (Append (snd e1)))) && fst e <> fst e1 && fst e > fst e1)) 
   (filter (fun e1 -> mem e1 s1 && mem e s1 && fst e <> fst e1 && fst e > fst e1 && ord e e1 s1) s1))) s1 &&
   forallb (fun e -> (forallb (fun e1 -> mem (get_id e, get_msg e) s1 && mem (get_id e1, get_msg e1) s1 && get_id e <> get_id e1 && get_id e > get_id e1 && ord (get_id e, get_msg e) (get_id e1, get_msg e1) s1)
-          (filter (fun e1 -> get_id e <> get_id e1 && get_id e > get_id e1 && tr.vis e1 e) tr.l))) tr.l
+          (filter (fun e1 -> (get_id e <> get_id e1 && get_id e > get_id e1 && tr.vis e1 e) ||
+              (not (tr.vis e e1 || tr.vis e1 e) && get_id e <> get_id e1 && get_id e > get_id e1)) tr.l))) tr.l
 
 val prop_oper : tr:ae op
               -> st:s
@@ -100,6 +116,19 @@ val prop_oper : tr:ae op
                                 (not (member (get_id op) tr.l)))
                       (ensures (sim (append tr op) (app_op st op)))
 let prop_oper tr st op = ()
+
+val remove_st : ele:(nat * string) -> a:s
+                  -> Pure s
+                    (requires (mem ele a))
+                    (ensures (fun r -> (forall e. mem e r <==> mem e a /\ e <> ele) /\
+                                    (forall id. mem_id_s id r <==> mem_id_s id a /\ id <> fst ele) /\
+                                    (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ ord e e1 r /\ fst e > fst e1 <==>
+                                            mem e a /\ mem e1 a /\ fst e <> fst e1 /\ e <> ele /\ e1 <> ele /\ fst e > fst e1 /\ ord e e1 a) /\ List.Tot.length r = List.Tot.length a - 1))
+#set-options "--z3rlimit 10000"
+let rec remove_st ele a = admit();
+      match a with
+      |ele1::xs -> if ele = ele1 then xs 
+                   else ((assume (forall e. mem e xs ==> fst ele1 > fst e)); ele1::(remove_st ele xs))
 
 val convergence : tr:ae op
                     -> a:s
@@ -140,6 +169,34 @@ val merge : ltr:ae op
 let merge ltr l atr a btr b = 
   merge1 l a b
 
+#set-options "--z3rlimit 1000000"
+val lem_abs : ltr:ae op
+                 -> atr:ae op
+                 -> btr:ae op
+                 -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                   (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
+                                   (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1))
+                         (ensures (forall e e1. (mem e (absmerge ltr atr btr).l /\ mem e1 (absmerge ltr atr btr).l /\
+                        get_id e <> get_id e1 /\ get_id e > get_id e1 /\ (absmerge ltr atr btr).vis e1 e) <==>
+            (mem e ltr.l /\ mem e1 ltr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1 /\ ltr.vis e1 e) \/
+            (mem e atr.l /\ mem e1 atr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1 /\ atr.vis e1 e) \/
+            (mem e btr.l /\ mem e1 btr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1 /\ btr.vis e1 e) \/
+            (mem e atr.l /\ mem e1 ltr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1) \/
+            (mem e btr.l /\ mem e1 ltr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1) \/
+            (mem e atr.l /\ mem e1 btr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1) \/
+            (mem e btr.l /\ mem e1 atr.l /\ get_id e <> get_id e1 /\ get_id e > get_id e1)))
+            (decreases %[ltr.l;atr.l;btr.l])
+
+#set-options "--z3rlimit 1000000"
+let rec lem_abs ltr atr btr = 
+  (*)match ltr.l,atr.l,btr.l with
+  |[],[],[] -> ()
+  |x::xs,_,_ -> lem_abs (A ltr.vis xs) atr btr
+  |[],x::xs,_ -> lem_abs ltr (A atr.vis xs) btr
+  |[],[],x::xs -> lem_abs ltr atr (A btr.vis xs)*) admit ()
+
 val prop_merge : ltr:ae op
                -> l:s
                -> atr:ae op
@@ -156,22 +213,24 @@ val prop_merge : ltr:ae op
 
 #set-options "--z3rlimit 10000000"
 let prop_merge ltr l atr a btr b = 
+  lem_abs ltr atr btr;
     assert (forall e. mem e (merge ltr l atr a btr b) <==> mem (fst e, (Append (snd e))) (absmerge ltr atr btr).l);
-    assume (forall e e1. mem e (merge ltr l atr a btr b) /\ mem e1 (merge ltr l atr a btr b) /\ fst e <> fst e1 /\ 
+    assert (forall e e1. mem e (merge ltr l atr a btr b) /\ mem e1 (merge ltr l atr a btr b) /\ fst e <> fst e1 /\ 
                 fst e > fst e1 /\ ord e e1 (merge ltr l atr a btr b) ==>
                 mem (fst e, (Append (snd e))) (absmerge ltr atr btr).l /\ 
                 mem (fst e1, (Append (snd e1))) (absmerge ltr atr btr).l /\
                 fst e <> fst e1 /\ fst e > fst e1 /\ 
-                (absmerge ltr atr btr).vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))));
+                ((absmerge ltr atr btr).vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))) ||
+                  not ((absmerge ltr atr btr).vis (fst e1, (Append (snd e1))) (fst e, (Append (snd e))) ||
+                    (absmerge ltr atr btr).vis (fst e, (Append (snd e))) (fst e1, (Append (snd e1))))));
     assert (forall e e1. mem e (absmerge ltr atr btr).l /\ mem e1 (absmerge ltr atr btr).l /\ get_id e <> get_id e1 /\ 
-                    get_id e > get_id e1 /\ (absmerge ltr atr btr).vis e1 e ==> 
+                    get_id e > get_id e1 /\ ((absmerge ltr atr btr).vis e1 e ||
+                           not ((absmerge ltr atr btr).vis e e1 || (absmerge ltr atr btr).vis e1 e)) ==> 
                       mem (get_id e, get_msg e) (merge ltr l atr a btr b) /\ 
                         mem (get_id e1, get_msg e1) (merge ltr l atr a btr b) /\
              get_id e <> get_id e1 /\ get_id e > get_id e1 /\ 
-             ord (get_id e, get_msg e) (get_id e1, get_msg e1) (merge ltr l atr a btr b));
-             ()
-
-
+             ord (get_id e, get_msg e) (get_id e1, get_msg e1) (merge ltr l atr a btr b)); (*done*)
+            admit  ()
 
 (*)instance _ : mrdt s op log = {
   Library.merge = merge;
