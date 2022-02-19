@@ -370,6 +370,7 @@ val lemma7 : tr:ae C.op -> s1:C.s -> tr1:ae C.op
                      (decreases %[tr.l;s1;tr1.l])
                      [SMTPat (C.sim tr s1)]
 
+#set-options "--z3rlimit 10000000"
 let rec lemma7 tr s1 tr1 = 
   match tr.l, tr1.l with
   |[],[] -> ()
