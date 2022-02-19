@@ -204,7 +204,7 @@ val merge1 : l:s
                        (forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
                        (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e) (*)/\
                        (forall e e1. mem e l /\ mem e1 a ==> fst e1 >= fst e) /\
-                       (forall e e1. mem e l /\ mem e1 b ==> fst e1 >= fst e*) /\
+                       (forall e e1. mem e l /\ mem e1 b ==> fst e1 >= fst e*) (*)/\
                        (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
                                 (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
               (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
@@ -212,15 +212,15 @@ val merge1 : l:s
               (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b <==>
                                  (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
                  (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
-                 (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)) /\
+                 (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)*) (*)/\
       (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
-      (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b))
-             (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
+      (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b*))
+             (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) (*)/\
                             (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
                                       (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
                                      (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
                                      (mem e a /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1) \/
-                                     (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1)) (*)/\
+                                     (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1)*) /\
                             (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
                                      (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
@@ -228,7 +228,7 @@ val merge1 : l:s
             (mem e (diff_s a l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
             (mem e (diff_s b l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
             (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1) \/
-            (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)*)))
+            (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1))))
 
 #set-options "--z3rlimit 10000000"
 let merge1 l a b =
@@ -261,7 +261,7 @@ let merge1 l a b =
                   ((mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
                                        (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
                                        (mem e a /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1) \/
-                                       (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1))); admit();
+                                       (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1))); 
     r
 
 val merge : ltr:ae op
@@ -290,7 +290,7 @@ let merge ltr l atr a btr b =
             (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))));
     assert ((forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
             (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e)); 
-    assert (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
+    (*)assert (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
                 (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
              (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
                 (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
@@ -299,7 +299,7 @@ let merge ltr l atr a btr b =
               (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
                   (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
     assert ((forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
-    (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b));
+    (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b));*)
     merge1 l a b
 
 val prop_merge : ltr:ae op
