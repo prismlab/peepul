@@ -1,4 +1,3 @@
-
 module Map_log
 open FStar.List.Tot
 
@@ -20,23 +19,23 @@ val get_ch_s : s:(string * C.s) -> Tot (s1:string {(exists c. s = (s1,c))})
 let get_ch_s (i,_) = i
 
 val mem_ch_s : ele1:string
-               -> l:list (string * C.s)
-               -> Tot (b:bool {b=true <==> (exists c. mem (ele1,c) l) /\ (exists e. mem e l /\ get_ch_s e = ele1)})
+             -> l:list (string * C.s)
+             -> Tot (b:bool {b=true <==> (exists c. mem (ele1,c) l) /\ (exists e. mem e l /\ get_ch_s e = ele1)})
 let rec mem_ch_s ele1 l =
   match l with
   |[] -> false
   |x::xs -> get_ch_s x = ele1 || mem_ch_s ele1 xs
 
-val unique_s : list (string * C.s) -> bool
-let rec unique_s l =
+val unique_ch : list (string * C.s) -> bool
+let rec unique_ch l =
   match l with
   |[] -> true
-  |(ele,_)::xs -> not (mem_ch_s ele xs) && unique_s xs
+  |(ele,_)::xs -> not (mem_ch_s ele xs) && unique_ch xs
 
-  val get_msg_s1 : s:(string * C.s) -> Tot (c:C.s {(exists i. s = (i,c))})
-  let get_msg_s1 (_, c) = c
+val get_msg_s1 : s:(string * C.s) -> Tot (c:C.s {(exists i. s = (i,c))})
+let get_msg_s1 (_, c) = c
 
-type s = l:list (string * C.s) {unique_s l /\ (forall e. mem e l ==> C.total_order (get_msg_s1 e))}
+type s = l:list (string * C.s) {unique_ch l}
 
 val get_msg_s : i:string -> s1:s -> Tot (c:C.s {(mem_ch_s i s1 ==> mem (i,c) s1 /\ (exists e. mem e s1 ==> e = (i,c))) /\ 
                                        (not (mem_ch_s i s1) ==> c = [])})
@@ -46,15 +45,17 @@ let rec get_msg_s i s1 =
   |x::xs -> if get_ch_s x = i then (get_msg_s1 x) else get_msg_s i xs
 
 val lemma2 : s1:s 
-             -> Lemma (requires true)
-                      (ensures (forall e. mem e s1 ==> (get_msg_s (get_ch_s e) s1 = get_msg_s1 e)))
+           -> Lemma (requires true)
+                   (ensures (forall e. mem e s1 ==> (get_msg_s (get_ch_s e) s1 = get_msg_s1 e)) /\
+                            (forall e. mem e s1 ==> C.unique_s (get_msg_s (get_ch_s e) s1) /\
+                                              C.total_order (get_msg_s (get_ch_s e) s1)))
                 [SMTPat (forall e. mem e s1)]
 #set-options "--z3rlimit 10000000"
 let rec lemma2  s1 = 
       match s1 with
       |[] -> ()
       |x::xs -> lemma2 xs 
-      
+
 val mem_op : ele1:op
            -> l:list (nat * op)
            -> Tot (b:bool {b=true <==> (exists id. mem (id, ele1) l) })
@@ -91,8 +92,8 @@ val project1 : i:string
              -> Pure (list (nat * C.op))
                     (requires true)
                     (ensures (fun r -> (forall id. member id r <==> member id l.l /\ 
-                      get_op (get_eve id l.l) = (i, (C.Append (get_msg (get_eve id l.l))))) /\
-             (forall id. member id r <==> (member id l.l /\ get_ch (get_eve id l.l) = i)) /\ unique r /\
+                                    get_op (get_eve id l.l) = (i, (C.Append (get_msg (get_eve id l.l))))) /\
+                                  (forall id. member id r <==> (member id l.l /\ get_ch (get_eve id l.l) = i)) /\ unique r /\
                 (forall e. mem e r <==> (mem ((get_id e), (i, C.Append (C.get_msg e))) l.l)) /\
                 (forall e. mem e l.l /\ get_ch e = i ==> mem (project_op e) r)))
             (decreases List.Tot.length l.l)
@@ -108,7 +109,7 @@ val project : i:string
             -> Pure (ae C.op)
                    (requires true)
                    (ensures (fun r -> (forall id. member id r.l <==> member id l.l /\ 
-                            get_op (get_eve id l.l) = (i, (C.Append (get_msg (get_eve id l.l))))) /\
+                                   get_op (get_eve id l.l) = (i, (C.Append (get_msg (get_eve id l.l))))) /\
               (forall id. member id r.l <==> (member id l.l /\ get_ch (get_eve id l.l) = i)) /\ unique r.l /\
                  (forall e. mem e r.l <==> (mem ((get_id e), (i, C.Append (C.get_msg e))) l.l)) /\
                  (forall e. mem e l.l /\ get_ch e = i ==> mem (project_op e) r.l) /\
@@ -150,12 +151,11 @@ let rec app_op st op1 =
 
 #set-options "--query_stats"
 val sim : tr:ae op
-            -> s1:s
-            -> Tot (b:bool {(b = true) <==> 
-                 (forall ch. mem_ch_s ch s1 <==> mem_ch ch tr.l) /\
-                 (forall ch. mem_ch_s ch s1 ==> C.sim (project ch tr) (get_msg_s ch s1)) /\
-                 (forall e. mem e tr.l ==> (exists e1. mem e1 s1 ==> get_ch e = get_ch_s e1 /\
-                           mem (get_id e, get_msg e) (get_msg_s1 e1)))})
+        -> s1:s
+        -> Tot (b:bool {(b = true) <==> (forall ch. mem_ch_s ch s1 <==> mem_ch ch tr.l) /\
+                                     (forall ch. mem_ch_s ch s1 ==> C.sim (project ch tr) (get_msg_s ch s1)) /\
+                                     (forall e. mem e tr.l ==> (exists e1. mem e1 s1 ==> get_ch e = get_ch_s e1 /\
+                                           mem (get_id e, get_msg e) (get_msg_s1 e1)))})
 
 #set-options "--z3rlimit 10000000"
 let sim tr s1 = 
@@ -165,55 +165,40 @@ let sim tr s1 =
   forallb (fun e -> (existsb (fun e1 -> get_ch e = get_ch_s e1 && mem (get_id e, get_msg e) (get_msg_s1 e1)) s1)) tr.l
 
 val lemma3 : tr:ae op -> s1:s
-             -> Lemma (requires (sim tr s1))
-       (ensures (forall ch e1. mem_ch_s ch s1 /\ mem e1 (get_msg_s ch s1) ==>
-                     mem (get_id e1, (ch, (C.Append (C.snd e1)))) tr.l) /\
-                (forall ch m. not (mem_ch_s ch s1) ==> (forall e. mem e tr.l ==> get_op e <> (ch, m))))
+           -> Lemma (requires (sim tr s1))
+                   (ensures (forall ch e1. mem_ch_s ch s1 /\ mem e1 (get_msg_s ch s1) ==>
+                                      mem (get_id e1, (ch, (C.Append (C.snd e1)))) tr.l) /\
+                                      (forall ch m. not (mem_ch_s ch s1) ==> (forall e. mem e tr.l ==> get_op e <> (ch, m))))
                                [SMTPat (sim tr s1)]
 let lemma3 tr s1 = ()
-  
+
 val lemma4 : tr:ae op -> s1:s
-             -> Lemma (requires sim tr s1)
-                      (ensures (forall i. (C.sim (project i tr) (get_msg_s i s1))))
+           -> Lemma (requires sim tr s1)
+                   (ensures (forall i. (C.sim (project i tr) (get_msg_s i s1))))
                       [SMTPat (sim tr s1)]
 let lemma4 tr s1 = ()
 
 val convergence1 : tr:ae op
-                  -> a:s
-                  -> b:s
-                  -> Lemma (requires (sim tr a /\ sim tr b))
-                          (ensures (forall e. mem_ch_s e a <==> mem_ch_s e b))
-                          (decreases %[tr.l;a;b])
-
+                 -> a:s
+                 -> b:s
+                 -> Lemma (requires (sim tr a /\ sim tr b))
+                         (ensures (forall e. mem_ch_s e a <==> mem_ch_s e b))
 #set-options "--z3rlimit 100000000"
 let convergence1 tr a b = ()
 
-val convergence2 : tr:ae op
-                    -> a:s
-                    -> b:s
-                    -> Lemma (requires (sim tr a /\ sim tr b))
-                            (ensures (forall ch. mem_ch_s ch a ==> 
-                                     (forall e e1. mem e (get_msg_s ch a) /\ mem e1 (get_msg_s ch a)  /\ fst e <> fst e1 /\ fst e > fst e1 /\ C.ord e e1 (get_msg_s ch a)  <==> 
-                                      mem e (get_msg_s ch b) /\ mem e1 (get_msg_s ch b) /\ fst e <> fst e1 /\ fst e > fst e1 /\ C.ord e e1 (get_msg_s ch b))))
-                            (decreases %[tr.l;a;b])
-
-#set-options "--z3rlimit 100000000"
-let convergence2 tr a b = 
-  convergence1 tr a b;
-  ()
-
-(*)val convergence : tr:ae op
-                          -> a:s
-                          -> b:s
-                          -> Lemma (requires (sim tr a /\ sim tr b))
-                                  (ensures (forall e. mem e a <==> mem e b))
-                                  (decreases %[tr.l;a;b])
-
+val convergence : tr:ae op
+                 -> a:s
+                 -> b:s
+                 -> Lemma (requires (sim tr a /\ sim tr b))
+                         (ensures (forall ch. mem_ch_s ch a ==> 
+                                  (forall e e1. mem e (get_msg_s ch a) /\ mem e1 (get_msg_s ch a) /\ 
+                                  fst e <> fst e1 /\ fst e > fst e1 /\ C.ord e e1 (get_msg_s ch a)  <==> 
+                                   mem e (get_msg_s ch b) /\ mem e1 (get_msg_s ch b) /\ fst e <> fst e1 /\ 
+                                   fst e > fst e1 /\ C.ord e e1 (get_msg_s ch b))))
 #set-options "--z3rlimit 100000000"
 let convergence tr a b = 
-    convergence1 tr a b;
-    convergence2 tr a b;
-    ()*)
+  convergence1 tr a b;
+  ()
 
 val lem_oper : tr:ae op 
              -> op:(nat * op)
@@ -238,11 +223,10 @@ val prop_oper1 : tr:ae op
               -> st:s
               -> op:(nat * op) 
               -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
-                                     (exists id ch m. op = (id, (ch, (C.Append m)))) /\
                                 (mem_ch_s (get_ch op) st ==> 
                                 (forall id. C.mem_id_s id (get_msg_s (get_ch op) st) ==> get_id op > id)))
-                                (ensures (forall ch. mem_ch_s ch (app_op st op) <==> mem_ch ch (append tr op).l) /\
-                   (forall e. mem e (append tr op).l ==> (exists e1. mem e1 (app_op st op) ==> get_ch e = get_ch_s e1 /\
+                      (ensures (forall ch. mem_ch_s ch (app_op st op) <==> mem_ch ch (append tr op).l) /\
+                            (forall e. mem e (append tr op).l ==> (exists e1. mem e1 (app_op st op) ==> get_ch e = get_ch_s e1 /\
                                 mem (get_id e, get_msg e) (get_msg_s1 e1))) /\
                                 (forall ch. mem_ch_s ch (app_op st op) /\ ch <> get_ch op ==>
                       C.sim (project ch (append tr op)) (get_msg_s ch (app_op st op))))
@@ -255,7 +239,6 @@ val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op) 
               -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
-                                     (exists id ch m. op = (id, (ch, (C.Append m)))) /\
                                 (mem_ch_s (get_ch op) st ==> 
                                 (forall id. C.mem_id_s id (get_msg_s (get_ch op) st) ==> get_id op > id)))
                       (ensures (sim (append tr op) (app_op st op)))
@@ -274,7 +257,7 @@ let rec unique_chs l =
   |x::xs -> not (mem x xs) && unique_chs xs
 
 val get_ch_lst : l:s -> a:s -> b:s
-                 -> Pure (list string)
+               -> Pure (list string)
                    (requires (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b))
                    (ensures (fun r -> (forall i. mem i r <==> mem_ch_s i a \/ mem_ch_s i b) /\ unique_chs r))
                    (decreases %[l;a;b])
@@ -314,10 +297,8 @@ val merge : ltr:ae op
                                (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
                                (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1))
                (ensures (fun r -> (forall i. mem_ch_s i r <==> mem_ch_s i a \/ mem_ch_s i b) /\
-                               (forall ch. mem_ch_s ch r ==> 
-                   (forall ch. mem_ch_s ch r ==> (get_msg_s ch r) =
-                         (C.merge1 (get_msg_s ch l) (get_msg_s ch a) (get_msg_s ch b))))))
-                        (decreases %[l;a;b])
+                               (forall ch. mem_ch_s ch r ==> (forall ch. mem_ch_s ch r ==> (get_msg_s ch r) =
+                               (C.merge1 (get_msg_s ch l) (get_msg_s ch a) (get_msg_s ch b))))))
 
 #set-options "--z3rlimit 10000000"
 let merge ltr l atr a btr b = 
@@ -330,7 +311,7 @@ val remove_op1 : tr:ae C.op
                -> Pure (list (nat * C.op))
                       (requires (mem x tr.l))
                       (ensures (fun r -> (forall e. mem e r <==> mem e tr.l /\ e <> x) /\ unique r /\ 
-                                        (List.Tot.length r = List.Tot.length tr.l - 1)))
+                                      (List.Tot.length r = List.Tot.length tr.l - 1)))
                  (decreases tr.l)
 
 let rec remove_op1 tr x =
@@ -350,17 +331,17 @@ let remove_op  tr x =
     (A (fun o o1 -> mem o (remove_op1 tr x) && mem o1 (remove_op1 tr x) && get_id o <> get_id o1 && tr.vis o o1) (remove_op1 tr x))
 
 val lemma6 : l:ae op 
-               -> a:ae op 
-               -> Lemma (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)))
-                        (ensures (forall e. mem_op e (union1 l a) <==> mem_op e l.l \/ mem_op e a.l))
+           -> a:ae op 
+           -> Lemma (requires (forall e. mem e l.l ==> not (member (get_id e) a.l)))
+                   (ensures (forall e. mem_op e (union1 l a) <==> mem_op e l.l \/ mem_op e a.l))
                                  (decreases %[l.l;a.l])
 
-    #set-options "--z3rlimit 10000000"
-    let rec lemma6 l a = 
-      match l,a with
-      |(A _ []), (A _ []) -> ()
-      |(A _ (x::xs)), _ -> lemma6 (A l.vis xs) a
-      |(A _ []), (A _ (x::xs)) -> lemma6 l (A a.vis xs)
+#set-options "--z3rlimit 10000000"
+let rec lemma6 l a = 
+  match l,a with
+  |(A _ []), (A _ []) -> ()
+  |(A _ (x::xs)), _ -> lemma6 (A l.vis xs) a
+  |(A _ []), (A _ (x::xs)) -> lemma6 l (A a.vis xs)
 
 val lemma7 : tr:ae C.op -> s1:C.s -> tr1:ae C.op
            -> Lemma (requires C.sim tr s1 /\ (forall e. mem e tr1.l <==> mem e tr.l) /\
@@ -407,7 +388,7 @@ val lemma9 : ltr:ae op
                              (forall i e. mem e (project i ltr).l ==> not (member (get_id e) (project i atr).l)) /\
                              (forall i e. mem e (project i atr).l ==> not (member (get_id e) (project i btr).l)) /\
                              (forall i e. mem e (project i ltr).l ==> not (member (get_id e) (project i btr).l)) /\
-                             (forall i e e1. mem e (project i ltr).l /\ mem e1 (project i atr).l ==> get_id e < get_id e1) /\
+                           (forall i e e1. mem e (project i ltr).l /\ mem e1 (project i atr).l ==> get_id e < get_id e1) /\
                              (forall i e e1. mem e (project i ltr).l /\ mem e1 (project i btr).l ==> get_id e < get_id e1))
                    (ensures (forall i. (forall e. mem e (absmerge (project i ltr) (project i atr) (project i btr)).l <==>
                              mem e (project i (absmerge ltr atr btr)).l)) /\
@@ -420,21 +401,21 @@ val lemma9 : ltr:ae op
 let lemma9 ltr atr btr = ()
 
 val prop_merge1 : ltr:ae op
-                 -> l:s
-                 -> atr:ae op
-                 -> a:s
-                 -> btr:ae op
-                 -> b:s
-                 -> chs:list string
-                 -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
-                                   (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
-                                   (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                                   (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                                   (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
-                                   (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1) /\
-                                   (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
-                                   (forall i. mem i chs ==> mem_ch_s i (merge ltr l atr a btr b)))
-                   (ensures (forall i. mem i chs ==> 
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> chs:list string
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                  (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
+                                  (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1) /\
+                                  (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
+                                  (forall i. mem i chs ==> mem_ch_s i (merge ltr l atr a btr b)))
+                        (ensures (forall i. mem i chs ==> 
                             (C.sim (project i (absmerge ltr atr btr)) (get_msg_s i (merge ltr l atr a btr b)))))
                 (decreases chs)
 

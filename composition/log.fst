@@ -186,6 +186,84 @@ let rec union_s l1 l2 =
     | h1::t1, h2::t2 -> if (fst h1 > fst h2)
                      then h1::(union_s t1 l2) else h2::(union_s l1 t2)
 
+val diff_s : a:s -> l:s
+           -> Pure s
+             (requires (forall e. mem e l ==> mem e a))
+             (ensures (fun r -> (forall e. mem e r <==> mem e a /\ not (mem e l)) /\
+                             (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
+             mem e a /\ mem e1 a /\ not (mem e l) /\ not (mem e1 l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a)))
+let diff_s a l = filter (fun e -> not (mem e l)) a
+
+val merge1 : l:s
+           -> a:s
+           -> b:s
+           -> Pure s
+             (requires (forall e. mem e l ==> mem e a /\ mem e b) /\
+                       (forall e. mem e (diff_s a l) ==> not (mem_id_s (fst e) (diff_s b l))) /\
+                       (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))) /\
+                       (forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
+                       (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e) (*)/\
+                       (forall e e1. mem e l /\ mem e1 a ==> fst e1 >= fst e) /\
+                       (forall e e1. mem e l /\ mem e1 b ==> fst e1 >= fst e*) /\
+                       (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
+                                (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+              (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
+              (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)) /\
+              (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b <==>
+                                 (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+                 (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
+                 (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)) /\
+      (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
+      (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b))
+             (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
+                            (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
+                                      (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
+                                     (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
+                                     (mem e a /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1) \/
+                                     (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1)) (*)/\
+                            (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
+                                     (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+            (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
+            (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
+            (mem e (diff_s a l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+            (mem e (diff_s b l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+            (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1) \/
+            (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)*)))
+
+#set-options "--z3rlimit 10000000"
+let merge1 l a b =
+    let la = diff_s a l in
+    assert (forall e e1. mem e l /\ mem e1 la ==> fst e1 > fst e); 
+    let lb = diff_s b l in
+    assert (unique_s lb /\ total_order lb);
+    assert ((forall e. mem e la ==> not (mem_id_s (fst e) lb)) /\ 
+            (forall e. mem e lb ==> not (mem_id_s (fst e) la))); 
+    let u = union_s la lb in
+    assert ((forall e. mem e l ==> not (mem_id_s (fst e) u)) /\ 
+            (forall e. mem e u ==> not (mem_id_s (fst e) l))); 
+    let r = union_s u l in 
+    assert (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
+                                      (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
+             (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
+             (mem e (diff_s a l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+             (mem e (diff_s b l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+             (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1) \/
+             (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1));
+      assert (forall e. mem e l \/ mem e (diff_s a l) \/ mem e (diff_s b l) <==> mem e a \/ mem e b); 
+      assert (forall e e1. ((mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
+             (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
+                     (mem e (diff_s a l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+                     (mem e (diff_s b l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1) \/
+                     (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1) \/
+                     (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)) ==>
+                  ((mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
+                                       (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
+                                       (mem e a /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1) \/
+                                       (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1))); admit();
+    r
+
 val merge : ltr:ae op
           -> l:s
           -> atr:ae op
@@ -207,19 +285,22 @@ val merge : ltr:ae op
 
 #set-options "--z3rlimit 10000000"
 let merge ltr l atr a btr b = 
-  assert (forall e. mem e l ==> mem e a /\ mem e b);
-  assert (forall e e1. mem e a /\ not (mem e l) /\ mem e1 b /\ not (mem e1 l) ==> e <> e1);
-  let la = filter (fun e -> not (mem e l)) a in
-  assert (unique_s la /\ total_order la);
-  assert (forall e e1. mem e l /\ mem e1 la ==> fst e1 > fst e);
-  let lb = filter (fun e -> not (mem e l)) b in
-  assert (unique_s lb /\ total_order lb);
-  assert (forall e e1. mem e l /\ mem e1 lb ==> fst e1 > fst e);
-  assert (forall id. mem_id_s id la ==> not (mem_id_s id lb));
-  let u = union_s la lb in
-  assert (forall id. mem_id_s id l ==> not (mem_id_s id u));
-  assert (forall e e1. mem e l /\ mem e1 u ==> fst e <> fst e1);
-  union_s u l
+    assert (forall e. mem e l ==> mem e a /\ mem e b);
+    assert ((forall e. mem e (diff_s a l) ==> not (mem_id_s (fst e) (diff_s b l))) /\
+            (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))));
+    assert ((forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
+            (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e)); 
+    assert (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
+                (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
+                (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
+    assert (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b <==>
+                                   (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
+              (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
+                  (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
+    assert ((forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
+    (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b));
+    merge1 l a b
 
 val prop_merge : ltr:ae op
                -> l:s
