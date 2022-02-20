@@ -186,19 +186,90 @@ val convergence1 : tr:ae op
 #set-options "--z3rlimit 100000000"
 let convergence1 tr a b = ()
 
-val convergence : tr:ae op
+val unique_chs : list string -> Tot bool
+      let rec unique_chs l =
+      match l with
+      |[] -> true
+      |x::xs -> not (mem x xs) && unique_chs xs
+
+val get_lst : m:s -> Pure (list string)
+                           (requires true)
+                           (ensures (fun r -> (forall i. mem i r <==> mem_ch_s i m) /\ unique_chs r))
+let rec get_lst m =
+          match m with
+          |[] -> []
+          |(i,x)::xs -> i::get_lst xs
+
+val convergence2 : tr:ae op
                  -> a:s
                  -> b:s
                  -> Lemma (requires (sim tr a /\ sim tr b))
-                         (ensures (forall ch. mem_ch_s ch a ==> 
+                         (ensures (forall ch. mem_ch_s ch a /\ mem_ch_s ch b ==> 
                                   (forall e e1. mem e (get_msg_s ch a) /\ mem e1 (get_msg_s ch a) /\ 
-                                  fst e <> fst e1 /\ fst e > fst e1 /\ C.ord e e1 (get_msg_s ch a)  <==> 
-                                   mem e (get_msg_s ch b) /\ mem e1 (get_msg_s ch b) /\ fst e <> fst e1 /\ 
-                                   fst e > fst e1 /\ C.ord e e1 (get_msg_s ch b))))
+                                  C.fst e <> C.fst e1 /\ C.fst e > C.fst e1 /\ C.ord e e1 (get_msg_s ch a)  <==> 
+                                   mem e (get_msg_s ch b) /\ mem e1 (get_msg_s ch b) /\ C.fst e <> C.fst e1 /\
+                                   C.fst e > C.fst e1 /\ C.ord e e1 (get_msg_s ch b))) /\
+                                  (forall ch. mem_ch_s ch a /\ mem_ch_s ch b ==>
+                                  (forall e. C.mem_id_s e (get_msg_s ch a) <==> C.mem_id_s e (get_msg_s ch b))))
+
 #set-options "--z3rlimit 100000000"
-let convergence tr a b = 
+let convergence2 tr a b = 
   convergence1 tr a b;
   ()
+
+val lem_length : a:s
+               -> b:s
+               -> lst:list string
+               -> Lemma (requires (forall ch. mem ch lst ==> mem_ch_s ch a /\ mem_ch_s ch b) /\
+                                    (forall e. mem_ch_s e a <==> mem_ch_s e b) /\
+                                   unique_chs lst /\ (forall ch. mem ch lst ==> 
+                                              (forall e. C.mem_id_s e (get_msg_s ch a) <==> C.mem_id_s e (get_msg_s ch b))))
+                         (ensures (forall ch. mem ch lst ==> (List.Tot.length (get_msg_s ch a) = List.Tot.length (get_msg_s ch b))))
+                         (decreases lst)
+
+let rec lem_length a b lst =
+  match lst with
+  |[] -> ()
+  |ch::chs -> C.lem_length (get_msg_s ch a) (get_msg_s ch b);
+            lem_length a b chs
+
+val convergence3 : a:s
+                 -> b:s
+                 -> lst:list string
+                 -> Lemma (requires (forall ch. mem ch lst ==> mem_ch_s ch a /\ mem_ch_s ch b) /\
+                                      (forall e. mem_ch_s e a <==> mem_ch_s e b) /\
+                                      unique_chs lst /\ (forall ch. mem ch lst ==> 
+                                                 (forall e. C.mem_id_s e (get_msg_s ch a) <==> C.mem_id_s e (get_msg_s ch b))) /\
+                         (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch a) <==> mem e (get_msg_s ch b))) /\
+                         (forall ch. mem ch lst ==> (List.Tot.length (get_msg_s ch a) = List.Tot.length (get_msg_s ch b))) /\
+                         (forall ch. mem ch lst ==> 
+                                         (forall e e1. mem e (get_msg_s ch a) /\ mem e1 (get_msg_s ch a) /\ 
+                                         C.fst e <> C.fst e1 /\ C.fst e > C.fst e1 /\ C.ord e e1 (get_msg_s ch a)  <==> 
+                                         mem e (get_msg_s ch b) /\ mem e1 (get_msg_s ch b) /\ C.fst e <> C.fst e1 /\
+                                         C.fst e > C.fst e1 /\ C.ord e e1 (get_msg_s ch b))))
+                         (ensures (forall ch. mem ch lst ==> (get_msg_s ch a = get_msg_s ch b)))
+                         (decreases lst)
+#set-options "--z3rlimit 10000000"
+let rec convergence3 a b lst =
+  match lst with
+  |[] -> ()
+  |ch::chs -> C.lem_same (get_msg_s ch a) (get_msg_s ch b);
+            convergence3 a b chs
+
+val convergence : tr:ae op
+                -> a:s
+                -> b:s
+                -> Lemma (requires (sim tr a /\ sim tr b))
+                        (ensures (forall ch. mem_ch_s ch a <==> mem_ch_s ch b) /\
+                                 (forall ch. mem_ch_s ch a /\ mem_ch_s ch b ==> (get_msg_s ch a = get_msg_s ch b)))
+
+#set-options "--z3rlimit 10000000"
+let convergence tr a b =
+  convergence1 tr a b;
+  convergence2 tr a b;
+  assume (forall ch. mem ch (get_lst a) ==> mem_ch_s ch a /\ mem_ch_s ch b);
+  lem_length a b (get_lst a); admit ();
+  convergence3 a b (get_lst a)
 
 val lem_oper : tr:ae op 
              -> op:(nat * op)
@@ -249,12 +320,6 @@ let prop_oper tr st op =
   prop_oper1 tr st op;
   C.prop_oper (project (get_ch op) tr) (get_msg_s (get_ch op) st) (project_op op);
   assert (C.sim (project (get_ch op) (append tr op)) (get_msg_s (get_ch op) (app_op st op))); ()
-
-val unique_chs : list string -> Tot bool
-let rec unique_chs l =
-  match l with
-  |[] -> true
-  |x::xs -> not (mem x xs) && unique_chs xs
 
 val get_ch_lst : l:s -> a:s -> b:s
                -> Pure (list string)
@@ -339,7 +404,7 @@ val lem_merge2 : ltr:ae op
 #set-options "--z3rlimit 10000000"
 let lem_merge2 ltr l atr a btr b lst = ()
 
-val lem_merge3 : ltr:ae op
+ val lem_merge3 : ltr:ae op
                  -> l:s
                  -> atr:ae op
                  -> a:s
@@ -570,13 +635,6 @@ let rec prop_merge1 ltr l atr a btr b lst =
                  (get_msg_s i (merge ltr l atr a btr b)) (project i (absmerge ltr atr btr));
           prop_merge1 ltr l atr a btr b is
 
-val get_lst : m:s -> Pure (list string)
-                       (requires true)
-                       (ensures (fun r -> (forall i. mem i r <==> mem_ch_s i m)))
-let rec get_lst m =
-      match m with
-      |[] -> []
-      |(i,x)::xs -> i::get_lst xs
 
 val prop_merge : ltr:ae op
                -> l:s
