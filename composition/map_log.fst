@@ -329,9 +329,12 @@ val lem_merge2 : ltr:ae op
                                    (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst /\
                 (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch l) ==> mem e (get_msg_s ch a) /\ mem e (get_msg_s ch b))))
                     (ensures (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
-                      (forall ch. mem ch lst ==>
+                      (*forall ch. mem ch lst ==>
                              (forall e. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==>
-                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))))
+                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))*)
+                      (forall ch. mem ch lst ==>
+                                 (forall e e1. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) /\
+                                          mem e1 (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==> C.fst e <> C.fst e1)))
 
 #set-options "--z3rlimit 10000000"
 let lem_merge2 ltr l atr a btr b lst = ()

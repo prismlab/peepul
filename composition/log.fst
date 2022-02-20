@@ -151,19 +151,82 @@ val remove_st : ele:(nat * string) -> a:s
                     (requires (mem ele a))
                     (ensures (fun r -> (forall e. mem e r <==> mem e a /\ e <> ele) /\
                                     (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ ord e e1 r /\ fst e > fst e1 <==>
-                         mem e a /\ mem e1 a /\ fst e <> fst e1 /\ e <> ele /\ e1 <> ele /\ fst e > fst e1 /\ ord e e1 a)))
+                         mem e a /\ mem e1 a /\ fst e <> fst e1 /\ e <> ele /\ e1 <> ele /\ fst e > fst e1 /\ ord e e1 a) /\
+                         (List.Tot.length r = List.Tot.length a - 1)))
 
 #set-options "--z3rlimit 1000000"
 let remove_st ele a = filter (fun e -> e <> ele) a
+
+val convergence1 : tr:ae op
+                -> a:s
+                -> b:s
+                -> Lemma (requires (sim tr a /\ sim tr b))
+                        (ensures (forall id. mem_id_s id a <==> mem_id_s id b) /\ (forall e. mem e a <==> mem e b) /\
+                                 (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==> 
+                                          mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b))
+let convergence1 tr a b = ()
+
+val remove_id : id:nat 
+              -> s1:s
+              -> Tot (r:s {(forall e. mem e r <==> mem e s1 /\ fst e <> id) /\
+                          (forall i1. mem_id_s i1 s1 /\ i1 <> id <==> mem_id_s i1 r) /\
+                          (mem_id_s id s1 ==> List.Tot.length r = List.Tot.length s1 - 1) /\
+                            (not (mem_id_s id s1) ==> List.Tot.length r = List.Tot.length s1) /\
+                            not (mem_id_s id r)})
+let rec remove_id id s1 =
+    match s1 with
+    |[] -> []
+    |(i1,c)::xs -> if id=i1 then xs else (i1,c)::remove_id id xs
+    
+val lem_length : a:s 
+               -> b:s 
+               -> Lemma (requires (forall e. mem_id_s e a <==> mem_id_s e b))
+                       (ensures (List.Tot.length a = List.Tot.length b))
+let rec lem_length a b =
+    match a,b with
+    |[],[] -> ()
+    |x::xs,_ -> lem_length xs (remove_id (fst x) b)
+
+val lem_same : a:s -> b:s
+             -> Lemma (requires (forall e. mem e a <==> mem e b) /\
+                           (forall id. mem_id_s id a <==> mem_id_s id b) /\
+                           (List.Tot.length a = List.Tot.length b) /\
+                           (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ ord e e1 a /\ fst e > fst e1 <==> 
+                                    mem e b /\ mem e1 b /\ fst e <> fst e1 /\ ord e e1 b /\ fst e > fst e1))
+                     (ensures (forall e. mem e a /\ mem e b ==> pos e a = pos e b) /\ a = b)
+
+#set-options "--z3rlimit 10000000"
+#set-options "--initial_fuel 10 --max_fuel 10 --initial_ifuel 10 --max_ifuel 10"
+let rec lem_same a b =
+  match a,b with
+  |[],[] -> ()
+  |[x],[y] -> ()
+  |x::xs::[], y::ys::[] -> ()
+  |x::x1::xs, y::y1::ys -> assert (unique_s (x1::xs) /\ unique_s (y1::ys) /\ total_order (x1::xs) /\ total_order (y1::ys));
+                      assert (length (x1::xs) = length (y1::ys));
+                      assert (ord x x1 a /\ ord y y1 b /\ ord x x1 b /\ ord y y1 a);
+                      assert (pos x a = pos y b /\ pos x1 a = pos y1 b);
+                      assert (forall e. mem e xs /\ fst x1 <> fst e /\ fst x1 > fst e /\ ord x1 e a <==> 
+                                   mem e ys /\ fst y1 <> fst e /\ fst y1 > fst e /\ ord y1 e b); 
+                      assert (fst x <> fst x1 /\ fst y <> fst y1 /\ x = y /\ x1 = y1);
+                      assert (forall e. mem e (x1::xs) <==> mem e (y1::ys)); 
+                      assert (forall e. mem e (x1::xs) /\ fst x <> fst e /\ fst x > fst e /\ ord x e a <==> 
+                                   mem e (y1::ys) /\ fst y <> fst e /\ fst x > fst e /\ ord y e b);
+                      assert (forall e. mem e xs <==> mem e ys /\ unique_s ys /\ total_order ys); 
+                      assert (forall e e1. mem e (x1::xs) /\ mem e1 (x1::xs) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (x1::xs) <==>
+                                      mem e (y1::ys) /\ mem e1 (y1::ys) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (y1::ys));
+                      lem_same (x1::xs) (y1::ys) 
 
 val convergence : tr:ae op
                 -> a:s
                 -> b:s
                 -> Lemma (requires (sim tr a /\ sim tr b))
-                        (ensures (forall id. mem_id_s id a <==> mem_id_s id b) /\ (forall e. mem e a <==> mem e b) /\
-                                 (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ ord e e1 a /\ fst e > fst e1 <==> 
-                                          mem e b /\ mem e1 b /\ fst e <> fst e1 /\ ord e e1 b /\ fst e > fst e1))
-let convergence tr a b = ()
+                        (ensures (a = b))
+
+let convergence tr a b = 
+  convergence1 tr a b;
+  lem_length a b;
+  lem_same a b
 
 val union_s : a:s
             -> b:s
@@ -202,25 +265,8 @@ val merge1 : l:s
                        (forall e. mem e (diff_s a l) ==> not (mem_id_s (fst e) (diff_s b l))) /\
                        (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))) /\
                        (forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
-                       (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e) (*)/\
-                       (forall e e1. mem e l /\ mem e1 a ==> fst e1 >= fst e) /\
-                       (forall e e1. mem e l /\ mem e1 b ==> fst e1 >= fst e*) (*)/\
-                       (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
-                                (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
-              (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
-              (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)) /\
-              (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b <==>
-                                 (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
-                 (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
-                 (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)*) (*)/\
-      (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
-      (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b*))
-             (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) (*)/\
-                            (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
-                                      (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
-                                     (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
-                                     (mem e a /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1) \/
-                                     (mem e b /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1)*) /\
+                       (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e))
+             (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
                             (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
                                      (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
@@ -290,16 +336,6 @@ let merge ltr l atr a btr b =
             (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))));
     assert ((forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e1 > fst e) /\
             (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e1 > fst e)); 
-    (*)assert (forall e e1. mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a <==>
-                (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
-             (mem e (diff_s a l) /\ mem e1 (diff_s a l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s a l)) \/
-                (mem e (diff_s a l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
-    assert (forall e e1. mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b <==>
-                                   (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
-              (mem e (diff_s b l) /\ mem e1 (diff_s b l) /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 (diff_s b l)) \/
-                  (mem e (diff_s b l) /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1)); 
-    assert ((forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 a) /\
-    (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l ==> ord e e1 b));*)
     merge1 l a b
 
 val prop_merge : ltr:ae op
@@ -337,4 +373,3 @@ let prop_merge ltr l atr a btr b =
   Library.convergence = convergence;
   Library.sim = sim;
   Library.prop_oper = prop_oper*)
-
