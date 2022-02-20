@@ -267,8 +267,7 @@ val convergence : tr:ae op
 let convergence tr a b =
   convergence1 tr a b;
   convergence2 tr a b;
-  assume (forall ch. mem ch (get_lst a) ==> mem_ch_s ch a /\ mem_ch_s ch b);
-  lem_length a b (get_lst a); admit ();
+  lem_length a b (get_lst a);
   convergence3 a b (get_lst a)
 
 val lem_oper : tr:ae op 
@@ -394,17 +393,13 @@ val lem_merge2 : ltr:ae op
                                    (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst /\
                 (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch l) ==> mem e (get_msg_s ch a) /\ mem e (get_msg_s ch b))))
                     (ensures (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
-                      (*forall ch. mem ch lst ==>
-                             (forall e. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==>
-                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))*)
-                      (forall ch. mem ch lst ==>
-                                 (forall e e1. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) /\
-                                          mem e1 (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==> C.fst e <> C.fst e1)))
+                      (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==>
+                                                not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))))
 
 #set-options "--z3rlimit 10000000"
 let lem_merge2 ltr l atr a btr b lst = ()
 
- val lem_merge3 : ltr:ae op
+val lem_merge3 : ltr:ae op
                  -> l:s
                  -> atr:ae op
                  -> a:s
@@ -417,11 +412,11 @@ let lem_merge2 ltr l atr a btr b lst = ()
                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1) /\
-                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst)
+                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst /\
+                     (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch l) ==> mem e (get_msg_s ch a) /\ mem e (get_msg_s ch b))))
                     (ensures (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
-                      (forall ch. mem ch lst ==>
-                             (forall e. mem e (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==>
-                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch a) (get_msg_s ch l))))))
+                      (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==>
+                                                not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch a) (get_msg_s ch l))))))
 
 #set-options "--z3rlimit 10000000"
 let lem_merge3 ltr l atr a btr b lst =
@@ -441,7 +436,12 @@ val lem_merge4 : ltr:ae op
                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1) /\
-                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst)
+                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst /\
+                   (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch l) ==> mem e (get_msg_s ch a) /\ mem e (get_msg_s ch b))) /\
+                   (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==>
+                                                 not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))) /\
+                   (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==>
+                                               not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch a) (get_msg_s ch l))))))
                     (ensures (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
                       (forall ch. mem ch lst ==>
                (forall e e1. mem e (get_msg_s ch l) /\ mem e1 (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==> C.fst e1 > C.fst e)))
@@ -462,7 +462,12 @@ val lem_merge5 : ltr:ae op
                                    (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
                                    (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1) /\
-                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst)
+                                   (forall ch. mem ch lst <==> mem_ch_s ch a \/ mem_ch_s ch b) /\ unique_chs lst /\
+                   (forall ch. mem ch lst ==> (forall e. mem e (get_msg_s ch l) ==> mem e (get_msg_s ch a) /\ mem e (get_msg_s ch b))) /\
+                     (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==>
+                                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch b) (get_msg_s ch l))))) /\
+                     (forall ch. mem ch lst ==> (forall e. mem e (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==>
+                                                   not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch a) (get_msg_s ch l))))))
                     (ensures (forall i. mem_ch_s i l ==> mem_ch_s i a /\ mem_ch_s i b) /\
                       (forall ch. mem ch lst ==>
                (forall e e1. mem e (get_msg_s ch l) /\ mem e1 (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==> C.fst e1 > C.fst e)))
