@@ -151,8 +151,7 @@ val remove_st : ele:(nat * string) -> a:s
                     (requires (mem ele a))
                     (ensures (fun r -> (forall e. mem e r <==> mem e a /\ e <> ele) /\
                                     (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ ord e e1 r /\ fst e > fst e1 <==>
-                         mem e a /\ mem e1 a /\ fst e <> fst e1 /\ e <> ele /\ e1 <> ele /\ fst e > fst e1 /\ ord e e1 a) /\
-                         (List.Tot.length r = List.Tot.length a - 1)))
+                         mem e a /\ mem e1 a /\ fst e <> fst e1 /\ e <> ele /\ e1 <> ele /\ fst e > fst e1 /\ ord e e1 a)))
 
 #set-options "--z3rlimit 1000000"
 let remove_st ele a = filter (fun e -> e <> ele) a
