@@ -154,7 +154,7 @@ val sim : tr:ae op
         -> s1:s
         -> Tot (b:bool {(b = true) <==> (forall ch. mem_ch_s ch s1 <==> mem_ch ch tr.l) /\
                                      (forall ch. mem_ch_s ch s1 ==> C.sim (project ch tr) (get_msg_s ch s1)) /\
-                                     (forall e. mem e tr.l ==> (exists e1. mem e1 s1 ==> get_ch e = get_ch_s e1 /\
+                                     (forall e. mem e tr.l ==> (exists e1. mem e1 s1 /\ get_ch e = get_ch_s e1 /\
                                            mem (get_id e, get_msg e) (get_msg_s1 e1)))})
 
 #set-options "--z3rlimit 10000000"
