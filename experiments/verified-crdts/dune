@@ -1,0 +1,17 @@
+(env
+ (dev
+  (flags (:standard -w -A))))
+
+(executable
+ (name counter)
+ (modules Counter)
+ (libraries num))
+
+(executable
+ (name orset)
+ (modules Orset))
+
+(executable
+ (name rga)
+ (modules Rga))
+
