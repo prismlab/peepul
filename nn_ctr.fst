@@ -166,17 +166,21 @@ val convergence : tr:ae
                         (ensures (a = b))
 let convergence tr a b = ()
 
-val append : tr:ae
-             -> op:o
-             -> Pure ae
-               (requires (not (member (get_id op) tr.l))  /\ (forall e. mem e tr.l ==> get_id e < get_id op))
-               (ensures (fun res -> (forall e. mem e res.l <==> (mem e tr.l \/ e = op)) /\
-                   (forall e1 e2. mem e1 tr.l /\ mem e2 tr.l /\ get_id e1 <> get_id e2 /\ tr.vis e1 e2 ==> res.vis e1 e2) /\
-                        (forall e. mem e tr.l ==> res.vis e op)))
+val append : tr:ae 
+           -> op1:o
+           -> Pure ae
+               (requires (not (member (get_id op1) tr.l)))
+               (ensures (fun r -> (forall e. mem e r.l <==> mem e tr.l \/ e = op1) /\
+                               (forall e e1. (mem e r.l /\ mem e1 r.l /\ get_id e <> get_id e1 /\ r.vis e e1) <==>
+                                        (mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1) \/
+                                        (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1)))) 
 let append tr op =
     match tr with
-    |(A _ ops) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
-                              (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::ops))
+    |(A _ []) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
+                              (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::[]))
+    |(A _ (x::xs)) -> (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
+                                (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::(x::xs)))
+
 
 val prop_oper0 : tr:ae
                -> st:s

@@ -52,7 +52,6 @@ val sorted_smaller: x:(nat * string)
                   ->  l:list (nat * string)
                   ->  Lemma (requires (unique_s (x::l) /\ total_order (x::l) /\ mem y l))
                            (ensures (fst x > fst y) /\ ord x y (x::l))
-                                    [SMTPat (unique_s (x::l) /\ total_order (x::l))]
 
 #set-options "--z3rlimit 1000000"
 let rec sorted_smaller x y l = match l with
