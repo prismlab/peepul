@@ -30,6 +30,12 @@ type op =
 val get_ele : op1:(nat * op) -> Tot (s:nat {op1 = (get_id op1, (Add s))}) 
 let get_ele (id, (Add m)) = m
 
+val mem_ele : ele:nat -> l:list (nat * op) -> Tot (b:bool {b = true <==> (exists id. mem (id, (Add ele)) l)})
+let rec mem_ele ele l =
+  match l with
+  |[] -> false
+  |(_, (Add ele1))::xs -> ele = ele1 || mem_ele ele xs
+
 val app_op : s1:s
            -> op:(nat * op)
            -> Pure s
@@ -44,7 +50,7 @@ instance gset : datatype s op = {
 #set-options "--query_stats"
 val sim : tr:ae op
         -> s1:s
-        -> Tot (b:bool {b = true <==> (forall e. mem e s1 <==> (exists e1. mem e1 tr.l /\ e1 = (get_id e1, (Add e))))})
+        -> Tot (b:bool {b = true <==> (forall e. mem e s1 <==> mem_ele e tr.l)})
 
 #set-options "--z3rlimit 1000000"
 let sim tr s1 = 
