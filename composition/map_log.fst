@@ -500,8 +500,8 @@ val merge : ltr:ae op
                                       not (C.mem_id_s (C.fst e) (C.diff_s (get_msg_s ch a) (get_msg_s ch l)))) /\
                (forall e e1. mem e (get_msg_s ch l) /\ mem e1 (C.diff_s (get_msg_s ch a) (get_msg_s ch l)) ==> C.fst e1 > C.fst e) /\
                (forall e e1. mem e (get_msg_s ch l) /\ mem e1 (C.diff_s (get_msg_s ch b) (get_msg_s ch l)) ==> C.fst e1 > C.fst e)) /\
-                               (forall ch. mem_ch_s ch r ==> (forall ch. mem_ch_s ch r ==> (get_msg_s ch r) =
-                               (C.merge1 (get_msg_s ch l) (get_msg_s ch a) (get_msg_s ch b))))))
+                               (forall ch. mem_ch_s ch r ==> (get_msg_s ch r) =
+                               (C.merge1 (get_msg_s ch l) (get_msg_s ch a) (get_msg_s ch b)))))
 
 #set-options "--z3rlimit 10000000"
 let merge ltr l atr a btr b =
