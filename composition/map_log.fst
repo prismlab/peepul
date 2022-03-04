@@ -167,7 +167,7 @@ let sim tr s1 =
 val lemma3 : tr:ae op -> s1:s
            -> Lemma (requires (sim tr s1))
                    (ensures (forall ch e1. mem_ch_s ch s1 /\ mem e1 (get_msg_s ch s1) ==>
-                                      mem (get_id e1, (ch, (C.Append (C.snd e1)))) tr.l) /\
+                                      mem (C.fst e1, (ch, (C.Append (C.snd e1)))) tr.l) /\
                                       (forall ch m. not (mem_ch_s ch s1) ==> (forall e. mem e tr.l ==> get_op e <> (ch, m))))
                                [SMTPat (sim tr s1)]
 let lemma3 tr s1 = ()
@@ -764,7 +764,7 @@ let prop_merge3 ltr l atr a btr b =
   lemma2 (merge ltr l atr a btr b);
   lemma6 ltr atr; lemma6 ltr btr;
   lemma61 ltr atr btr
-  
+
 val prop_merge : ltr:ae op
                -> l:s
                -> atr:ae op
