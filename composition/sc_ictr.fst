@@ -68,7 +68,7 @@ let rec filter_uni #op f l =
   |x::xs -> filter_uni f xs
 
 val project_op : o1:(nat * op)
-               -> Tot (o2:(nat * C.op) {(o2 = (get_id o1, C.Add))})
+               -> Tot (o2:(nat * C.op) {(o2 = (get_id o1, C.Add)) /\ (get_id o1 = get_id o2)})
 let project_op op =
   match op with
   |(id, (C.Add, i)) -> (id, C.Add)
@@ -80,7 +80,7 @@ val project1 : i:string
                     (ensures (fun r -> (forall id. member id r <==> (member id l.l /\ get_op (get_eve id l.l) = (C.Add,i))) /\
                                     unique r /\ (forall e. mem e l.l /\ get_op e = (C.Add,i) ==> mem (project_op e) r) /\
                                     (C.sum r = List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l)) /\
-                                    (forall e. mem e r ==> mem ((get_id e), (C.Add, i)) l.l)))
+                                    (forall e. mem e r <==> (mem ((get_id e), (C.Add, i)) l.l))))
             (decreases List.Tot.length l.l)
 
 #set-options "--z3rlimit 10000000"
@@ -93,17 +93,16 @@ val project : i:string
             -> l:ae op
             -> Pure (ae C.op)
                    (requires true)
-                   (ensures (fun r -> (forall id. member id r.l <==> (member id l.l /\ get_op (get_eve id l.l) = (C.Add,i))) /\
-                                   unique r.l /\ (forall e. mem e r.l ==> mem ((get_id e), (C.Add,i)) l.l) /\
-                                   (forall e. mem e l.l /\ get_op e = (C.Add,i) ==> mem (project_op e) r.l) /\
+                   (ensures (fun r -> (forall id. member id r.l <==> (member id l.l /\ get_op (get_eve id l.l) = (C.Add,i))) /\ unique r.l /\
                                    (C.sum r.l = List.Tot.length (filter (fun a -> get_op a = (C.Add,i)) l.l)) /\
-                                   (forall id id1. id <> id1 /\ member id r.l /\ member id1 r.l /\ (visib id id1 r) <==> 
-                                              id <> id1 /\ member id l.l /\ member id1 l.l /\ 
-              get_item (get_op (get_eve id l.l)) = i /\ get_item (get_op (get_eve id1 l.l)) = i /\ (visib id id1 l))))
+                                   (forall e. mem e r.l <==> (mem ((get_id e), (C.Add, i)) l.l)) /\
+                                   (forall e e1. (get_id e <> get_id e1 /\ mem (get_id e, (C.Add, i)) l.l /\ 
+                                    mem (get_id e1, (C.Add, i)) l.l /\ l.vis (get_id e, (C.Add, i)) (get_id e1, (C.Add, i))) <==>
+                                    (get_id e <> get_id e1 /\ mem e r.l /\ mem e1 r.l /\ r.vis e e1))))
+
+#set-options "--z3rlimit 10000000"
 let project i l =
-  (A (fun o o1 -> mem o (project1 i l) && mem o1 (project1 i l) && get_id o <> get_id o1 &&
-    get_item (get_op (get_eve (get_id o) l.l)) = i && get_item (get_op (get_eve (get_id o1) l.l)) = i &&
-               (visib (get_id o) (get_id o1) l)) (project1 i l))
+  (A (fun o o1 -> (mem (get_id o, (C.Add, i)) l.l && mem (get_id o1, (C.Add, i)) l.l &&  get_id o <> get_id o1 && l.vis (get_id o, (C.Add, i)) (get_id o1, (C.Add, i)))) (project1 i l))
 
 val lemma1 : l:ae op
            -> Lemma (ensures (forall i. not (mem_op (C.Add,i) l.l) ==> C.sum (project i l).l = 0) /\
@@ -143,7 +142,7 @@ instance sc : datatype s op = {
 val lemma2 : s1:s 
            -> Lemma (requires true)
                    (ensures (forall e. mem e s1 ==> (ctr (item e) s1 = ctr1 e)))
-               [SMTPat (forall e. mem e s1)]
+               [SMTPat (unique_s s1)]
 #set-options "--z3rlimit 10000000"
 let rec lemma2  s1 = 
     match s1 with
@@ -309,7 +308,6 @@ val lemma7 : tr:ae C.op -> s1:C.s -> tr1:ae C.op
            -> Lemma (requires C.sim tr s1 /\ (forall e. mem e tr1.l <==> mem e tr.l))
                    (ensures (C.sim tr1 s1))
                    (decreases %[tr.l;s1;tr1.l])
-                   [SMTPat (C.sim tr s1)]
 
 let rec lemma7 tr s1 tr1 = 
   match tr.l, tr1.l with
@@ -395,37 +393,3 @@ instance _ : mrdt s op sc = {
   Library.sim = sim;
   Library.prop_oper = prop_oper
 }
-
-
-(*#set-options "--z3rlimit 10000000"
-let rec prop_merge1 ltr l atr a btr b lst =
-  (*)lemma5 ltr atr; lemma5 ltr btr;*)
-  match lst with
-  |[] -> ()
-  |i::is -> assert (forall e. mem e (project i ltr).l ==> not (member (get_id e) (project i atr).l)); 
-          assert (forall e. mem e (project i ltr).l ==> not (member (get_id e) (project i btr).l));
-          lem_un i ltr atr; lem_un i ltr btr;
-          assert (forall e. mem e (union (project i ltr) (project i atr)).l <==> mem e (project i (union ltr atr)).l);
-          assert (forall e. mem e (union (project i ltr) (project i btr)).l <==> mem e (project i (union ltr btr)).l);
-          same (project i (union ltr atr)) (ctr i a) (union (project i ltr) (project i atr));
-          same (project i (union ltr btr)) (ctr i b) (union (project i ltr) (project i btr));
-          assert (C.sim (project i ltr) (ctr i l)); 
-          assert ((C.sim (project i ltr) (ctr i l))); 
-          assert ((C.sim (project i ltr) (ctr i l) /\ 
-                   C.sim (union (project i ltr) (project i atr)) (ctr i a) /\ 
-                   C.sim (union (project i ltr) (project i btr)) (ctr i b))); 
-          C.prop_merge (project i ltr) (ctr i l) (project i atr) (ctr i a) (project i btr) (ctr i b);
-      assert (C.sim (absmerge (project i ltr) (project i atr) (project i btr)) (ctr i (merge ltr l atr a btr b)));
-      assert ((forall  e. mem e (project i ltr).l ==> not (member (get_id e) (project i atr).l)) /\
-                  (forall  e. mem e (project i atr).l ==> not (member (get_id e) (project i btr).l)) /\
-                  (forall  e. mem e (project i ltr).l ==> not (member (get_id e) (project i btr).l)));
-      lem_abs i ltr atr btr;
-      assert (forall e. mem e (absmerge (project i ltr) (project i atr) (project i btr)).l <==> mem e (project i (absmerge ltr atr btr)).l); 
-      same (absmerge (project i ltr) (project i atr) (project i btr)) (ctr i (merge ltr l atr a btr b)) (project i (absmerge ltr atr btr));
-          assert (C.sim (project i (absmerge ltr atr btr)) (ctr i (merge ltr l atr a btr b)));
-          prop_merge1 ltr l atr a btr b is*)
-
-
-  (*)if (mem_item_s (get_item (get_op op)) st) then
-      C.prop_oper (project (get_item (get_op op)) tr) (ctr (get_item (get_op op)) st) (project_op op)
-  else ()*)

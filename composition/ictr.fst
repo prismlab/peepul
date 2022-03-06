@@ -6,7 +6,7 @@ type s = nat
 
 type op = |Add 
 
-val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {(exists id. op = (id, Add) ==> s2 = s1 + 1)})
+val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {s2 = s1 + 1})
 let app_op s op1 =
   match op1 with
   |(_,Add) -> s + 1
@@ -114,7 +114,6 @@ val convergence : tr:ae op
                  -> b:s
                  -> Lemma (requires (sim tr a /\ sim tr b))
                          (ensures a = b)
-                         [SMTPat (sim tr a /\ sim tr b)]
 let convergence tr a b = ()
 
 instance _ : mrdt s op ctr = {
