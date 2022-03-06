@@ -22,3 +22,5 @@ List of verified MRDTs:
 11. Functional queue : (state : list (unique ids, elements))
 12. Shopping cart composed of increment-only counter (state : list (unique items, icounter)
 13. Shopping cart composed of PN counter (state : list (unique items, pncounter))
+14. Append-only log : (state : list (unique ids, string))
+15. Grows-only map composed of Append-only log : (state : list (unique channels, Alog.state))
