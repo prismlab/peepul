@@ -9,6 +9,7 @@ end = struct
 
   type t = int list * int list
   type op = Enqueue of int | Dequeue
+  open TreeGraph
 
   let empty = ([], [])
   let norm q = match q with
@@ -83,6 +84,8 @@ end = struct
     let res_ob_h = merge_rels lca_ob a_ob b_ob PairSet.diff PairSet.inter PairSet.union in
     let res_ob = PairSet.inter res_ob_h (r_cross_sets res_mem res_mem) in
     (res_mem, res_ob)
+
+  (* let concrete (r_mem, r_ob) =  *)
 
 end
 

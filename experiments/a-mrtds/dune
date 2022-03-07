@@ -5,13 +5,13 @@
 (executable
  (name counter)
  (modules Counter)
- (libraries num))
+ (libraries bag))
 
 (executable
  (name orset)
  (modules Orset))
 
 (executable
- (name rga)
- (modules Rga))
+ (name queue)
+ (modules Queue))
 
