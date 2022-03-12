@@ -3,7 +3,7 @@ module Counter : sig
   type op = Increment | Decrement
   val make: int -> t
   val read: t -> int
-  val app_op: op -> t -> t
+  val app_op: (int * op) -> t -> t
   val merge: t -> t -> t -> t
 end = struct
 
@@ -17,14 +17,12 @@ end = struct
   module MultiSet = Bag.Make(Int)
 
   let app_op op st = match op with
-    | Increment -> increment st
-    | Decrement -> decrement st
+    | (_, Increment) -> increment st
+    | (_, Decrement) -> decrement st
 
-  let abstract t =
-    let rec abs_help ctr set = if ctr = 0 then set else abs_help (ctr-1) (MultiSet.add 1 set) in
-    abs_help t MultiSet.empty
+  let abstract st = MultiSet.add 1 ~mult:st MultiSet.empty
 
-  let concrete t_set = MultiSet.occ 1 t_set
+  let concretize t_set = MultiSet.occ 1 t_set
 
   let merge_rels lca a b diff inter union =
     let ixn = (inter (inter a b) lca) in
@@ -37,8 +35,6 @@ end = struct
     let a_abs = abstract a in
     let b_abs = abstract b in
     let r_abs = merge_rels lca_abs a_abs b_abs MultiSet.diff MultiSet.inter MultiSet.sum in
-    concrete r_abs
-
-  let _ = Printf.printf "%d\n" (merge 1 2 3)
+    concretize r_abs
 
 end
