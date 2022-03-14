@@ -303,6 +303,15 @@ let enqueue x s1 = (S s1.front (x::s1.back))
 
 #set-options "--initial_fuel 7 --ifuel 7 --initial_ifuel 7 --fuel 7 --z3rlimit 10000"
 
+val enqueue01 :x:(nat * nat)
+             -> s1:s
+             -> Lemma (requires (not (mem_id (fst x) s1.front) /\ not (mem_id (fst x) s1.back) /\ (s1.front = [] /\ s1.back <> [])))
+                     (ensures (forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
+                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))))
+                       (decreases (length (tolist (s1))))  [SMTPat (enqueue x s1)]
+
+let enqueue01 x s1 = ()
+
 val enqueue0 :x:(nat * nat)
              -> s1:s
              -> Lemma (requires (not (mem_id (fst x) s1.front) /\ not (mem_id (fst x) s1.back)))
@@ -316,23 +325,7 @@ let rec enqueue0 x s1 = match (s1) with
   | S (y::ys) [] -> enqueue0 x (S ys [])
   | S (y::ys) (g::gs) -> enqueue0 x (S ys (g::gs))
   | S [] (g::gs) -> if (tl (rev (g::gs)) = []) then () else
-                  enqueue0 x (S [] (tl (rev (g::gs))));
-                  assert(forall e. memq e s1 ==> order e x (tolist (enqueue x s1)));
-                  assert(forall e. memq e s1 /\ fst e <> fst x <==>
-                           memq e (enqueue x s1) /\ memq x (enqueue x s1) /\ fst e <> fst x /\ order e x (tolist (enqueue x s1)));
-                  assert(forall e e1. mem e s1.front /\ mem e1 s1.front /\ order e e1 (s1.front) /\ fst e <> fst e1 ==>
-                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
-                  assert(forall e e1. mem e s1.front /\ mem e1 s1.back /\ fst e <> fst e1 ==>
-                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)));
-                  assert(forall e e1. mem e s1.back /\ mem e1 s1.back /\ order e e1 (rev s1.back) /\ fst e <> fst e1 ==>
-                           memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 ((tolist (enqueue x s1))));
-                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1))) ==>
-                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1)))));
-                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) ==>
-                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1))));
-                  assert(forall e e1. (memq e s1 /\ fst e <> fst e1 /\ ((memq e1 s1 /\ order e e1 (tolist s1)) \/ (e1 = x))) <==>
-                       (memq e (enqueue x s1) /\ memq e1 (enqueue x s1) /\ fst e <> fst e1 /\ order e e1 (tolist (enqueue x s1))));
-                  ()
+                  enqueue01 x s1
 
 val get_val : a:option (nat * nat){Some? a} -> n:(nat * nat){a = Some n}
 let get_val a = match a with
@@ -1004,8 +997,7 @@ let merge0 ltr l atr a btr b =
                         (memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
                         (memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ memq e res /\ memq e1 res) \/
                         (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/
-                        (mem e1 (diff_s (tolist a) (tolist l)) /\ mem e (diff_s (tolist b) (tolist l)))) /\ (fst e < fst e1))));
-  ()
+                        (mem e1 (diff_s (tolist a) (tolist l)) /\ mem e (diff_s (tolist b) (tolist l)))) /\ (fst e < fst e1))))
 
 val absmerge01 : ltr:ae
                -> atr:ae
@@ -1043,7 +1035,7 @@ let absmerge01 ltr atr btr =
                                                && not (exists_mem (btr).l (fun d -> is_dequeue d && mem d (btr).l && mem x (union ltr btr).l &&
                                                                   get_id x <> get_id d && matched x d (union ltr btr)))) ltr.l in
   assert(forall e. mem e enq_list1 <==> mem e enq_list2);
-  assert(forall e. mem e enq_list2 ==> mem e enq_list); ()
+  assert(forall e. mem e enq_list2 ==> mem e enq_list)
 
 #pop-options
 

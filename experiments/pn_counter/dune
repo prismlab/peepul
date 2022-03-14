@@ -5,5 +5,5 @@
 (executable
  (name test)
  (ocamlopt_flags (-I %{env:FSTAR_HOME=/home/adharsh/Sources/FStar}/bin))
- (modules Peepul_Pnctr Quark_Pnctr test)
- (libraries fstarlib core_kernel))
+ (modules Library Peepul_Pnctr Quark_Pnctr test)
+ (libraries bag fstarlib core_kernel))
