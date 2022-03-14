@@ -22,6 +22,7 @@ let rec update_id new_id old_ele st = match st with
   | x::xs -> if (snd x) = old_ele then (new_id, (snd x))::xs else update_id new_id old_ele xs
 
 let add x s = if is_mem (snd x) s then (update_id (fst x) (snd x) s) else x::s
+
 let rem x s = List.filter (fun y -> snd y <> x) s
 
 let app_op st op = match op with
