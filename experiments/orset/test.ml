@@ -43,14 +43,7 @@ let rec gen_list acc x =
     gen_list ((random 100000, random 1000)::acc) (x-1)
 
 let run =
-<<<<<<< HEAD
   let lca = gen_list [] 1000 in
   let p_lca = lca in
   let q_lca = lca in
   test p_lca q_lca 1000
-=======
-  let lca = gen_list [] 100000 in
-  let p_lca = lca in
-  let q_lca = lca in
-  test p_lca q_lca 10000
->>>>>>> 6b089e3256e19a8b6dc512464536076ec70eaadb
