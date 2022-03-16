@@ -1,4 +1,3 @@
-module IntSet = Set.Make(Int)
 
 module Pair: sig
   include Set.OrderedType
@@ -21,7 +20,7 @@ let rec update_id new_id old_ele st = match st with
   | [] -> []
   | x::xs -> if (snd x) = old_ele then (new_id, (snd x))::xs else update_id new_id old_ele xs
 
-let add x s = if is_mem (snd x) s then (update_id (fst x) (snd x) s) else x::s
+let add x s = x::s
 
 let rem x s = List.filter (fun y -> snd y <> x) s
 
@@ -39,11 +38,7 @@ let merge_r lca a b =
   let ixn = (PairSet.inter (PairSet.inter a b) lca) in
   let diff_a = PairSet.diff a lca in
   let diff_b = PairSet.diff b lca in
-  let la1 = PairSet.filter (fun x -> not (PairSet.exists (fun y -> (snd y = snd x)) diff_b)) diff_a in
-  let lb1 = PairSet.filter (fun x -> not (PairSet.exists (fun y -> (snd y = snd x)) diff_a)) diff_b in
-  let la2 = PairSet.filter (fun x -> (PairSet.exists (fun y -> snd y = snd x) diff_b) && get_id (snd x) a > get_id (snd x) b) diff_a in
-  let lb2 = PairSet.filter (fun x -> (PairSet.exists (fun y -> snd y = snd x) diff_a) && get_id (snd x) a > get_id (snd x) a) diff_b in
-  PairSet.union (PairSet.union (PairSet.union (PairSet.union ixn la1) lb1) la2) lb2
+  (PairSet.union (PairSet.union ixn diff_a) diff_b)
 
 let (merge: t -> t -> t -> t) = fun lca a b ->
   let lca_abs = abstract lca in
