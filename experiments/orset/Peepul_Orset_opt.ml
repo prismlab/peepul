@@ -19,11 +19,13 @@ let (opa : o -> Prims.bool) =
     match o1 with
     | (uu___, Add uu___1) -> true
     | (uu___, Rem uu___1) -> false
+    | (_, _) -> false
 let (opr : o -> Prims.bool) =
   fun o1 ->
     match o1 with
     | (uu___, Add uu___1) -> false
     | (uu___, Rem uu___1) -> true
+    | (_, _) -> false
 let (get_ele : o -> Prims.nat) =
   fun o1 -> match o1 with | (uu___, Add ele) -> ele | (uu___, Rem ele) | (uu___, Look ele) -> ele
 let rec (member_id :
@@ -109,7 +111,7 @@ let (app_op : s -> o -> s) =
       else (if opr op1 then
         (if member_ele (get_ele op1) s1
         then remove_ele s1 (get_ele op1)
-        else s1) else (if member_ele (get_ele op1) s1 then s1 else s1))
+        else s1) else (if member_ele (get_ele op1) s1 then s1 else (Sys.opaque_identity s1)))
 let rec (member : Prims.nat -> o Prims.list -> Prims.bool) =
   fun n ->
     fun l ->

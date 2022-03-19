@@ -56,7 +56,6 @@ let rec except : 'a . ('a -> Prims.bool) -> 'a Prims.list -> 'a Prims.list =
           if Prims.op_Negation (f hd)
           then hd :: (except f tl)
           else except f tl
-
 let rec (app_op : s -> o -> s) =
   fun s1 ->
     fun uu___ ->
@@ -66,7 +65,7 @@ let rec (app_op : s -> o -> s) =
            | Add -> (id, ele) :: s1
            | Rem ->
              filter (fun e -> (FStar_Pervasives_Native.snd e) <> ele) s1
-           | Look -> if member_s ele s1 then s1 else s1)
+           | Look -> if member_s ele s1 then s1 else (Sys.opaque_identity s1))
 let rec (member : Prims.int -> o Prims.list -> Prims.bool) =
   fun n ->
     fun l ->

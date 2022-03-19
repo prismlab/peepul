@@ -32,7 +32,7 @@ let rec (member_ele : Prims.nat -> tree -> Prims.bool) =
       match t with
       | Leaf -> false
       | Node ((uu___, ele1), t1, t2) ->
-          ((ele = ele1) || (member_ele ele t1)) || (member_ele ele t2)
+        (ele = ele1) || if ele > ele1 then (member_ele ele t1) else (member_ele ele t2)
 let rec (forallt :
   ((Prims.nat * Prims.nat) -> Prims.bool) -> tree -> Prims.bool) =
   fun p ->
@@ -180,12 +180,14 @@ let rec (update : Prims.nat -> Prims.nat -> t -> tree) =
               if ele < ele1
               then Node ((id1, ele1), (update ele id t1), t2)
               else Node ((id1, ele1), t1, (update ele id t2))
+
 let (app_op : t -> Peepul_Orset_opt.o -> t) =
   fun s1 ->
-    fun op ->
-      if Peepul_Orset_opt.opa op
-      then update (Peepul_Orset_opt.get_ele op) (Peepul_Orset_opt.get_id op) s1
-      else delete_ele (Peepul_Orset_opt.get_ele op) s1
+  fun op ->
+  match op with
+  | (id, Add x) -> update (Peepul_Orset_opt.get_ele op) (Peepul_Orset_opt.get_id op) s1
+  | (id, Rem x) -> delete_ele (Peepul_Orset_opt.get_ele op) s1
+  | (id, Look x) -> if member_ele x s1 then s1 else (Sys.opaque_identity s1)
 let rec (insert : (Prims.nat * Prims.nat) -> t -> tree) =
   fun x ->
     fun t1 ->

@@ -12,15 +12,15 @@ let size l = List.length l
 let l_random l = if l = [] then (Z.of_int (-1), []) else let ele = List.nth l (Random.int (List.length l)) in
     (ele, List.filter (fun x -> x <> ele) l)
 
-let g_random l = List.nth l (Random.int (List.length l))
+let g_random l = if l = [] then Z.of_int (-1) else List.nth l (Random.int (List.length l))
 
 let add_random x l = if List.mem x l then (x, l) else (x, x::l)
 
-let random_ops r1 r2 r_l = let r = Random.int 100 in
+let rec random_ops r1 r2 r_l = let r = Random.int 100 in
   if (r < r1) then
     begin
-      let ele = (g_random r_l) in
-      ((ele, M.Look, ele), r_l)
+      if r_l = [] then (random_ops (-1) 101 r_l) else
+      (let ele = (g_random r_l) in ((ele, M.Look, ele), r_l))
     end
   else
     begin
@@ -62,11 +62,11 @@ let rec test lca a b a_l b_l count =
 let rec gen_lca p p_l count =
   if count = 0 then (p, p_l) else
     let insert_ratio = 70 in
-    let (p, p_l) = app_op p (random_ops 0 60 p_l) in
+    let (p, p_l) = app_op p (random_ops 60 90 p_l) in
     gen_lca p p_l (count - 1)
 
 let _ =
-  let (lca, lca_l) = gen_lca [] [] 10000 in
+  let (lca, lca_l) = gen_lca [] [] 1000 in
   let a = lca in
   let b = lca in
   let t = test lca a b lca_l lca_l 1000 in
