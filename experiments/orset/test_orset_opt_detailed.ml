@@ -53,15 +53,15 @@ let rec test lca a b a_l b_l time count =
   let replica_ratio = 50 in
   let insert_ratio = 50 in
   let merge_ratio = 500 in
-  let ((a, a_l, t_a), (b, b_l, t_b)) = if pick_r replica_ratio a b = a then (app_op a (random_ops 60 90 a_l), (b, b_l, 0.0))
-    else ((a, a_l, 0.0), app_op b (random_ops 60 90 b_l)) in
+  let ((a, a_l, t_a), (b, b_l, t_b)) = if pick_r replica_ratio a b = a then (app_op a (random_ops 70 90 a_l), (b, b_l, 0.0))
+    else ((a, a_l, 0.0), app_op b (random_ops 70 90 b_l)) in
   let (lca, t_la) = if (count mod merge_ratio = 0) then merge lca a b else (lca, 0.0) in
   test lca a b a_l b_l (time +. t_a +. t_b +. t_l +. t_la) (count-1)
 
 let rec gen_lca p p_l count =
   if count = 0 then (p, p_l) else
     let insert_ratio = 70 in
-    let (p, p_l, t_p) = app_op p (random_ops 60 90 p_l) in
+    let (p, p_l, t_p) = app_op p (random_ops 70 90 p_l) in
     gen_lca p p_l (count - 1)
 
 let _ =
