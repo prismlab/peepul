@@ -2,6 +2,7 @@ open Prims
 type op =
   | Add of Prims.nat 
   | Rem of Prims.nat 
+  | Look of Prims.nat 
 let (uu___is_Add : op -> Prims.bool) =
   fun projectee -> match projectee with | Add _0 -> true | uu___ -> false
 let (__proj__Add__item___0 : op -> Prims.nat) =
@@ -24,7 +25,7 @@ let (opr : o -> Prims.bool) =
     | (uu___, Add uu___1) -> false
     | (uu___, Rem uu___1) -> true
 let (get_ele : o -> Prims.nat) =
-  fun o1 -> match o1 with | (uu___, Add ele) -> ele | (uu___, Rem ele) -> ele
+  fun o1 -> match o1 with | (uu___, Add ele) -> ele | (uu___, Rem ele) | (uu___, Look ele) -> ele
 let rec (member_id :
   Prims.nat -> (Prims.nat * Prims.nat) Prims.list -> Prims.bool) =
   fun n ->
@@ -105,10 +106,10 @@ let (app_op : s -> o -> s) =
         (if member_ele (get_ele op1) s1
          then update s1 (get_ele op1) (get_id op1)
          else ((get_id op1), (get_ele op1)) :: s1)
-      else
-        if member_ele (get_ele op1) s1
+      else (if opr op1 then
+        (if member_ele (get_ele op1) s1
         then remove_ele s1 (get_ele op1)
-        else s1
+        else s1) else (if member_ele (get_ele op1) s1 then s1 else s1))
 let rec (member : Prims.nat -> o Prims.list -> Prims.bool) =
   fun n ->
     fun l ->

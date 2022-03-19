@@ -52,9 +52,9 @@ let test lca_ops ops =
 
 let rec gen_list acc x =
   if x = 0 then acc else
-    gen_list ((random 100000, random 1000)::acc) (x-1)
+    gen_list ((random 100000, random 100000)::acc) (x-1)
 
 let run =
-  let lca_ops = 10000 in
+  let lca_ops = 50000 in
   let merge_ops = 1000 in
   test lca_ops merge_ops
