@@ -450,8 +450,8 @@ val tree_of_list : l:O.s
                    (requires (sorted l))
                    (ensures (fun r -> (size r = length l) /\
                             (forall e. memt1 e r <==> mem e l) /\
-                            (forall id. member_id id r <==> O.member_id id l) /\
-                            (forall ele. member_ele ele r <==> O.member_ele ele l)))
+                            (forall id. member_id id r <==> O.member_id id l) (*)/\
+                            (forall ele. member_ele ele r <==> O.member_ele ele l*)))
                    (decreases %[length l])
 
 #set-options "--z3rlimit 1000000"
@@ -468,12 +468,12 @@ let lem_tree l = admit ()
 
 val lem_sort : l:list (nat * nat)
              -> Lemma (requires (O.unique_id l /\ O.unique_ele l))
-                     (ensures (O.unique_id (sortWith (fun x y -> snd y - snd x) l)) /\
-                              (O.unique_ele (sortWith (fun x y -> snd y - snd x) l)) /\
-                              (sorted (sortWith (fun x y -> snd y - snd x) l)) /\
-                                (forall e. mem e l <==> mem e (sortWith (fun x y -> snd y - snd x) l)) /\
-                                  (forall id. O.member_id id l <==> O.member_id id (sortWith (fun x y -> snd y - snd x) l)) /\
-                                    (forall ele. O.member_ele ele l <==> O.member_ele ele (sortWith (fun x y -> snd y - snd x) l)))
+                     (ensures (O.unique_id (sortWith (fun x y -> snd x - snd y) l)) /\
+                              (O.unique_ele (sortWith (fun x y -> snd x - snd y) l)) /\
+                              (sorted (sortWith (fun x y -> snd x - snd y) l)) /\
+                                (forall e. mem e l <==> mem e (sortWith (fun x y -> snd x - snd y) l)) /\
+                                  (forall id. O.member_id id l <==> O.member_id id (sortWith (fun x y -> snd x - snd y) l)) /\
+                                    (forall ele. O.member_ele ele l <==> O.member_ele ele (sortWith (fun x y -> snd x - snd y) l)))
                   (decreases l)
 
 #set-options "--z3rlimit 10000000"
@@ -483,9 +483,11 @@ let rec lem_sort l =
     |x::[] -> ()
     |x::y::xs -> admit (); lem_sort (y::xs)
 
-let l = [(2,2);(1,1);(3,3);(10,10);(5,5)]
-let l' = sortWith (fun x y -> snd y - snd x) l
-let _ = assert (l' = [(1,1);(2,2);(3,3);(5,5);(10,10)] /\ sorted l')
+val sort : lst:list (nat * nat) -> Tot (list (nat * nat))
+let sort lst = sortWith (fun x y -> snd x - snd y) lst
+
+let _ = assert (sort [(1,2);(2,1);(3,3);(4,10);(5,5)] = [(2,1);(1,2);(3,3);(5,5);(4,10)] /\
+                     sorted (sort [(1,2);(2,1);(3,3);(4,10);(5,5)]))
 
 val merge : ltr:O.ae
           -> l:t
@@ -506,7 +508,7 @@ val merge : ltr:O.ae
 let merge ltr l atr a btr b = 
     let m = O.merge ltr (flatten l) atr (flatten a) btr (flatten b) in
     assert (O.unique_id m /\ O.unique_ele m); 
-    let m' = sortWith (fun x y -> snd y - snd x) m in
+    let m' = sortWith (fun x y -> snd x - snd y) m in
     lem_sort m;
     assert (sorted m');
     lem_tree m';
