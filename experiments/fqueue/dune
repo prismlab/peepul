@@ -4,7 +4,7 @@
 
 (executable
  (name test)
- (ocamlopt_flags (-I %{env:FSTAR_HOME=/home/adharsh/Sources/FStar}/bin))
+ (ocamlopt_flags (-I %{env:FSTAR_HOME=/Users/vimcy7/everest/FStar}/bin))
  (modules Peepul_Fqueue Quark_Fqueue test)
  (libraries fstarlib core_kernel))
 
