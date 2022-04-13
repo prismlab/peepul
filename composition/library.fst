@@ -41,14 +41,16 @@ let rec get_eve id l =
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
 noeq type ae (op:eqtype) = 
-    |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-       -> l:list (nat * op) {unique l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
-                                        get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'')
-                                        ==> vis e e'') (*transitive*)/\
-                                     (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e')
-                                        ==> not (vis e' e)) (*asymmetric*) /\
-                                     (forall e. mem e l ==> not (vis e e)) (*irreflexive*)} 
-       -> ae op
+      |A : vis:((nat * op) -> (nat * op) -> Tot bool) -> l:list (nat * op) {unique l} -> ae op
+
+assume val axiom : #op:eqtype
+                     -> l:ae op
+                     -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
+           get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'') ==> l.vis e e'') (*transitive*)/\ 
+           (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') ==> not (l.vis e' e)) (*asymmetric*) /\
+                                (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)) /\
+             (forall e e1. mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1 ==> get_id e < get_id e1))
+                                [SMTPat (unique l.l)]
 
 val get_op_id : #op:eqtype
               -> id:nat
@@ -120,26 +122,25 @@ val union1 : #op:eqtype
                (requires (forall e. (mem e l.l ==> not (member  (get_id e) a.l))))
                (ensures (fun u -> (forall e. mem e u <==> mem e l.l \/ mem e a.l) /\ (unique u))) 
                (decreases %[l.l;a.l])
+
 #set-options "--z3rlimit 10000"
 let rec union1 #op l a =
     match l,a with
     |(A _ []), (A _ []) -> []
     |(A _ (x::xs)), _ -> x::(union1  (A l.vis xs) a)
-    |(A _ []), (A _ (x::xs)) -> x::(union1  l (A a.vis xs))
+    |(A _ []), (A _ (x::xs)) -> x::(union1 l (A a.vis xs))
 
 val union : #op:eqtype 
           -> l:ae op
           -> a:ae op
           -> Pure (ae op)
               (requires (forall e. (mem e l.l ==> not (member (get_id e) a.l))))
-              (ensures (fun u -> (forall e e1. (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1) <==>
-                                         (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1) \/
-                                         (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ a.vis e e1) \/
-                                         (mem e l.l /\ mem e1 a.l /\ get_id e <> get_id e1)))) 
+              (ensures (fun u -> (forall e e1. (mem e l.l /\ mem e1 l.l /\ get_id e <> get_id e1 /\ l.vis e e1) \/
+                                       (mem e a.l /\ mem e1 a.l /\ get_id e <> get_id e1 /\ a.vis e e1) ==>
+                                       (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1)))) 
 let union l a =
       (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
-                   (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) ||
-                   (mem o l.l && mem o1 a.l && get_id o <> get_id o1)) (union1 l a))
+                   (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1)) (union1 l a))
 
 val absmerge1 : #op:eqtype 
               -> l:ae op
@@ -166,19 +167,15 @@ val absmerge : #op:eqtype
                          (forall e. mem e a.l ==> not (member (get_id e) b.l)) /\
                          (forall e. mem e l.l ==> not (member (get_id e) b.l)))  
                (ensures (fun u -> (forall e. mem e u.l <==> mem e l.l \/ mem e a.l \/ mem e b.l) /\
-                          (forall e1 e2. (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2) <==> 
-                                         (mem e1 l.l /\ mem e2 l.l /\ get_id e1 <> get_id e2 /\ l.vis e1 e2) \/
-                                         (mem e1 a.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ a.vis e1 e2) \/ 
-                                         (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) \/
-                             (mem e1 l.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ (union l a).vis e1 e2) \/
-                             (mem e1 l.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ (union l b).vis e1 e2))))
+                          (forall e1 e2. (mem e1 l.l /\ mem e2 l.l /\ get_id e1 <> get_id e2 /\ l.vis e1 e2) \/
+                                    (mem e1 a.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ a.vis e1 e2) \/ 
+                                    (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) ==>
+                             (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2))))
 #set-options "--z3rlimit 10000"
 let absmerge l a b = 
     (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) || 
                  (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) || 
-                 (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1) ||
-                 (mem o l.l && mem o1 a.l && get_id o <> get_id o1 && (union l a).vis o o1) || 
-                 (mem o l.l && mem o1 b.l && get_id o <> get_id o1 && (union l b).vis o o1)) (absmerge1 l a b))
+                 (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1)) (absmerge1 l a b))
 
 val filter_uni : #op:eqtype
                -> f:((nat * op) -> bool)
@@ -241,9 +238,7 @@ class mrdt (s:eqtype) (op:eqtype) (m: datatype s op) = {
         -> Pure s (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                            (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                            (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                           (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                           (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
-                           (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1))
+                           (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                  (ensures (fun b -> true));
 
   prop_merge : ltr:ae op 
@@ -255,9 +250,7 @@ class mrdt (s:eqtype) (op:eqtype) (m: datatype s op) = {
              -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                                (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                                (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
-                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                               (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
-                               (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1))
+                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                      (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)));
 
   prop_oper : tr:ae op 

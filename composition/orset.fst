@@ -1,7 +1,7 @@
 module Orset
 open FStar.List.Tot
 
-open Library
+open Library_weak
 
 val member_s : id:nat 
              -> l:list (nat * nat)

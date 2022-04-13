@@ -1,7 +1,7 @@
 module Ew
 open FStar.List.Tot
 
-open Library
+open Library_weak
 type s = nat * bool
 
 type op = 
@@ -34,7 +34,7 @@ let app_op (c,f) e =
       |(_,Rem) -> (c, false)
 
 instance ew : datatype s op = {
-  Library.app_op = app_op
+  Library_weak.app_op = app_op
 }
 
 val sum : l:(list (nat * op))
@@ -154,7 +154,79 @@ let rec lemma2 l a b =
    match l with
    |[] -> ()
    |x::xs -> lem_sum xs
-   
+
+val lemma4 : ltr:ae op
+           -> l:s 
+           -> atr:ae op
+           -> a:s 
+           -> btr:ae op
+           -> b:s 
+           -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                   (ensures (snd a = true /\ snd b = false /\ fst a = fst l ==> flag (absmerge ltr atr btr) = false) /\
+                            (snd b = true /\ snd a = false /\ fst b = fst l ==> flag (absmerge ltr atr btr) = false))
+
+#set-options "--z3rlimit 1000000"
+let lemma4 ltr l atr a btr b = 
+    lemma1 ltr atr; lemma1 ltr btr;
+    lem_sum atr.l; lem_sum btr.l;
+    ()
+
+val lemma5 : ltr:ae op
+           -> l:s 
+           -> atr:ae op
+           -> a:s 
+           -> btr:ae op
+           -> b:s 
+           -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                   (ensures (snd a = true /\ snd b = false /\ fst a > fst l ==> flag (absmerge ltr atr btr) = true) /\
+                            (snd b = true /\ snd a = false /\ fst b > fst l ==> flag (absmerge ltr atr btr) = true))
+
+#set-options "--z3rlimit 1000000"
+let lemma5 ltr l atr a btr b = 
+    lemma1 ltr atr; lemma1 ltr btr;
+    lem_sum atr.l; lem_sum btr.l;
+    ()
+
+val lemma3 : ltr:ae op
+           -> l:s 
+           -> atr:ae op
+           -> a:s 
+           -> btr:ae op
+           -> b:s 
+           -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                   (ensures (snd a = true /\ snd b = true ==> flag (absmerge ltr atr btr) = true) /\
+                            (snd a = false /\ snd b = false ==> flag (absmerge ltr atr btr) = false))
+
+#set-options "--z3rlimit 1000000"
+let lemma3 ltr l atr a btr b = ()
+
+val lemma0 : ltr:ae op
+             -> l:s 
+             -> atr:ae op
+             -> a:s 
+             -> btr:ae op
+             -> b:s 
+             -> Lemma (requires (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                     (ensures (sum (absmerge ltr atr btr).l = fst (merge ltr l atr a btr b)))
+
+#set-options "--z3rlimit 1000000"
+let lemma0 ltr l atr a btr b = 
+  lemma1 ltr atr; 
+  lemma1 ltr btr;
+  lemma2 ltr atr btr; ()
+
 val prop_merge : ltr:ae op
                -> l:s
                -> atr:ae op
@@ -169,11 +241,10 @@ val prop_merge : ltr:ae op
 
 #set-options "--z3rlimit 10000000"
 let prop_merge ltr l atr a btr b = 
-  lemma1 ltr atr; 
-  lemma1 ltr btr;
-  lemma2 ltr atr btr;
-  lem_sum atr.l;
-  lem_sum btr.l;
+  lemma0 ltr l atr a btr b;
+  lemma3 ltr l atr a btr b;
+  lemma4 ltr l atr a btr b;
+  lemma5 ltr l atr a btr b;
   ()
 
 val convergence : tr:ae op
@@ -185,10 +256,10 @@ val convergence : tr:ae op
 let convergence tr a b = ()
 
 instance _ : mrdt s op ew = {
-  Library.merge = merge;
-  Library.prop_merge = prop_merge;
-  Library.convergence = convergence;
-  Library.sim = sim;
-  Library.prop_oper = prop_oper
+  Library_weak.merge = merge;
+  Library_weak.prop_merge = prop_merge;
+  Library_weak.convergence = convergence;
+  Library_weak.sim = sim;
+  Library_weak.prop_oper = prop_oper
 }
 
