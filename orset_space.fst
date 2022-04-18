@@ -151,8 +151,8 @@ let sim tr s1 =
 val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (forall e. mem e tr.l ==> get_id e < get_id op) /\
-                                (not (mem_id (get_id op) tr.l)))
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                       (ensures (sim (append tr op) (app_op st op)))
 
 #set-options "--z3rlimit 1000000"

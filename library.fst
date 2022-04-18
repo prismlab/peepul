@@ -34,9 +34,11 @@ let rec get_eve id l =
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
 noeq type ae (op:eqtype) = 
-  |A : vis:((nat * op) -> (nat * op) -> Tot bool) -> l:list (nat * op) {unique_id l} -> ae op
+  |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
+     -> l:list (nat * op) {unique_id l} 
+     -> ae op
 
-assume val axiom : #op:eqtype
+assume val axiom_ae : #op:eqtype
                  -> l:ae op
                  -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
                                                get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'')
@@ -49,18 +51,33 @@ assume val axiom : #op:eqtype
                                   (forall e. mem e l.l ==> get_id e > 0))
                                   [SMTPat (unique_id l.l)]
 
+(*)noeq type ae (op:eqtype) = 
+  |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
+     -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
+                                                    get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') 
+                                                    ==> vis e e'') (*transitive*) /\ 
+                                      (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') 
+                                                ==> not (vis e' e)) (*asymmetric*) /\
+                                      (forall e. mem e l ==> not (vis e e) (*irreflexive*)) /\
+                                      (forall e e'. mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e' ==> get_id e < get_id e') /\
+                                      (forall e e'. mem e l /\ mem e' l /\ get_id e = get_id e' ==> e = e') /\
+                                      (forall e. mem e l ==> get_id e > 0)} -> ae op*)
+
 val append : #op:eqtype 
            -> tr:ae op
            -> op1:(nat *op)
            -> Pure (ae op)
-             (requires (not (mem_id (get_id op1) tr.l)))
-             (ensures (fun r -> (forall e. mem e r.l <==> mem e tr.l \/ e = op1) /\
+             (requires (forall e. mem e tr.l ==> get_id e < get_id op1) /\
+                             get_id op1 > 0 /\ not (mem_id (get_id op1) tr.l))
+             (ensures (fun r -> (forall e. mem e r.l <==> mem e tr.l \/ e = op1) /\ get_id op1 > 0 /\
                              (forall e e1. (mem e r.l /\ mem e1 r.l /\ get_id e <> get_id e1 /\ r.vis e e1) <==>
                                       (mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1) \/
-                                      (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1)))) 
+                                      (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1))))
+
+#set-options "--z3rlimit 100000000"
 let append tr op = 
-  (A (fun o o1 -> (mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
-               (mem o tr.l && o1 = op && get_id o <> get_id op)) (op::tr.l))
+  (A (fun o o1 -> ((mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
+                (mem o tr.l && o1 = op && get_id o <> get_id op))) (op::tr.l))
 
 val forallb : #a:eqtype
             -> f:(a -> bool)
@@ -135,6 +152,7 @@ val absmerge1 : #op:eqtype
                           (forall e. mem e l.l ==> not (mem_id (get_id e) b.l)))
                 (ensures (fun u -> (forall e. mem e u <==> mem e a.l \/ mem e b.l \/ mem e l.l) /\ (unique_id u))) 
                 (decreases %[l.l;a.l;b.l])
+#set-options "--z3rlimit 100000000"
 let rec absmerge1 #op l a b =
   match l,a,b with
   |(A _ []), (A _ []), (A _ []) -> []
@@ -161,17 +179,6 @@ let absmerge l a b =
                (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) || 
                (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1)) (absmerge1 l a b))
 
-val filter_uni : #op:eqtype
-               -> f:((nat * op) -> bool)
-               -> l:list (nat * op)
-               -> Lemma (requires unique_id l)
-                       (ensures (unique_id (filter f l)))
-                          [SMTPat (filter f l)]
-let rec filter_uni f l =
-  match l with
-  |[] -> ()
-  |x::xs -> filter_uni f xs
-
 val remove_op1 : #op:eqtype 
                -> tr:ae op 
                -> x:(nat * op) 
@@ -197,6 +204,17 @@ val remove_op : #op:eqtype
                      (decreases tr.l)
 let remove_op #op tr x =
     (A (fun o o1 -> mem o (remove_op1 tr x) && mem o1 (remove_op1 tr x) && get_id o <> get_id o1 && tr.vis o o1) (remove_op1 tr x))
+
+val filter_uni : #op:eqtype
+               -> f:((nat * op) -> bool)
+               -> l:list (nat * op)
+               -> Lemma (requires unique_id l)
+                       (ensures (unique_id (filter f l)))
+                          [SMTPat (filter f l)]
+let rec filter_uni f l =
+  match l with
+  |[] -> ()
+  |x::xs -> filter_uni f xs
 
 class mrdt (s:eqtype) (op:eqtype) = {
   pre_cond_op : s
@@ -247,9 +265,9 @@ class mrdt (s:eqtype) (op:eqtype) = {
   prop_oper : tr:ae op 
             -> st:s 
             -> op:(nat * op)
-            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\
-                              (not (mem_id (get_id op) tr.l)) /\
-                              (forall e. mem e tr.l ==> get_id e < get_id op))
+            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\
+                              get_id op > 0 /\ not (mem_id (get_id op) tr.l))
                     (ensures (sim (append tr op) (app_op st op)));
  
   convergence : tr:ae op

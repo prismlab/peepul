@@ -198,7 +198,8 @@ let convergence tr a b =
 
 val lem_oper : tr:ae op 
              -> op:(nat * op)
-             -> Lemma (requires (not (mem_id (get_id op) tr.l)))
+             -> Lemma (requires (not (mem_id (get_id op) tr.l)) /\
+                               (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                      (ensures (forall e. mem e (project (get_key op) (append tr op)).l <==> 
                                     mem e (append (project (get_key op) tr) (project_op op)).l) /\
                (forall e e1. mem e (project (get_key op) (append tr op)).l /\
@@ -218,7 +219,8 @@ let lem_oper tr op = ()
 val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op) 
-              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)))
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                       (ensures (sim (append tr op) (app_op st op)))
 
 #set-options "--z3rlimit 10000000"

@@ -275,7 +275,8 @@ let convergence tr a b =
 
 val lem_oper : tr:ae op 
              -> op:(nat * op)
-             -> Lemma (requires (not (mem_id (get_id op) tr.l)))
+             -> Lemma (requires (not (mem_id (get_id op) tr.l)) /\
+                               (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                      (ensures (forall e. mem e (project (get_ch op) (append tr op)).l <==> 
                                     mem e (append (project (get_ch op) tr) (project_op op)).l) /\
                (forall e e1. mem e (project (get_ch op) (append tr op)).l /\
@@ -296,6 +297,7 @@ val prop_oper1 : tr:ae op
               -> st:s
               -> op:(nat * op) 
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0 /\
                                 (mem_ch_s (get_ch op) st ==> 
                                 (forall id. C.mem_id_s id (get_msg_s (get_ch op) st) ==> get_id op > id)))
                       (ensures (forall ch. mem_ch_s ch (app_op st op) <==> mem_ch ch (append tr op).l) /\
@@ -312,7 +314,7 @@ val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op) 
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
-                                (forall e. mem e tr.l ==> get_id e < get_id op))
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                       (ensures (sim (append tr op) (app_op st op)))
 
 #set-options "--z3rlimit 10000000"
