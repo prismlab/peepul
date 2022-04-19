@@ -33,6 +33,7 @@ let rec get_eve id l =
   match l with
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
+(* Abstract state *)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
      -> l:list (nat * op) {unique_id l} 
@@ -216,18 +217,23 @@ let rec filter_uni f l =
   |[] -> ()
   |x::xs -> filter_uni f xs
 
-class mrdt (s:eqtype) (op:eqtype) = {
+class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
+
+  (*Pre-condition for apply operation*)
   pre_cond_op : s
               -> (nat (*timestamp*) * op)
               -> Tot bool;
 
+  (*Implementation of operations*)
   app_op : st:s
          -> op:(nat (*timestamp*) * op)
          -> Pure s (requires pre_cond_op st op)
                   (ensures (fun r -> true));
 
+  (* Simulation relation *)
   sim : ae op -> s -> Tot bool;
 
+  (*Pre-condition for three-way merge*)
   pre_cond_merge : ltr:ae op 
                  -> l:s 
                  -> atr:ae op 
@@ -236,6 +242,7 @@ class mrdt (s:eqtype) (op:eqtype) = {
                  -> b:s 
                  -> Tot bool;
 
+  (*Implementation of three-way*)
   merge : ltr:ae op 
         -> l:s 
         -> atr:ae op 
@@ -249,6 +256,7 @@ class mrdt (s:eqtype) (op:eqtype) = {
                            pre_cond_merge ltr l atr a btr b)
                  (ensures (fun b -> true));
 
+  (*Proof of three-way merge*)
   prop_merge : ltr:ae op 
              -> l:s 
              -> atr:ae op 
@@ -262,6 +270,7 @@ class mrdt (s:eqtype) (op:eqtype) = {
                                pre_cond_merge ltr l atr a btr b)
                      (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)));
 
+  (*Proof of apply operation*)
   prop_oper : tr:ae op 
             -> st:s 
             -> op:(nat * op)
@@ -269,7 +278,8 @@ class mrdt (s:eqtype) (op:eqtype) = {
                               (forall e. mem e tr.l ==> get_id e < get_id op) /\
                               get_id op > 0 /\ not (mem_id (get_id op) tr.l))
                     (ensures (sim (append tr op) (app_op st op)));
- 
+
+  (*Convergence modulo observable behavior*)
   convergence : tr:ae op
               -> a:s
               -> b:s

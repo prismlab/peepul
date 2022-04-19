@@ -1,7 +1,8 @@
 module Orset_bst
 
 open FStar.List.Tot
-module O = Orset_opt
+module O = Orset_space
+open Library
 
 type tree =
   |Leaf : tree
@@ -72,9 +73,11 @@ let rec size t1 =
   |Leaf -> 0
   |Node _ t1 t2 -> 1 + size t1 + size t2
 
-type t = tree1:tree {is_bst tree1 /\ unique_id tree1}
+type s = tree1:tree {is_bst tree1 /\ unique_id tree1}
 
-val help : t1:t -> Lemma (ensures unique_ele t1)
+type op = O.op
+
+val help : t1:s -> Lemma (ensures unique_ele t1)
                   [SMTPat (is_bst t1)]
 #set-options "--z3rlimit 1000000"
 let rec help tr = 
@@ -83,7 +86,7 @@ let rec help tr =
   |Node n t1 t2 -> help t1 ; help t2
 
 val memt : ele:(nat * nat)
-         -> t1:t
+         -> t1:s
          -> Tot (b:bool {(memt1 ele t1 <==> b = true)})
 let rec memt x t =
   match t with
@@ -107,8 +110,8 @@ let rec find_max t1 =
     | _ -> find_max t2
 
 val delete_ele : x:nat
-               -> t1:t
-               -> Pure t
+               -> t1:s
+               -> Pure s
                  (requires true)
                  (ensures (fun r -> (forall e. memt1 e r <==> (memt e t1) /\ snd e <> x) /\ not (member_ele x r) /\ 
                                    is_bst r /\ unique_id r)) 
@@ -126,14 +129,12 @@ let rec delete_ele x tr =
                       | _           -> assert (Node? t1); let y = find_max t1 in Node y (delete_ele (snd y) t1) t2
                    else if x < snd n then Node n (delete_ele x t1) t2
                         else Node n t1 (delete_ele x t2)
-(*104556 ms*)
 
-val delete : x:(nat * nat)
+(*)val delete : x:(nat * nat)
            -> t1:t
            -> Pure t
              (requires (memt x t1))
-             (ensures (fun r -> (forall e. memt1 e r <==> (memt e t1) /\ e <> x) /\ not (memt x r) /\ is_bst r 
-                                   /\ unique_id r)) 
+             (ensures (fun r -> (forall e. memt1 e r <==> (memt e t1) /\ e <> x) /\ not (memt x r) /\ is_bst r /\ unique_id r)) 
              (decreases (size t1))
 
 #set-options "--z3rlimit 1000000"
@@ -147,13 +148,12 @@ let rec delete x tr =
                       | Leaf, _    -> t2
                       | _           -> assert (Node? t1); let y = find_max t1 in Node y (delete y t1) t2
                    else if snd x < snd n then Node n (delete x t1) t2
-                     else Node n t1 (delete x t2)
-(*62485 ms*)
+                     else Node n t1 (delete x t2)*)
 
 #set-options "--z3rlimit 1000000"
 val update : ele:nat
            -> id:nat
-           -> t1:t
+           -> t1:s
            -> Pure tree
              (requires not (member_id id t1))
              (ensures (fun res -> (forall e. memt e t1 /\ snd e <> ele <==> memt1 e res /\ snd e <> ele) /\
@@ -170,27 +170,28 @@ let rec update ele id tr =
   |Node (id1,ele1) t1 t2 -> if ele = ele1 then Node (id, ele1) t1 t2
                               else if ele < ele1 then (Node (id1,ele1) (update ele id t1) t2)
                                  else Node (id1,ele1) t1 (update ele id t2)
-(*1177895 ms*)
 
-val app_op : s1:t
-           -> op:O.o
-           -> Pure t
-             (requires (not (member_id (O.get_id op) s1)))
-             (ensures (fun res -> (O.opa op ==> (forall e. memt e s1 /\ snd e <> O.get_ele op <==> 
-                                              memt e res /\ snd e <> O.get_ele op) /\
-                               (forall e. memt e res /\ fst e <> O.get_id op /\ member_id (fst e) res <==> 
-                                     memt e s1 /\ snd e <> O.get_ele op /\ member_id (fst e) s1) /\
-                               (forall e. member_ele e s1 \/ e = O.get_ele op <==> member_ele e res) /\
-                               (forall e. memt e res /\ e <> ((O.get_id op), (O.get_ele op)) <==> 
-                                     memt e s1 /\ snd e <> O.get_ele op) /\
-                                     memt ((O.get_id op), (O.get_ele op)) res) /\
-                               (O.opr op ==> (forall e. memt e res <==> memt e s1 /\ snd e <> O.get_ele op))))
+let pre_cond_op s1 op = not (member_id (get_id op) s1)
+
+val app_op : s1:s
+           -> op1:(nat * op)
+           -> Pure s
+             (requires pre_cond_op s1 op1)
+             (ensures (fun res -> (O.opa op1 ==> (forall e. memt e s1 /\ snd e <> O.get_ele op1 <==> 
+                                                   memt e res /\ snd e <> O.get_ele op1) /\
+                               (forall e. memt e res /\ fst e <> get_id op1 /\ member_id (fst e) res <==> 
+                                     memt e s1 /\ snd e <> O.get_ele op1 /\ member_id (fst e) s1) /\
+                               (forall e. member_ele e s1 \/ e = O.get_ele op1 <==> member_ele e res) /\
+                               (forall e. memt e res /\ e <> ((get_id op1), (O.get_ele op1)) <==> 
+                                     memt e s1 /\ snd e <> O.get_ele op1) /\
+                                     memt ((get_id op1), (O.get_ele op1)) res) /\
+                               (O.opr op1 ==> (forall e. memt e res <==> memt e s1 /\ snd e <> O.get_ele op1))))
 
 let app_op s1 op =
-  if O.opa op then update (O.get_ele op) (O.get_id op) s1 else delete_ele (O.get_ele op) s1
+  if O.opa op then update (O.get_ele op) (get_id op) s1 else delete_ele (O.get_ele op) s1
 
 val insert : x:(nat * nat)
-           -> t1:t
+           -> t1:s
            -> Pure tree
              (requires (not (memt x t1) /\ not (member_id (fst x) t1) /\ not (member_ele (snd x) t1)))
              (ensures (fun r -> is_bst r /\ (forall y. memt1 y r <==> (memt y t1 \/ x = y)) /\ unique_id r))
@@ -203,23 +204,21 @@ let rec insert x t =
   | Node n t1 t2 -> if x = n then t
                       else if snd x < snd n then (let y = insert x t1 in Node n (insert x t1) t2)
                         else Node n t1 (insert x t2)
-(*47764 ms*)
 
 val totree1 : s1:O.s
-            -> acc:t
-            -> Pure t
+            -> acc:s
+            -> Pure s
               (requires (forall e. member_id e acc ==> not (O.member_id e s1)) /\
                         (forall e. member_ele e acc ==> not (O.member_ele e s1)))
               (ensures (fun t1 -> (forall e. memt e t1 <==> mem e s1 \/ memt e acc)))
 
-#set-options "--initial_fuel 10000000 --initial_ifuel 10000000"
 #set-options "--z3rlimit 1000000"
 let rec totree1 l acc =
-    match l with
-    |[] -> acc
-    |x::xs -> totree1 xs (insert x acc)
+  match l with
+  |[] -> acc
+  |x::xs -> totree1 xs (insert x acc)
 
-val totree : l:O.s -> t1:t {(forall e. memt e t1 <==> mem e l) /\
+val totree : l:O.s -> t1:s {(forall e. memt e t1 <==> mem e l) /\
                            (forall e. member_ele e t1 <==> O.member_ele e l) /\
                            (forall e. member_id e t1 <==> O.member_id e l)}
 let totree l = totree1 l Leaf
@@ -238,12 +237,12 @@ val appendt : l1:O.s
                                 (forall e. O.member_id e res <==> O.member_id e l1 \/ O.member_id e l2) /\
                                 (forall e. O.member_ele e res <==> O.member_ele e l1 \/ O.member_ele e l2)))
 let rec appendt l1 l2 =
-    match l1,l2 with
-    |[],[] -> []
-    |x::xs,_ -> x::(appendt xs l2)
-    |[],_ -> l2
+  match l1,l2 with
+  |[],[] -> []
+  |x::xs,_ -> x::(appendt xs l2)
+  |[],_ -> l2
 
-val flatten : tree1:t
+val flatten : tree1:s
             -> Pure O.s
               (requires true)
               (ensures (fun res -> (forall e. memt e tree1 <==> mem e res) /\
@@ -253,17 +252,17 @@ val flatten : tree1:t
 
 #set-options "--z3rlimit 1000000"
 let rec flatten t =
-    match t with
-    |Leaf -> []
-    |Node n t1 t2 -> assert ((forall e. O.member_ele e (flatten t1) ==> not (O.member_ele ( e) (flatten t2))) /\
-                            (forall e. O.member_id e (flatten t1) ==> not (O.member_id ( e) (flatten t2))) /\
-                            not (O.member_id (fst n) ( (flatten t1) )) /\
-                            not (O.member_ele (snd n) ( (flatten t1) )) /\
-                            not (O.member_id (fst n) ( (flatten t2) )) /\
-                            not (O.member_ele (snd n) ( (flatten t2) )));
-                     assert (not (O.member_id (fst n) (appendt (flatten t1) (flatten t2))) /\
-                             not (O.member_ele (snd n) (appendt (flatten t1) (flatten t2))));
-                     n::(appendt (flatten t1) (flatten t2))
+  match t with
+  |Leaf -> []
+  |Node n t1 t2 -> assert ((forall e. O.member_ele e (flatten t1) ==> not (O.member_ele ( e) (flatten t2))) /\
+                          (forall e. O.member_id e (flatten t1) ==> not (O.member_id ( e) (flatten t2))) /\
+                           not (O.member_id (fst n) ( (flatten t1) )) /\
+                           not (O.member_ele (snd n) ( (flatten t1) )) /\
+                           not (O.member_id (fst n) ( (flatten t2) )) /\
+                           not (O.member_ele (snd n) ( (flatten t2) )));
+                  assert (not (O.member_id (fst n) (appendt (flatten t1) (flatten t2))) /\
+                          not (O.member_ele (snd n) (appendt (flatten t1) (flatten t2))));
+                  n::(appendt (flatten t1) (flatten t2))
 
 val fst : (nat * nat) -> nat
 let fst (id,ele) = id
@@ -271,110 +270,109 @@ val snd : (nat * nat) -> nat
 let snd (id,ele) = ele
 
 #set-options "--query_stats"
-val sim : tr:O.ae
-        -> s1:t
+val sim : tr:ae op
+        -> s1:s
         -> Tot (b:bool {(b = true <==> (forall e. memt e s1 ==> (forall a. mem a tr.l /\ O.opa a /\ snd e = O.get_ele a ==>
-                                      (forall r. mem r tr.l /\ O.opr r /\ O.get_ele a = O.get_ele r ==> 
-                                      not (O.get_id a <> O.get_id r && tr.vis a r)) ==> fst e >= O.get_id a) /\ 
+                                    (forall r. mem r tr.l /\ O.opr r /\ O.get_ele a = O.get_ele r /\ get_id a <> get_id r ==> 
+                                     not (tr.vis a r)) ==> fst e >= get_id a) /\ 
                  (mem ((fst e), O.Add (snd e)) tr.l /\
-                 (forall r. mem r tr.l /\ O.opr r /\ O.get_ele r = snd e ==> not (fst e <> O.get_id r && tr.vis ((fst e), O.Add (snd e)) r)))) /\
-                 (forall a. mem a tr.l /\ O.opa a ==> (forall r. mem r tr.l /\ O.opr r /\ O.get_ele a = O.get_ele r && O.get_id a <> O.get_id r ==> not (tr.vis a r)) ==> member_ele (O.get_ele a) s1))})
+  (forall r. mem r tr.l /\ O.opr r /\ O.get_ele r = snd e /\ fst e <> get_id r ==> not (tr.vis ((fst e), O.Add (snd e)) r)))) /\
+                 (forall a. mem a tr.l /\ O.opa a ==> (forall r. mem r tr.l /\ O.opr r /\ O.get_ele a = O.get_ele r /\ get_id a <> get_id r ==> not (tr.vis a r)) ==> member_ele (O.get_ele a) s1))})
 
 #set-options "--z3rlimit 1000000"
 let sim tr s1 = 
-    let lsta = (O.filter (fun a -> O.opa a) tr.l) in
-    let lstr = (O.filter (fun r -> O.opr r) tr.l) in
-    let lst = O.filter (fun a -> not (O.existsb (fun r -> O.get_id a <> O.get_id r && 
-              O.get_ele r = O.get_ele a && tr.vis a r) lstr)) lsta in
+  let lsta = (filter (fun a -> O.opa a) tr.l) in
+  let lstr = (filter (fun r -> O.opr r) tr.l) in
+  let lst = filter (fun a -> not (existsb (fun r -> get_id a <> get_id r && 
+            O.get_ele r = O.get_ele a && tr.vis a r) lstr)) lsta in
 
-    (forallt (fun e -> (O.forallb (fun a -> fst e >= O.get_id a) (O.filter (fun a -> O.get_ele a = snd e) lst)) &&
-                    (mem ((fst e), O.Add (snd e)) tr.l &&
-                    not (O.existsb (fun r -> fst e <> O.get_id r && tr.vis ((fst e), O.Add (snd e)) r ) 
-                    (O.filter (fun r -> snd e = O.get_ele r) lstr)))) s1) &&
-    (O.forallb (fun a -> member_ele (O.get_ele a) s1) lst)
-(*541617 ms*)
+  (forallt (fun e -> (forallb (fun a -> fst e >= get_id a) (filter (fun a -> O.get_ele a = snd e) lst)) &&
+                  (mem ((fst e), O.Add (snd e)) tr.l &&
+                   not (existsb (fun r -> fst e <> get_id r && tr.vis ((fst e), O.Add (snd e)) r ) 
+                  (filter (fun r -> snd e = O.get_ele r) lstr)))) s1) &&
+  (forallb (fun a -> member_ele (O.get_ele a) s1) lst)
 
-val diff : a:t
-         -> l:t
-         -> Pure t
+val diff : a:s
+         -> l:s
+         -> Pure s
            (requires true)
            (ensures (fun d -> (forall e. memt e d <==> memt e a /\ not (memt e l)) /\
                            (forall e. memt e d /\ member_id (fst e) d <==> 
                                  memt e a /\ member_id (fst e) a /\ not (memt e l)) /\
                            (forall e. memt e d  /\ member_ele (snd e) d <==> 
                                  memt e a /\ member_ele (snd e) a /\ not (memt e l)) /\
-                           (forall e. memt e a /\ memt e l ==> not (member_ele (snd e) d) /\
-                                                         not (member_id (fst e) d))))
-          (decreases %[l;a])
+                           (forall e. memt e a /\ memt e l ==> not (member_ele (snd e) d) /\ not (member_id (fst e) d))))
+           (decreases %[l;a])
 let diff a l =
   totree (O.diff (flatten a) (flatten l))
 
-val merge : ltr:O.ae
-          -> l:t
-          -> atr:O.ae
-          -> a:t
-          -> btr:O.ae
-          -> b:t
-          -> Pure t (requires (forall e. mem e ltr.l ==> not (O.member (O.get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (O.member (O.get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (O.member (O.get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (O.union ltr atr) a /\ sim (O.union ltr btr) b) /\ 
-                             (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> O.get_id e < O.get_id e1) /\
-                             (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> O.get_id e < O.get_id e1) /\
-                             (forall e. member_id e (diff a l) ==> not (member_id e (diff b l))))
-                    (ensures (fun res -> true))
+let pre_cond_merge ltr l atr a btr b = true
+
+val merge : ltr:ae op
+          -> l:s
+          -> atr:ae op
+          -> a:s
+          -> btr:ae op
+          -> b:s
+          -> Pure s (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                   (ensures (fun res -> true))
 
 #set-options "--z3rlimit 10000000"
-let merge ltr l atr a btr b = 
-    let m = O.merge ltr (flatten l) atr (flatten a) btr (flatten b) in
-    totree m
-(*90020 ms*)
+let merge ltr l atr a btr b =
+  let m = O.merge ltr (flatten l) atr (flatten a) btr (flatten b) in
+  totree m
 
 #set-options "--z3rlimit 10000000"
-val prop_merge : ltr:O.ae
-               -> l:t
-               -> atr:O.ae
-               -> a:t
-               -> btr:O.ae
-               -> b:t
-               -> Lemma (requires (forall e. mem e ltr.l ==> not (O.member (O.get_id e) atr.l)) /\
-                                 (forall e. mem e atr.l ==> not (O.member (O.get_id e) btr.l)) /\
-                                 (forall e. mem e ltr.l ==> not (O.member (O.get_id e) btr.l)) /\
-                                 (sim ltr l /\ sim (O.union ltr atr) a /\ sim (O.union ltr btr) b) /\ 
-                                 (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> O.get_id e < O.get_id e1) /\
-                                 (forall e e1. mem e ltr.l /\ mem e1 btr.l ==> O.get_id e < O.get_id e1) /\
-                                 (forall e. member_id e (diff a l) ==> not (member_id e (diff b l))))
-                       (ensures (sim (O.absmerge ltr atr btr) (merge ltr l atr a btr b)))
+val prop_merge : ltr:ae op
+               -> l:s
+               -> atr:ae op
+               -> a:s
+               -> btr:ae op
+               -> b:s
+               -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                 (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge ltr l atr a btr b = 
-  O.prop_merge ltr (flatten l) atr (flatten a) btr (flatten b);
-  ()
-(*122427 ms*)
+let prop_merge ltr l atr a btr b =
+  O.prop_merge ltr (flatten l) atr (flatten a) btr (flatten b)
 
-val prop_oper : tr:O.ae
-              -> st:t
-              -> op:O.o 
-              -> Lemma (requires (sim tr st) /\ 
-                                (not (O.member (O.get_id op) tr.l)) /\
-                                (forall e. mem e tr.l ==> O.get_id e < O.get_id op))
-                      (ensures (sim (O.append tr op) (app_op st op)))
+val prop_oper : tr:ae op
+              -> st:s
+              -> op:(nat * op)
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                      (ensures (sim (append tr op) (app_op st op)))
 
 #set-options "--z3rlimit 10000000"
 let prop_oper tr st op =
-  assert (not (member_id (O.get_id op) st)); 
-  O.prop_oper tr (flatten st) op;
-  ()
- (*240793 ms*)
+  assert (not (member_id (get_id op) st));
+  O.prop_oper tr (flatten st) op
 
-val convergence : tr:O.ae
-                -> a:t
-                -> b:t  
+val convergence : tr:ae op
+                -> a:s
+                -> b:s
                 -> Lemma (requires (sim tr a /\ sim tr b))
                         (ensures (forall e. memt e a <==> memt e b))
-let convergence tr a b = 
-  O.convergence tr (flatten a) (flatten b);
-  ()
+let convergence tr a b =
+  O.convergence tr (flatten a) (flatten b)
+
+instance _ : mrdt s op = {
+  Library.sim = sim;
+  Library.pre_cond_op = pre_cond_op;
+  Library.app_op = app_op;
+  Library.prop_oper = prop_oper;
+  Library.pre_cond_merge = pre_cond_merge;
+  Library.merge = merge;
+  Library.prop_merge = prop_merge;
+  Library.convergence = convergence
+}
+
 
 (******************* Height-balanced BST ************************)
 
@@ -497,5 +495,4 @@ let rec tree_of_list l  =
   | [] -> Leaf
   | h::[] -> Node h Leaf Leaf
   | h::t -> Node (hd (takemiddle l)) (tree_of_list (takefront l)) (tree_of_list (takeback l) )
-(*92128 ms*)
 
