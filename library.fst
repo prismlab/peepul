@@ -219,6 +219,8 @@ let rec filter_uni f l =
 
 class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
 
+  init : s;
+
   (*Pre-condition for apply operation*)
   pre_cond_op : s
               -> (nat (*timestamp*) * op)
@@ -242,6 +244,15 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
                  -> b:s 
                  -> Tot bool;
 
+  pre_cond_merge1 : s -> s -> s 
+                  -> Tot bool;
+
+  merge1 : l:s
+         -> a:s
+         -> b:s
+         -> Pure s (requires pre_cond_merge1 l a b)
+                  (ensures (fun r -> true));
+  
   (*Implementation of three-way*)
   merge : ltr:ae op 
         -> l:s 
@@ -253,8 +264,8 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
                            (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                            (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                            (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                           pre_cond_merge ltr l atr a btr b)
-                 (ensures (fun b -> true));
+                           pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
+                 (ensures (fun r -> r = merge1 l a b));
 
   (*Proof of three-way merge*)
   prop_merge : ltr:ae op 
@@ -267,7 +278,7 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
                                (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                               pre_cond_merge ltr l atr a btr b)
+                               pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
                      (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)));
 
   (*Proof of apply operation*)

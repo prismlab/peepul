@@ -7,6 +7,8 @@ type s = nat
 
 type op = |Add 
 
+let init = 0
+
 let pre_cond_op s1 op = true
 
 val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {s2 = s1 + 1})
@@ -41,9 +43,11 @@ let rec lemma1 l a =
   |(A _ (x::xs)), _ -> lemma1 (A l.vis xs) a
   |(A _ []), (A _ (x::xs)) -> lemma1 l (A a.vis xs)
 
+let pre_cond_merge1 l a b = a >= l && b >= l
+
 val merge1 : l:s -> a:s -> b:s
            -> Pure s
-             (requires (a >= l /\ b >= l))
+             (requires pre_cond_merge1 l a b)
              (ensures (fun r -> r = a + b - l))
 let merge1 l a b = a + b - l
 
@@ -117,11 +121,14 @@ val convergence : tr:ae op
 let convergence tr a b = ()
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence

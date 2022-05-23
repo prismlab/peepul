@@ -24,6 +24,9 @@ let fst (c,f) = c
 val snd : s1:s -> Tot (b:bool {exists c. s1 = (c,b)})
 let snd (c,f) = f
 
+val init : nat * bool
+let init = (0, false)
+
 let pre_cond_op s1 op = true
 
 val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {ope op ==> (fst s2 = fst s1 + 1 /\ snd s2 = true) /\
@@ -92,7 +95,25 @@ let merge_flag l a b =
       else if af then ac - lc > 0
         else bc - lc > 0
 
+let pre_cond_merge1 l a b = fst a >= fst l && fst b >= fst l
 let pre_cond_merge ltr l atr a btr b = true
+
+val merge1 : l:s
+           -> a:s
+           -> b:s
+           -> Pure s
+             (requires pre_cond_merge1 l a b)
+             (ensures (fun res -> (snd res = true <==> (snd a = true /\ snd b = true) \/ 
+                                                  (snd a = true /\ snd b = false /\ fst a > fst l) \/
+                                                  (snd b = true /\ snd a = false /\ fst b > fst l)) /\
+                               (snd res = false <==> (snd a = false /\ snd b = false) \/
+                                                   (snd a = true /\ snd b = false /\ fst a = fst l) \/ 
+                                                   (snd b = true /\ snd a = false /\ fst b = fst l)) /\
+                               (fst res = fst a + fst b - fst l)))
+let merge1 l a b =
+  let c = fst a + fst b - fst l in
+  let f = merge_flag l a b in
+  c, f
 
 val merge : ltr:ae op
           -> l:s
@@ -109,7 +130,9 @@ val merge : ltr:ae op
                                                         (snd b = true /\ snd a = false /\ fst b > fst l)) /\
                                      (snd res = false <==> (snd a = false /\ snd b = false) \/
                                                          (snd a = true /\ snd b = false /\ fst a = fst l) \/ 
-                                                         (snd b = true /\ snd a = false /\ fst b = fst l)))) 
+                                                         (snd b = true /\ snd a = false /\ fst b = fst l)) /\
+                                     (fst res = fst a + fst b - fst l) /\
+                                     (res = merge1 l a b))) 
 #set-options "--z3rlimit 10000"
 let merge ltr l atr a btr b = 
   lemma1 ltr atr; 
@@ -182,15 +205,19 @@ val convergence : tr:ae op
 let convergence tr a b = ()
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence
 }
+
 
 (* Additional lemmas for prop_merge 
 

@@ -60,6 +60,8 @@ let rec sorted_smaller x y l = match l with
 
 type s = l:list (nat (*timestamp*) * string (*message*)) {unique_s l /\ total_order l}
 
+let init = []
+
 val filter_uni : f:((nat * string) -> bool)
                -> l:list (nat * string) 
                -> Lemma (requires (unique_s l /\ total_order l))
@@ -274,13 +276,22 @@ let rec diff_s a l =
   |[] -> a
   |x::xs -> diff_s (remove x a) xs
 
+val pre_cond_merge1 : l:s
+                    -> a:s
+                    -> b:s
+                    -> Tot (b1:bool {b1 = true <==> (forall e. mem e l <==> mem e a /\ mem e b) /\
+                                                 (forall e. mem e (diff_s a l) ==> not (mem_id_s (fst e) (diff_s b l))) /\
+                                                 (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l)))})
+let pre_cond_merge1 l a b = 
+  forallb (fun e -> mem e a && mem e b) l &&
+  forallb (fun e -> not (mem_id_s (fst e) (diff_s b l))) (diff_s a l) &&
+  forallb (fun e -> not (mem_id_s (fst e) (diff_s a l))) (diff_s b l)
+
 val merge1 : l:s
            -> a:s
            -> b:s
            -> Pure s
-             (requires (forall e. mem e l <==> mem e a /\ mem e b) /\
-                       (forall e. mem e (diff_s a l) ==> not (mem_id_s (fst e) (diff_s b l))) /\
-                       (forall e. mem e (diff_s b l) ==> not (mem_id_s (fst e) (diff_s a l))))
+             (requires pre_cond_merge1 l a b)
              (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
                            (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
                            (mem e l /\ mem e1 l /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 l) \/
@@ -313,7 +324,7 @@ val merge : ltr:ae op
                              (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (fun r -> (forall e. mem e r <==> mem e a \/ mem e b) /\
+                   (ensures (fun r -> r = merge1 l a b /\ (forall e. mem e r <==> mem e a \/ mem e b) /\
                                (forall e e1. mem e r /\ mem e1 r /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 r <==>
                                         (mem e a /\ mem e1 a /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 a) \/
                                         (mem e b /\ mem e1 b /\ fst e <> fst e1 /\ fst e > fst e1 /\ ord e e1 b) \/
@@ -355,12 +366,16 @@ let prop_merge ltr l atr a btr b =
   ()
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.pre_cond_merge1 = pre_cond_merge1;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence
 }
+
