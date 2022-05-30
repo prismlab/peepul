@@ -20,6 +20,9 @@ let rec unique_s l =
 
 type s = l:list (nat (*unique id*) * nat (*element*)) {unique_s l}
 
+val init : s
+let init = []
+
 val filter_uni : f:((nat * nat) -> bool)
                -> l:list (nat * nat) 
                -> Lemma (requires (unique_s l))
@@ -103,10 +106,9 @@ let sim tr s1 =
 val prop_oper : tr:ae op
               -> st:s
               -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)))
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
                       (ensures (sim (append tr op) (app_op st op)))
-
-#set-options "--z3rlimit 1000000"
 let prop_oper tr st op = ()
 
 val convergence : tr:ae op
@@ -132,15 +134,20 @@ val remove : l:s
 let remove l ele =
   filter (fun e -> e <> ele) l
 
+val pre_cond_merge1 : l:s -> a:s -> b:s
+                    -> Tot (b1:bool {b1=true <==> (forall e. mem e (diff2 a l) ==> not (member_s (fst e) b)) /\
+                                               (forall e. mem e (diff2 b l) ==> not (member_s (fst e) a))})
+let pre_cond_merge1 l a b =
+  forallb (fun e -> not (member_s (fst e) b)) (diff2 a l) &&
+  forallb (fun e -> not (member_s (fst e) a)) (diff2 b l)
+
 val merge1 : l:s
            -> a:s 
            -> b:s 
            -> Pure s 
-             (requires (forall e. mem e (diff2 a l) ==> not (member_s (fst e) b)) /\
-                       (forall e. mem e (diff2 b l) ==> not (member_s (fst e) a)))
+             (requires pre_cond_merge1 l a b)
              (ensures (fun res -> (forall e. mem e res <==> (mem e l /\ mem e a /\ mem e b) \/ 
                                (mem e (diff2 a l)) \/ (mem e (diff2 b l)))))    (decreases %[l;a;b])
-#set-options "--z3rlimit 10000"
 let rec merge1 l a b = 
   match l,a,b with
   |[],[],[] -> []
@@ -163,10 +170,7 @@ val merge : ltr:ae op
                              (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (fun res -> (forall e. mem e res <==> (mem e l /\ mem e a /\ mem e b) \/ 
-                                     (mem e (diff2 a l)) \/ (mem e (diff2 b l)))))
-
-#set-options "--z3rlimit 10000000"
+                   (ensures (fun res -> pre_cond_merge1 l a b /\ res = merge1 l a b))
 let merge ltr l atr a btr b = 
   merge1 l a b
 
@@ -216,11 +220,14 @@ let prop_merge ltr l atr a btr b =
     ()
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence
