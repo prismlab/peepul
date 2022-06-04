@@ -75,6 +75,9 @@ let rec size t1 =
 
 type s = tree1:tree {is_bst tree1 /\ unique_id tree1}
 
+val init : s
+let init = Leaf
+
 type op = O.op
 
 val help : t1:s -> Lemma (ensures unique_ele t1)
@@ -306,7 +309,14 @@ val diff : a:s
 let diff a l =
   totree (O.diff (flatten a) (flatten l))
 
+let pre_cond_merge1 l a b = O.pre_cond_merge1 (flatten l) (flatten a) (flatten b)
 let pre_cond_merge ltr l atr a btr b = true
+
+val merge1 : l:s -> a:s -> b:s
+           -> Pure s 
+             (requires pre_cond_merge1 l a b)
+             (ensures (fun res -> res = totree (O.merge1 (flatten l) (flatten a) (flatten b))))
+let merge1 l a b = totree (O.merge1 (flatten l) (flatten a) (flatten b))
 
 val merge : ltr:ae op
           -> l:s
@@ -318,14 +328,13 @@ val merge : ltr:ae op
                              (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (fun res -> true))
+                   (ensures (fun res -> pre_cond_merge1 l a b /\ res = merge1 l a b))
 
 #set-options "--z3rlimit 10000000"
 let merge ltr l atr a btr b =
   let m = O.merge ltr (flatten l) atr (flatten a) btr (flatten b) in
   totree m
 
-#set-options "--z3rlimit 10000000"
 val prop_merge : ltr:ae op
                -> l:s
                -> atr:ae op
@@ -363,11 +372,14 @@ let convergence tr a b =
   O.convergence tr (flatten a) (flatten b)
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence
