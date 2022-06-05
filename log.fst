@@ -365,7 +365,7 @@ let prop_merge ltr l atr a btr b =
              ord (get_id e, get_msg e) (get_id e1, get_msg e1) (merge ltr l atr a btr b));
   ()
 
-instance _ : mrdt s op = {
+instance log : mrdt s op = {
   Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;

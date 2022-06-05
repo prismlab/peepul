@@ -186,6 +186,13 @@ let merge_a ltr l atr a btr b =
   let r = merge1_a l a b in
   r
 
+instance _ : A.alpha_map (G.s) (G.op) G.log = {
+    A.lemma1 = lemma1;
+    A.lemma4 = lemma4;
+    A.lemma2 = lemma2;
+    A.lemma7 = lemma7
+}
+
 val prop_oper : tr:ae (A.op G.op)
               -> st:A.s G.s
               -> op1:(nat * (A.op G.op)) 
@@ -203,7 +210,7 @@ let prop_oper tr st op =
   assert (G.app_op (A.get_val_s #G.s #G.op (A.get_key op) st) (A.project_op op) =
           A.get_val_s #G.s #G.op (A.get_key op) (A.app_op_a st op));
   assert (G.sim (A.project (A.get_key op) (append tr op)) (A.get_val_s #G.s #G.op (A.get_key op) (A.app_op_a st op)));
-  A.prop_oper_a tr st op; ()
+  A.prop_oper_a #G.s #G.op #G.log tr st op; ()
 
 val convergence2 : tr:ae (A.op G.op)
                  -> a:(A.s G.s)
@@ -274,8 +281,33 @@ let convergence_a tr a b =
   lem_length a b (A.get_lst a);
   convergence3 a b (A.get_lst a)
 
+val prop_merge_a : ltr:ae (A.op G.op)
+          -> l:(A.s G.s)
+            -> atr:ae (A.op G.op)
+            -> a:(A.s G.s)
+            -> btr:ae (A.op G.op)
+            -> b:(A.s G.s)
+          -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                            (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                            (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                            (A.sim_a ltr l /\ A.sim_a (union ltr atr) a /\ A.sim_a (union ltr btr) b) /\
+                             pre_cond_merge1_a l a b /\
+                             (forall ch. A.mem_key_s ch a \/ A.mem_key_s ch b ==> 
+                             (pre_cond_merge #G.s #G.op (A.project ch ltr) (A.get_val_s #G.s #G.op  ch l)
+                                                    (A.project ch atr) (A.get_val_s #G.s #G.op  ch a)
+                                                    (A.project ch btr) (A.get_val_s #G.s #G.op  ch b)) /\
+                            (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch atr).l)) /\
+                            (forall e. mem e (A.project ch atr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
+                            (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
+                                  (sim #G.s #G.op (A.project ch ltr) (A.get_val_s #G.s #G.op  ch l) /\ sim #G.s #G.op (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op  ch a) /\ sim #G.s #G.op (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op  ch b))))
+                    (ensures (A.sim_a (absmerge ltr atr btr) (merge_a ltr l atr a btr b)))
+
+#set-options "--z3rlimit 10000000"
+let prop_merge_a ltr l atr a btr b = 
+  A.prop_merge_a #G.s #G.op #G.log ltr l atr a btr b
+
 #set-options "--z3rlimit 10000000" 
-instance _ : mrdt (A.s G.s) (A.op G.op) = {
+instance log_map : mrdt (A.s G.s) (A.op G.op) = {
   Library.init = A.init_a;
   Library.sim = A.sim_a;
   Library.pre_cond_op = A.pre_cond_op_a;
@@ -285,6 +317,6 @@ instance _ : mrdt (A.s G.s) (A.op G.op) = {
   Library.pre_cond_merge = pre_cond_merge_a;
   Library.merge1 = merge1_a;
   Library.merge = merge_a;
-  Library.prop_merge = A.prop_merge_a;
+  Library.prop_merge = prop_merge_a;
   Library.convergence = convergence_a;
 }

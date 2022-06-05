@@ -152,7 +152,7 @@ val convergence : tr:ae op
                         (ensures (forall e. mem e a <==> mem e b))
 let convergence tr a b = ()
 
-instance _ : mrdt s op = {
+instance gset : mrdt s op = {
   Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;

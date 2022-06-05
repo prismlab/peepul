@@ -37,18 +37,13 @@ type s (alpha_st:eqtype) = l:list (nat * alpha_st) {unique_key l}
 let init_a = []
 
 val get_val_s : #st:eqtype -> #o:eqtype -> {| mrdt st o |}
-              -> i:nat -> s1:s st -> Tot (c:st {(mem_key_s i s1 ==> mem (i,c) s1 /\ (exists e. mem e s1 /\ e = (i,c))) /\ 
+                -> i:nat -> s1:s st -> Tot (c:st {(mem_key_s i s1 ==> mem (i,c) s1 /\ 
+                                         (exists e. mem e s1 /\ e = (i,c) /\ c = get_val_s1 #st e)) /\ 
                                          (not (mem_key_s i s1) ==> c = init #st #o)})
 let rec get_val_s #st #o i s1 =
   match s1 with
   |[] -> init #st #o
   |x::xs -> if get_key_s x = i then get_val_s1 x else get_val_s #st #o i xs
-
-val lemma2 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
-           -> s1:s st
-           -> Lemma (requires true)
-                   (ensures (forall e. mem e s1 ==> (get_val_s #st #o (get_key_s e) s1 = get_val_s1 #st e)))
-let lemma2 #st #o s1 = admit ()
 
 val mem_op : #o:eqtype -> ele1:op o
            -> l:list (nat * (op o))
@@ -156,6 +151,7 @@ val sim_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
           -> Tot (b:bool {(b = true) <==> (forall ch. mem_key_s ch s1 <==> mem_key ch tr.l) /\
                           (forall ch. mem_key_s ch s1 ==> (sim #st #o) (project ch tr) (get_val_s #st #o ch s1)) /\
                                      (forall e. mem e tr.l ==> (exists e1. mem e1 s1 /\ get_key e = get_key_s e1))})
+
 #set-options "--z3rlimit 10000000"
 let sim_a #st #o tr s1 =
   forallb (fun e -> mem_key (get_key_s e) tr.l) s1 &&
@@ -163,12 +159,36 @@ let sim_a #st #o tr s1 =
   forallb (fun e -> (sim #st #o) (project (get_key_s e) tr) (get_val_s #st #o (get_key_s e) s1)) s1 &&
   forallb (fun e -> (existsb (fun e1 -> get_key e = get_key_s e1) s1)) tr.l
 
-val lemma4 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
-           -> tr:ae (op o) -> s1:s st
-           -> Lemma (requires sim_a tr s1)
-                   (ensures (forall i. (sim #st #o) (project i tr) (get_val_s #st #o i s1)))
-                    [SMTPat (sim_a tr s1)]
-let lemma4 #st #o tr s1 = admit()
+class alpha_map (st:eqtype) (o:eqtype) (m:mrdt st o) = {
+
+  lemma4 : tr:ae (op o) -> s1:s st
+         -> Lemma (requires sim_a tr s1)
+                 (ensures (forall i. (sim #st #o) (project i tr) (get_val_s #st #o i s1)));
+
+  lemma1 : tr:ae (op o)
+         -> s1:s st
+         -> op1:(nat * (op o))
+         -> Lemma (requires (sim_a tr s1) /\ (not (mem_id (get_id op1) tr.l)) /\
+                           (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
+                           pre_cond_op #st #o (get_val_s #st #o (get_key op1) s1) (project_op op1))
+                 (ensures (forall i. mem_key_s i (app_op_a s1 op1) /\ i <> get_key op1 ==>
+                   ((forall e. mem e (project i (append tr op1)).l <==> mem e (project i tr).l) /\
+                   (forall e e1. mem e (project i (append tr op1)).l /\ mem e1 (project i (append tr op1)).l /\ 
+                        get_id e <> get_id e1 /\ (project i (append tr op1)).vis e e1 <==> 
+                 mem e (project i tr).l /\ mem e1 (project i tr).l /\ get_id e <> get_id e1 /\ (project i tr).vis e e1) /\
+                   (get_val_s #st #o i (app_op_a s1 op1) = (get_val_s #st #o i s1))) ==>
+                     (sim #st #o) (project i (append tr op1)) (get_val_s #st #o i (app_op_a s1 op1))));
+
+  lemma7 : tr:ae o -> s1:st -> tr1:ae o
+         -> Lemma (requires sim tr s1 /\ (forall e. mem e tr1.l <==> mem e tr.l) /\
+                           (forall e e1. mem e tr1.l /\ mem e1 tr1.l /\ get_id e <> get_id e1 /\ tr1.vis e e1 <==>
+                                    mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1))
+                 (ensures (sim tr1 s1));
+
+  lemma2 : s1:s st
+         -> Lemma (requires true)
+                 (ensures (forall e. mem e s1 ==> (get_val_s #st #o (get_key_s e) s1 = get_val_s1 #st e)))
+}
 
 val convergence_a1 : #st:eqtype -> #o:eqtype -> {| mrdt st o |} 
                    -> tr:ae (op o)
@@ -265,25 +285,7 @@ let prop_oper2 tr st op =
   lem_oper tr op;
   prop_oper1 tr st op
 
-val lemma1 : #st1:eqtype -> #o:eqtype -> {|mrdt st1 o|}
-         -> tr:ae (op o)
-         -> st:s st1
-         -> op1:(nat * (op o))
-         -> Lemma (requires (sim_a tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
-                           (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
-                           pre_cond_op #st1 #o (get_val_s #st1 #o (get_key op1) st) (project_op op1))
-                 (ensures (forall i. mem_key_s i (app_op_a st op1) /\ i <> get_key op1 ==>
-                   ((forall e. mem e (project i (append tr op1)).l <==> mem e (project i tr).l) /\
-                   (forall e e1. mem e (project i (append tr op1)).l /\ mem e1 (project i (append tr op1)).l /\ 
-                        get_id e <> get_id e1 /\ (project i (append tr op1)).vis e e1 <==> 
-                 mem e (project i tr).l /\ mem e1 (project i tr).l /\ get_id e <> get_id e1 /\ (project i tr).vis e e1) /\
-                   (get_val_s #st1 #o i (app_op_a st op1) = (get_val_s #st1 #o i st))) ==>
-                     (sim #st1 #o) (project i (append tr op1)) (get_val_s #st1 #o i (app_op_a st op1))))
-
-#set-options "--z3rlimit 10000000"
-let lemma1 #st1 #o tr st op = admit ()
-
-val prop_oper3 : #st1:eqtype -> #o:eqtype -> {|mrdt st1 o|}
+val prop_oper3 : #st1:eqtype -> #o:eqtype -> #m:(mrdt st1 o) -> {|alpha_map st1 o m|}
                -> tr:ae (op o)
                -> st:s st1
                -> op1:(nat * (op o)) 
@@ -294,13 +296,13 @@ val prop_oper3 : #st1:eqtype -> #o:eqtype -> {|mrdt st1 o|}
                          (sim #st1 #o) (project ch (append tr op1)) (get_val_s #st1 #o ch (app_op_a st op1))))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper3 #st1 #o tr st op = 
+let prop_oper3 #st1 #o #m tr st op = 
   lem_oper tr op;
   prop_oper1 tr st op;
   prop_oper2 tr st op;
-  lemma1 #st1 #o tr st op
+  lemma1 #st1 #o #m tr st op
 
-val prop_oper_a : #st1:eqtype -> #o:eqtype -> {|mrdt st1 o|}
+val prop_oper_a : #st1:eqtype -> #o:eqtype -> #m:(mrdt st1 o) -> {|alpha_map st1 o m|}
                 -> tr:ae (op o)
                 -> st:s st1
                 -> op1:(nat * (op o)) 
@@ -311,11 +313,11 @@ val prop_oper_a : #st1:eqtype -> #o:eqtype -> {|mrdt st1 o|}
                       (ensures (sim_a (append tr op1) (app_op_a st op1)))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper_a #st1 #o tr st op = 
+let prop_oper_a #st1 #o #m tr st op = 
   lem_oper tr op;
   prop_oper1 tr st op;
   prop_oper2 tr st op;
-  prop_oper3 #st1 #o tr st op
+  prop_oper3 #st1 #o #m tr st op
 
 val get_key_lst : #st:eqtype 
                 -> l:s st -> a:s st -> b:s st
@@ -404,10 +406,10 @@ val lem_merge1 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
 #set-options "--z3rlimit 10000000"
 let lem_merge1 ltr l atr a btr b lst = ()
 
-(*)val pre_cond_merge_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val pre_cond_merge_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
             -> ltr:ae (op o) -> l:s st -> atr:ae (op o) -> a:s st -> btr:ae (op o) -> b:s st
             -> Tot bool
-let pre_cond_merge_a ltr l atr a btr b = true*)
+let pre_cond_merge_a ltr l atr a btr b = true
 
 val merge_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
             -> ltr:ae (op o)
@@ -476,14 +478,6 @@ let rec lemma61 #o l a b =
   |(A _ []), (A _ (x::xs)), _ -> lemma61 l (A a.vis xs) b
   |(A _ []), (A _ []), (A _ (x::xs)) -> lemma61 l a (A b.vis xs)
 
-val lemma7 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
-           -> tr:ae o -> s1:st -> tr1:ae o
-           -> Lemma (requires sim tr s1 /\ (forall e. mem e tr1.l <==> mem e tr.l) /\
-                             (forall e e1. mem e tr1.l /\ mem e1 tr1.l /\ get_id e <> get_id e1 /\ tr1.vis e e1 <==>
-                                      mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1))
-                   (ensures (sim tr1 s1))
-let lemma7 #st #o tr s1 tr1 = admit ()
-
 val lemma8 : #o:eqtype 
            -> ltr:ae (op o)
            -> atr:ae (op o)
@@ -520,7 +514,7 @@ val lemma9 : #o:eqtype
 #set-options "--z3rlimit 10000000"
 let lemma9 #o ltr atr btr = ()
 
-val prop_merge1 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val prop_merge1 : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
                 -> ltr:ae (op o)
                 -> l:s st
                 -> atr:ae (op o)
@@ -552,23 +546,23 @@ val prop_merge1 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                         (decreases chs)
 
 #set-options "--z3rlimit 10000000"
-let rec prop_merge1 #st #o ltr l atr a btr b lst =
+let rec prop_merge1 #st #o #m ltr l atr a btr b lst =
   match lst with
   |[] -> ()
-  |i::is -> lemma4 #st #o ltr l; lemma4 #st #o (union ltr atr) a; lemma4 #st #o (union ltr btr) b;
+  |i::is -> lemma4 #st #o #m ltr l; lemma4 #st #o #m (union ltr atr) a; lemma4 #st #o #m (union ltr btr) b;
           lemma8 #o ltr atr; lemma8 #o ltr btr; 
-          lemma7 #st #o (project i (union ltr atr)) (get_val_s #st #o i a) (union (project i ltr) (project i atr));
-          lemma7 #st #o (project i (union ltr btr)) (get_val_s #st #o i b) (union (project i ltr) (project i btr));
+          lemma7 #st #o #m (project i (union ltr atr)) (get_val_s #st #o i a) (union (project i ltr) (project i atr));
+          lemma7 #st #o #m (project i (union ltr btr)) (get_val_s #st #o i b) (union (project i ltr) (project i btr));
           (prop_merge #st #o) (project i ltr) (get_val_s #st #o i l) (project i atr) (get_val_s #st #o i a) (project i btr) (get_val_s #st #o i b);
           assert (sim #st #o (absmerge (project i ltr) (project i atr) (project i btr)) (merge #st #o (project i ltr) (get_val_s #st #o i l) (project i atr) (get_val_s #st #o i a) (project i btr) (get_val_s #st #o i b)));
           lemma9 #o ltr atr btr;
           assert ((sim #st #o) (absmerge (project i ltr) (project i atr) (project i btr)) (get_val_s #st #o i (merge_a ltr l atr a btr b))); 
-          lemma7 #st #o (absmerge (project i ltr) (project i atr) (project i btr)) 
+          lemma7 #st #o #m (absmerge (project i ltr) (project i atr) (project i btr)) 
                  (get_val_s #st #o i (merge_a ltr l atr a btr b)) (project i (absmerge ltr atr btr)); 
           assert ((sim #st #o) (project i (absmerge ltr atr btr)) (get_val_s #st #o i (merge_a ltr l atr a btr b)));
-          prop_merge1 #st #o ltr l atr a btr b is
+          prop_merge1 #st #o #m ltr l atr a btr b is
 
-val prop_merge21 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val prop_merge21 : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
           -> ltr:ae (op o)
           -> l:s st
           -> atr:ae (op o)
@@ -591,12 +585,12 @@ val prop_merge21 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                   (ensures (forall e. mem e (merge_a ltr l atr a btr b) ==> mem_key (get_key_s e) (absmerge ltr atr btr).l))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge21 #st #o ltr l atr a btr b = 
-  lemma2 #st #o (merge_a ltr l atr a btr b);
+let prop_merge21 #st #o #m ltr l atr a btr b = 
+  lemma2 #st #o #m (merge_a ltr l atr a btr b);
   lemma6 ltr atr; lemma6 ltr btr;
   lemma61 ltr atr btr
 
-val prop_merge22 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val prop_merge22 : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
           -> ltr:ae (op o)
           -> l:s st
           -> atr:ae (op o)
@@ -620,12 +614,12 @@ val prop_merge22 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                                       mem_key_s (get_key e) (merge_a ltr l atr a btr b)))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge22 #st #o ltr l atr a btr b = 
-  lemma2 #st #o (merge_a ltr l atr a btr b);
+let prop_merge22 #st #o #m ltr l atr a btr b = 
+  lemma2 #st #o #m (merge_a ltr l atr a btr b);
   lemma6 ltr atr; lemma6 ltr btr;
   lemma61 ltr atr btr
 
-val prop_merge2 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val prop_merge2 : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
           -> ltr:ae (op o)
           -> l:s st
           -> atr:ae (op o)
@@ -649,11 +643,11 @@ val prop_merge2 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                                        mem_key ch (absmerge ltr atr btr).l))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge2 #st #o ltr l atr a btr b = 
-  prop_merge21 #st #o ltr l atr a btr b;
-  prop_merge22 #st #o ltr l atr a btr b
+let prop_merge2 #st #o #m ltr l atr a btr b = 
+  prop_merge21 #st #o #m ltr l atr a btr b;
+  prop_merge22 #st #o #m ltr l atr a btr b
 
-val prop_merge31 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+val prop_merge31 : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
           -> ltr:ae (op o)
           -> l:s st
           -> atr:ae (op o)
@@ -677,12 +671,12 @@ val prop_merge31 : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                              (exists e1. mem e1 (merge_a ltr l atr a btr b) /\ get_key e = get_key_s e1)))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge31 #st #o ltr l atr a btr b = 
-  lemma2 #st #o (merge_a ltr l atr a btr b);
+let prop_merge31 #st #o #m ltr l atr a btr b = 
+  lemma2 #st #o #m (merge_a ltr l atr a btr b);
   lemma6 ltr atr; lemma6 ltr btr;
   lemma61 ltr atr btr
-  
-val prop_merge_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
+
+val prop_merge_a : #st:eqtype -> #o:eqtype -> #m:(mrdt st o) -> {|alpha_map st o m|}
           -> ltr:ae (op o)
           -> l:s st
           -> atr:ae (op o)
@@ -705,10 +699,10 @@ val prop_merge_a : #st:eqtype -> #o:eqtype -> {|mrdt st o|}
                     (ensures (sim_a (absmerge ltr atr btr) (merge_a ltr l atr a btr b)))
 
 #set-options "--z3rlimit 10000000"
-let prop_merge_a #st #o ltr l atr a btr b = 
-  prop_merge2 #st #o ltr l atr a btr b;
-  prop_merge31 #st #o ltr l atr a btr b;
-  let m = get_lst (merge_a ltr l atr a btr b) in
-  prop_merge1 #st #o ltr l atr a btr b m
+let prop_merge_a #st #o #m ltr l atr a btr b = 
+  prop_merge2 #st #o #m ltr l atr a btr b;
+  prop_merge31 #st #o #m ltr l atr a btr b;
+  let m1 = get_lst (merge_a ltr l atr a btr b) in
+  prop_merge1 #st #o #m ltr l atr a btr b m1
 
 
