@@ -9,6 +9,8 @@ type op =
   |Add 
   |Rem
 
+let init = 0
+
 val opa : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Add))})
 let opa op1 =
   match op1 with
@@ -58,6 +60,8 @@ let rec lemma1 l a =
   |(A _ []), (A _ []) -> ()
   |(A _ (x::xs)), _ -> lemma1 (A l.vis xs) a
   |(A _ []), (A _ (x::xs)) -> lemma1 l (A a.vis xs)
+
+let pre_cond_merge1 l a b = true
 
 val merge1 : l:s -> a:s -> b:s
            -> Pure s
@@ -133,11 +137,14 @@ val convergence : tr:ae op
 let convergence tr a b = ()
 
 instance _ : mrdt s op = {
+  Library.init = init;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
   Library.convergence = convergence
