@@ -217,7 +217,13 @@ let rec filter_uni f l =
   |[] -> ()
   |x::xs -> filter_uni f xs
 
-class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
+val get_st : #s:eqtype ->  #rval:eqtype -> (s * rval) -> s
+let get_st (s,r) = s
+
+val get_rval : #s:eqtype ->  #rval:eqtype -> (s * rval) -> rval
+let get_rval (s,r) = r
+
+class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return value of op*)) = {
 
   init : s;
 
@@ -229,8 +235,11 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
   (*Implementation of operations*)
   app_op : st:s
          -> op:(nat (*timestamp*) * op)
-         -> Pure s (requires pre_cond_op st op)
-                  (ensures (fun r -> true));
+         -> Pure (s * rval) (requires pre_cond_op st op)
+                           (ensures (fun r -> true));
+
+  (*Specification*)
+  spec : (nat * op) -> ae op -> rval;
 
   (* Simulation relation *)
   sim : ae op -> s -> Tot bool;
@@ -288,7 +297,16 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
             -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
                               (forall e. mem e tr.l ==> get_id e < get_id op) /\
                               get_id op > 0 /\ not (mem_id (get_id op) tr.l))
-                    (ensures (sim (append tr op) (app_op st op)));
+                    (ensures (sim (append tr op) (get_st (app_op st op))));
+
+  (*Proof of spec*)
+  prop_spec : tr:ae op 
+            -> st:s 
+            -> op:(nat * op)
+            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\
+                              get_id op > 0 /\ not (mem_id (get_id op) tr.l))
+                    (ensures (*get_rval (app_op st op) = spec op tr*) true);
 
   (*Convergence modulo observable behavior*)
   convergence : tr:ae op

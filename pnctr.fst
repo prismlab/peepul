@@ -5,9 +5,15 @@ open Library
 
 type s = int
 
-type op = 
-  |Add 
+type rval = |Val : s -> rval
+            |Bot
+
+type op =
+  |Add
   |Rem
+  |Rd
+
+let init = 0
 
 val opa : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Add))})
 let opa op1 =
@@ -23,11 +29,15 @@ let opr op1 =
 
 let pre_cond_op s1 op = true
 
-val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {opa op ==> s2 = s1 + 1 /\ opr op ==> s2 = s1 - 1})
+val app_op : s1:s -> op:(nat * op) 
+           -> Tot (s2:(s * rval) {(opa op ==> s2 = (s1 + 1, Bot)) /\ 
+                                 (opr op ==> s2 = (s1 - 1, Bot)) /\
+                                 (not (opa op || opr op) ==> s2 = (s1, Val s1))})
 let app_op s op1 =
   match op1 with
-  |(_,Add) -> s + 1
-  |(_,Rem) -> s - 1
+  |(_,Add) -> (s + 1, Bot)
+  |(_,Rem) -> (s - 1, Bot)
+  |(_,Rd) -> (s, Val s)
 
 val sum : l:(list (nat * op))
         -> Tot (n:int {n = (List.Tot.length (filter (fun a -> opa a) l) - 
@@ -38,6 +48,17 @@ let rec sum l =
   |[] -> 0
   |(_, Add)::xs -> sum xs + 1
   |(_, Rem)::xs -> sum xs - 1
+  |(_, Rd)::xs -> sum xs
+
+val spec : o:(nat * op) -> tr:ae op -> Tot rval
+let spec o tr =
+  match o with
+  |(_, Add) -> Bot
+  |(_, Rem) -> Bot
+  |(_, Rd) -> Val (sum tr.l)
+
+val extract : r:rval {exists v. r = Val v} -> s
+let extract (Val s) = s
 
 #set-options "--query_stats"
 val sim : tr:ae op
@@ -58,6 +79,8 @@ let rec lemma1 l a =
   |(A _ []), (A _ []) -> ()
   |(A _ (x::xs)), _ -> lemma1 (A l.vis xs) a
   |(A _ []), (A _ (x::xs)) -> lemma1 l (A a.vis xs)
+
+let pre_cond_merge1 l a b = true
 
 val merge1 : l:s -> a:s -> b:s
            -> Pure s
@@ -122,7 +145,7 @@ val prop_oper : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (app_op st op)))
+                      (ensures (sim (append tr op) (get_st (app_op st op))))
 let prop_oper tr st op = ()
 
 val convergence : tr:ae op
@@ -132,14 +155,28 @@ val convergence : tr:ae op
                          (ensures a = b)
 let convergence tr a b = ()
 
-instance _ : mrdt s op = {
+val prop_spec : tr:ae op
+              -> st:s
+              -> op:(nat * op)
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                      (ensures (get_rval (app_op st op) = spec op tr))
+#set-options "--z3rlimit 1000000"
+let prop_spec tr st op = ()
+
+instance pnctr : mrdt s op rval = {
+  Library.init = init;
+  Library.spec = spec;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
   Library.prop_oper = prop_oper;
+  Library.pre_cond_merge1 = pre_cond_merge1;
   Library.pre_cond_merge = pre_cond_merge;
+  Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
+  Library.prop_spec = prop_spec;
   Library.convergence = convergence
 }
 

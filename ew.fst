@@ -5,9 +5,13 @@ open Library
 
 type s = nat * bool
 
+type rval = |Val : s -> rval
+            |Bot
+
 type op = 
   |Enable
   |Disable
+  |Rd
 
 val ope : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Enable))})
 let ope op1 =
@@ -16,25 +20,27 @@ let ope op1 =
   |_ -> false
 
 val opd : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Disable))})
-let opd op1 = not (ope op1)
+let opd op1 = 
+  match op1 with
+  |(id,Disable) -> true
+  |_ -> false
 
-val fst : s1:s -> Tot (n:nat {exists f. s1 = (n,f)})
-let fst (c,f) = c
-
-val snd : s1:s -> Tot (b:bool {exists c. s1 = (c,b)})
-let snd (c,f) = f
+val opr : op1:(nat * op) -> Tot (b:bool {b=true <==> (exists id. op1 = (id,Rd))})
+let opr op1 = not (ope op1 || opd op1)
 
 val init : nat * bool
 let init = (0, false)
 
 let pre_cond_op s1 op = true
 
-val app_op : s1:s -> op:(nat * op) -> Tot (s2:s {ope op ==> (fst s2 = fst s1 + 1 /\ snd s2 = true) /\
-                                             opd op ==> (fst s2 = fst s1 /\ snd s2 = false)})
+val app_op : s1:s -> op:(nat * op) -> Tot (s2:(s * rval) {(ope op ==> s2 = ((fst s1 + 1, true), Bot)) /\
+                                                      (opd op ==> s2 = ((fst s1, false), Bot)) /\
+                                                      (opr op ==> s2 = (s1, Val s1))})
 let app_op (c,f) e = 
   match e with
-  |(_,Enable) -> (c + 1, true)
-  |(_,Disable) -> (c, false)
+  |(_,Enable) -> ((c + 1, true), Bot)
+  |(_,Disable) -> ((c, false), Bot)
+  |(_,Rd) -> ((c,f), Val (c,f))
 
 val sum : l:(list (nat * op))
         -> Tot (n:nat {n = (List.Tot.length (filter (fun a -> get_op a = Enable) l))}) (decreases %[l])
@@ -48,12 +54,20 @@ val flag : tr:ae op
          -> Tot (b:bool {((b = true) <==> ((exists e. (mem e tr.l /\ get_op e = Enable /\ 
                                        (forall d. (mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (tr.vis e d)))))) /\
                        ((b = false) <==> ((forall e. (mem e tr.l /\ get_op e = Enable ==> 
-                                        (exists d. mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable /\ tr.vis e d))) \/ (forall d. mem d tr.l ==> get_op d = Disable) \/ tr.l = []))})
+                                        (exists d. mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable /\ tr.vis e d))) \/ 
+                                        (forall d. mem d tr.l ==> get_op d = Disable \/ get_op d = Rd) \/ tr.l = []))})
 
 let flag tr = if ((forallb (fun e -> (existsb (fun d -> (get_op d = Disable) && get_id e <> get_id d && tr.vis e d) tr.l))
                                   (filter (fun e -> (get_op e = Enable)) tr.l))
-                 || (forallb (fun d -> (get_op d = Disable)) tr.l)
+                 || (forallb (fun d -> (get_op d = Disable || get_op d = Rd)) tr.l)
                  || tr.l = []) then false else true
+
+val spec : (nat * op) -> ae op -> rval
+let spec o tr = 
+  match o with
+  |(_,Enable) -> Bot
+  |(_,Disable) -> Bot
+  |(_,Rd) -> Val (sum tr.l, flag tr)
 
 #set-options "--query_stats"
 val sim : tr:ae op
@@ -95,7 +109,9 @@ let merge_flag l a b =
       else if af then ac - lc > 0
         else bc - lc > 0
 
+val pre_cond_merge1 : s -> s -> s -> bool
 let pre_cond_merge1 l a b = fst a >= fst l && fst b >= fst l
+
 let pre_cond_merge ltr l atr a btr b = true
 
 val merge1 : l:s
@@ -161,7 +177,7 @@ let rec lemma2 l a b =
 val lem_sum : l:list (nat * op)
             -> Lemma (requires (unique_id l))
                     (ensures (sum l > 0 <==> (exists e. mem e l /\ get_op e = Enable)) /\
-                             (sum l = 0 <==> ((forall e. mem e l ==> get_op e = Disable /\ l <> []) \/ l = [])))
+                             (sum l = 0 <==> ((forall e. mem e l ==> (get_op e = Disable \/ get_op e = Rd) /\ l <> []) \/ l = [])))
                              (decreases l)
 let rec lem_sum l = 
   match l with
@@ -194,7 +210,7 @@ val prop_oper : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (app_op st op)))
+                      (ensures (sim (append tr op) (get_st (app_op st op))))
 let prop_oper tr st op = ()
 
 val convergence : tr:ae op
@@ -204,8 +220,17 @@ val convergence : tr:ae op
                          (ensures a = b)
 let convergence tr a b = ()
 
-instance _ : mrdt s op = {
+val prop_spec : tr:ae op
+              -> st:s
+              -> op:(nat * op)
+              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                      (ensures (get_rval (app_op st op) = spec op tr))
+let prop_spec tr st op = ()
+
+instance ew : mrdt s op rval = {
   Library.init = init;
+  Library.spec = spec;
   Library.sim = sim;
   Library.pre_cond_op = pre_cond_op;
   Library.app_op = app_op;
@@ -215,6 +240,7 @@ instance _ : mrdt s op = {
   Library.merge1 = merge1;
   Library.merge = merge;
   Library.prop_merge = prop_merge;
+  Library.prop_spec = prop_spec;
   Library.convergence = convergence
 }
 
