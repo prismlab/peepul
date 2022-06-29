@@ -14,15 +14,15 @@ let get_key op1 =
   |(_, Get k _) -> k
   |(_, Set k _) -> k
 
-  val opget : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Get k alphaop))))})
-  let opget op1 =
+val opget : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Get k alphaop))))})
+let opget op1 =
     match op1 with
     |(_, (Get _ _)) -> true
     |_ -> false
 
-  val opset : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Set k alphaop))))})
-  let opset op1 = not (opget op1)
-  
+val opset : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Set k alphaop))))})
+let opset op1 = not (opget op1)
+
 val get_alpha_op : #o:eqtype -> op1:(nat * op o) -> Tot (s:o {(exists id k. op1 = (id, (Get k s))) \/
                                                           (exists id k. op1 = (id, (Set k s)))})
 let get_alpha_op op1 =
@@ -145,7 +145,8 @@ val update : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
            -> Pure (s st1)
                   (requires mem_key_s k st)
                   (ensures (fun res -> unique_key res /\ (forall e. mem_key_s e st <==> mem_key_s e res) /\
-                    (forall ch. ch <> k ==> (get_val_s #st1 #o #r ch st = get_val_s #st1 #o #r ch res))))
+                    (forall ch. ch <> k ==> (get_val_s #st1 #o #r ch st = get_val_s #st1 #o #r ch res)) /\
+                      ((v = get_val_s #st1 #o #r k res))))
 #set-options "--z3rlimit 10000000"
 let rec update #st1 #o #r st k v = 
   match st with
@@ -158,16 +159,16 @@ val app_op_a : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
                (ensures (fun res -> (opget op1 ==> (get_rval res = get_rval (app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))) /\ (get_st res = st)) /\
                            (opset op1 ==> (get_rval res = get_rval (app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))) /\ (forall k. k <> get_key op1 ==> (get_val_s #st1 #o #r k st = get_val_s #st1 #o #r k (get_st res))) /\ (not (mem_key_s (get_key op1) st) ==> (forall e. mem e (get_st res) <==> mem e st \/ e = (get_key op1, (get_st ((app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))))))) /\
                (mem_key_s (get_key op1) st ==> (forall e. mem e (get_st res) <==> mem e (update #st1 #o #r st (get_key op1) (get_st (app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1)))))) /\
-                 (forall k. mem_key_s k (get_st res) <==> mem_key_s k st \/ k = get_key op1) /\ mem_key_s (get_key op1) (get_st res)) /\ unique_key (get_st res) (*)/\
+                 (forall k. mem_key_s k (get_st res) <==> mem_key_s k st \/ k = get_key op1) /\ mem_key_s (get_key op1) (get_st res)) /\ unique_key (get_st res) /\
                    (opset op1 ==> (get_val_s #st1 #o #r (get_key op1) (get_st res) = 
-                         (get_st (app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))))*)))
+                         (get_st (app_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1)))))))
 
 #set-options "--z3rlimit 10000000"
 let rec app_op_a #st1 #o #r st op1 = 
-  (*)match op1 with
+  match op1 with
   |(_, Get k ao) -> let (_, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (st, ret)
-  |(_, Set k ao) -> let (v, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (if mem_key_s (get_key op1) st then (update #st1 #o #r st (get_key op1) v, ret) else ((get_key op1, v)::st, ret))*)
-  match st with
+  |(_, Set k ao) -> let (v, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (if mem_key_s (get_key op1) st then (update #st1 #o #r st (get_key op1) v, ret) else ((get_key op1, v)::st, ret))
+  (*)match st with
   |[] -> (match op1 with
        |(_, Get k ao) -> let (_, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in 
                             ((init_a), ret)
@@ -176,7 +177,7 @@ let rec app_op_a #st1 #o #r st op1 =
   |(ch, x)::xs -> match op1 with
                 |(_, Get k ao) -> let (_, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in
                                  (st, ret)
-                |(_, Set k ao) -> let (v, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (if mem_key_s (get_key op1) st then (update #st1 #o #r st (get_key op1) v, ret) else ((get_key op1, v)::st, ret))
+                |(_, Set k ao) -> let (v, ret) = (app_op #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (if mem_key_s (get_key op1) st then (update #st1 #o #r st (get_key op1) v, ret) else ((get_key op1, v)::st, ret))*)
 
 
 val unique_keys : list nat -> Tot bool
@@ -205,13 +206,13 @@ let spec_a #st #o #r o1 tr = (spec #st #o #r) (project_op o1) (project (get_key 
 val sim_a : #st:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st o r|}
           -> tr:ae (op o)
           -> s1:s st
-          -> Tot (b:bool {(b = true) <==> (forall k. mem_key_s k s1 ==> (exists e. mem e tr.l /\ get_id e = k /\ opset e)) /\
+          -> Tot (b:bool {(b = true) <==> (forall e1. mem e1 s1 ==> (exists e. mem e tr.l /\ get_key e = get_key_s e1 /\ opset e)) /\
             (forall k. mem_key_s k s1 ==> (sim #st #o #r) (project k tr) (get_val_s #st #o #r k s1)) /\
             (forall e. mem e tr.l /\ opset e ==> (exists e1. mem e1 s1 /\ get_key e = get_key_s e1))})
 
 #set-options "--z3rlimit 10000000"
 let sim_a #st #o #r tr s1 =
-  forallb (fun e -> (existsb (fun e1 -> get_id e1 = get_key_s e && opset e1) tr.l)) s1 &&
+  forallb (fun e -> (existsb (fun e1 -> get_key e1 = get_key_s e && opset e1) tr.l)) s1 &&
   forallb (fun e -> (sim #st #o #r) (project (get_key_s e) tr) (get_val_s #st #o #r (get_key_s e) s1)) s1 &&
   forallb (fun e -> (existsb (fun e1 -> get_key e = get_key_s e1) s1)) (filter (fun e -> opset e) tr.l)
 
@@ -334,12 +335,11 @@ val prop_oper2 : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
                -> op1:(nat * (op o)) 
                -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                  (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
-                                 pre_cond_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-                                 ((sim #st1 #o #r) (project (get_key op1) (append tr op1)) (get_val_s #st1 #o #r (get_key op1) (get_st (app_op_a #st1 #o #r st op1)))))
-                       (ensures (forall k. mem_key_s k (get_st (app_op_a #st1 #o #r st op1)) ==> (exists e. mem e (append tr op1).l /\ get_id e = k /\ opset e)))
+                                 pre_cond_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))
+                       (ensures (forall e1. mem e1 (get_st (app_op_a #st1 #o #r st op1)) ==> (exists e. mem e (append tr op1).l /\ get_key e = get_key_s e1 /\ opset e)))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper2 #st1 #o #r tr st op = admit();
+let prop_oper2 #st1 #o #r tr st op =
   lem_oper tr op;
   prop_oper1 #st1 #o #r tr st op
 
@@ -350,8 +350,8 @@ val prop_oper3 : #st1:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st1 o r) -> {
                -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                  (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
                                  pre_cond_op #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))
-                       (ensures (forall ch. mem_key_s ch (get_st (app_op_a #st1 #o #r st op1)) /\ ch <> get_key op1 ==>
-   (sim #st1 #o #r) (project ch (append tr op1)) (get_val_s #st1 #o #r ch (get_st (app_op_a #st1 #o #r st op1)))))
+             (ensures (forall k. mem_key_s k (get_st (app_op_a #st1 #o #r st op1)) /\ k <> get_key op1 ==>
+   (sim #st1 #o #r) (project k (append tr op1)) (get_val_s #st1 #o #r k (get_st (app_op_a #st1 #o #r st op1)))))
 
 #set-options "--z3rlimit 10000000"
 let prop_oper3 #st1 #o #r #m tr st op = 

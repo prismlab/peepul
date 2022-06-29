@@ -157,16 +157,16 @@ val prop_oper : tr:ae (A.op G.op)
                       (ensures (A.sim_a #G.s #G.op #G.rval (append tr op1) (get_st (A.app_op_a #G.s #G.op #G.rval st op1))))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper tr st op = 
-  assert (G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op));
+let prop_oper tr st op = A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op
+  (*)assert (G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op));
   G.prop_oper (A.project (A.get_key op) tr) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op);
   assert (G.sim (append (A.project (A.get_key op) tr) (A.project_op op)) (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))));
   A.lem_oper tr op; 
-  assert ((forall e. mem e (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))) <==>
+  assert (A.opset op ==>
+         (forall e. mem e (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))) <==>
          mem e (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))))); 
-  admit ();
   assert (G.sim (A.project (A.get_key op) (append tr op)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))));
-  A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op
+  A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op*)
 
 val convergence_a : tr:ae (A.op G.op)
                   -> a:A.s G.s

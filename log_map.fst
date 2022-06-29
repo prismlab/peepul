@@ -190,26 +190,34 @@ let merge_a ltr l atr a btr b = A.merge_a #G.s #G.op #G.rval ltr l atr a btr b
   A.lem_merge1 ltr l atr a btr b keys;
   let r = merge1_a l a b in
   r*)
-  
+
+val pre_cond_op_a : s1:(A.s G.s) -> op1:(nat * (A.op G.op))
+                    -> Tot (b:bool {b = true <==> 
+                          G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) s1) (A.project_op op1)})
+let pre_cond_op_a s1 op = 
+      G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) s1) (A.project_op op)
+
 val prop_oper : tr:ae (A.op G.op)
               -> st:A.s G.s
               -> op1:(nat * (A.op G.op)) 
               -> Lemma (requires (A.sim_a #G.s #G.op #G.rval tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
-                                A.pre_cond_op_a #G.s #G.op #G.rval st op1 (*)/\
+                                pre_cond_op_a st op1 (*)/\
                                 (G.sim (A.project (A.get_key op1) (append tr op1)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) (get_st (A.app_op_a #G.s #G.op #G.rval st op1)))*))
                       (ensures (A.sim_a #G.s #G.op #G.rval (append tr op1) (get_st (A.app_op_a #G.s #G.op #G.rval st op1))))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper tr st op = admit();
-  assert (G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op));
+let prop_oper tr st op = 
+  (*)assert (G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op));*)
   G.prop_oper (A.project (A.get_key op) tr) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op); 
-  assert (G.sim (append (A.project (A.get_key op) tr) (A.project_op op)) (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))));
-  A.lem_oper tr op;
-  //assert (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op)) =
-       //   A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op)));
-  assert (G.sim (A.project (A.get_key op) (append tr op)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))));
-    A.prop_oper_a #G.s #G.op #G.rval #G.log tr st op
+  assume (G.sim (append (A.project (A.get_key op) tr) (A.project_op op)) (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op)))); 
+  A.lem_oper tr op; 
+  lemma1 tr st op;
+  lemma4 tr st; 
+  assert (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op)) =
+          A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))); admit();
+  assert (G.sim (A.project (A.get_key op) (append tr op)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op)))); admit ();
+  A.prop_oper_a #G.s #G.op #G.rval #G.log tr st op
 
 val convergence2 : tr:ae (A.op G.op)
                  -> a:(A.s G.s)
@@ -309,12 +317,6 @@ let prop_merge_a ltr l atr a btr b =
 
 val extract : r:G.rval {r <> G.Bot} -> G.s
 let extract (G.Val s) = s
-
-val pre_cond_op_a : s1:(A.s G.s) -> op1:(nat * (A.op G.op))
-                  -> Tot (b:bool {b = true <==> 
-                        G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) s1) (A.project_op op1)})
-let pre_cond_op_a s1 op = 
-    G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) s1) (A.project_op op)
 
 val spec_a : o1:(nat * (A.op G.op))
            -> tr:ae (A.op G.op)
