@@ -13,7 +13,8 @@ type op = |Add
 
 let init = 0
 
-let pre_cond_op s1 op = true
+let pre_cond_app_op s1 op = true
+let pre_cond_prop_oper tr s1 op = true
 
 val app_op : s1:s -> op:(nat * op) -> Tot (s2:(s * rval) {get_op op = Add ==> s2 = (s1 + 1, Bot) /\
                                                       get_op op = Rd ==> s2 = (s1, Val s1)})
@@ -56,32 +57,15 @@ let rec lemma1 l a =
   |(A _ (x::xs)), _ -> lemma1 (A l.vis xs) a
   |(A _ []), (A _ (x::xs)) -> lemma1 l (A a.vis xs)
 
-let pre_cond_merge1 l a b = a >= l && b >= l
+let pre_cond_merge l a b = a >= l && b >= l
 
-val merge1 : l:s -> a:s -> b:s
+let pre_cond_prop_merge ltr l atr a btr b = true
+
+val merge : l:s -> a:s -> b:s
            -> Pure s
-             (requires pre_cond_merge1 l a b)
+             (requires pre_cond_merge l a b)
              (ensures (fun r -> r = a + b - l))
-let merge1 l a b = a + b - l
-
-let pre_cond_merge ltr l atr a btr b = true
-
-val merge : ltr:ae op
-          -> l:s
-          -> atr:ae op
-          -> a:s
-          -> btr:ae op
-          -> b:s
-          -> Pure s (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (fun res -> res = merge1 l a b))
-#set-options "--z3rlimit 10000"
-let merge ltr l atr a btr b = 
-  lemma1 ltr atr;
-  lemma1 ltr btr;
-  merge1 l a b
+let merge l a b = a + b - l
 
 val lemma2 : l:ae op
            -> a:ae op
@@ -110,7 +94,7 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+                       (ensures (sim (absmerge ltr atr btr) (merge l a b)))
 #set-options "--z3rlimit 10000000"
 let prop_merge ltr l atr a btr b = 
   lemma1 ltr atr; 
@@ -145,13 +129,13 @@ instance ictr : mrdt s op rval = {
   Library.init = init;
   Library.spec = spec;
   Library.sim = sim;
-  Library.pre_cond_op = pre_cond_op;
-  Library.app_op = app_op;
-  Library.prop_oper = prop_oper;
-  Library.pre_cond_merge1 = pre_cond_merge1;
+  Library.pre_cond_app_op = pre_cond_app_op;
+  Library.pre_cond_prop_oper = pre_cond_prop_oper;
   Library.pre_cond_merge = pre_cond_merge;
-  Library.merge1 = merge1;
+  Library.pre_cond_prop_merge = pre_cond_prop_merge;
+  Library.app_op = app_op;
   Library.merge = merge;
+  Library.prop_oper = prop_oper;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence

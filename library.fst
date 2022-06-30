@@ -225,87 +225,74 @@ let get_rval (s,r) = r
 
 class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return value of op*)) = {
 
+  (*Initial state*)
   init : s;
-
-  (*Pre-condition for apply operation*)
-  pre_cond_op : s
-              -> (nat (*timestamp*) * op)
-              -> Tot bool;
-
-  (*Implementation of operations*)
-  app_op : st:s
-         -> op:(nat (*timestamp*) * op)
-         -> Pure (s * rval) (requires pre_cond_op st op)
-                           (ensures (fun r -> true));
 
   (*Specification*)
   spec : (nat * op) -> ae op -> rval;
 
-  (* Simulation relation *)
+  (*Simulation relation*)
   sim : ae op -> s -> Tot bool;
 
+  (*Pre-condition for apply operation*)
+  pre_cond_app_op : s -> (nat * op) -> Tot bool;
+
+  (*Pre-condition for prop_oper*)
+  pre_cond_prop_oper : tr:ae op -> st:s -> o:(nat * op) 
+                     -> Pure bool
+                       (requires (not (mem_id (get_id o) tr.l) /\
+                                 (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0))
+                       (ensures (fun b -> true));
+
   (*Pre-condition for three-way merge*)
-  pre_cond_merge : ltr:ae op 
-                 -> l:s 
-                 -> atr:ae op 
-                 -> a:s
-                 -> btr:ae op 
-                 -> b:s 
-                 -> Tot bool;
+  pre_cond_merge : s -> s -> s -> Tot bool;
 
-  pre_cond_merge1 : s -> s -> s 
-                  -> Tot bool;
+  (*Pre-condition for prop_merge*)
+  pre_cond_prop_merge : ae op -> s -> ae op -> s -> ae op -> s -> Tot bool;
 
-  merge1 : l:s
-         -> a:s
-         -> b:s
-         -> Pure s (requires pre_cond_merge1 l a b)
-                  (ensures (fun r -> true));
-  
-  (*Implementation of three-way*)
-  merge : ltr:ae op 
-        -> l:s 
-        -> atr:ae op 
+  (*Implementation of operations*)
+  app_op : st:s
+         -> op:(nat (*timestamp*) * op)
+         -> Pure (s * rval) (requires pre_cond_app_op st op)
+                           (ensures (fun r -> true));
+
+  (*Implementation of three-way merge*)
+  merge : l:s
         -> a:s
-        -> btr:ae op 
-        -> b:s 
-        -> Pure s (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                           (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                           (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                           (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                           pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
-                 (ensures (fun r -> r = merge1 l a b));
+        -> b:s
+        -> Pure s (requires pre_cond_merge l a b)
+                 (ensures (fun r -> true));
+
+  (*Proof of apply operation*)
+  prop_oper : tr:ae op 
+            -> st:s 
+            -> o:(nat * op)
+            -> Lemma (requires (sim tr st) /\ pre_cond_app_op st o /\
+                              (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\
+                              not (mem_id (get_id o) tr.l) /\ pre_cond_prop_oper tr st o)
+                    (ensures (sim (append tr o) (get_st (app_op st o))));
 
   (*Proof of three-way merge*)
-  prop_merge : ltr:ae op 
-             -> l:s 
-             -> atr:ae op 
-             -> a:s 
+  prop_merge : ltr:ae op
+             -> l:s
+             -> atr:ae op
+             -> a:s
              -> btr:ae op
              -> b:s
              -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
                                (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                               pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
-                     (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)));
-
-  (*Proof of apply operation*)
-  prop_oper : tr:ae op 
-            -> st:s 
-            -> op:(nat * op)
-            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
-                              (forall e. mem e tr.l ==> get_id e < get_id op) /\
-                              get_id op > 0 /\ not (mem_id (get_id op) tr.l))
-                    (ensures (sim (append tr op) (get_st (app_op st op))));
+                               pre_cond_merge l a b /\ pre_cond_prop_merge ltr l atr a btr b)
+                     (ensures (sim (absmerge ltr atr btr) (merge l a b)));
 
   (*Proof of spec*)
   prop_spec : tr:ae op 
             -> st:s 
-            -> op:(nat * op)
-            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
-                              (forall e. mem e tr.l ==> get_id e < get_id op) /\
-                              get_id op > 0 /\ not (mem_id (get_id op) tr.l))
+            -> o:(nat * op)
+            -> Lemma (requires (sim tr st) /\ pre_cond_app_op st o /\ 
+                              (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\ 
+                              not (mem_id (get_id o) tr.l) /\ pre_cond_prop_oper tr st o)
                     (ensures (*get_rval (app_op st op) = spec op tr*) true);
 
   (*Convergence modulo observable behavior*)

@@ -176,7 +176,9 @@ let rec update ele id tr =
                               else if ele < ele1 then (Node (id1,ele1) (update ele id t1) t2)
                                  else Node (id1,ele1) t1 (update ele id t2)
 
-let pre_cond_op s1 op = not (member_id_s (get_id op) s1)
+let pre_cond_app_op s1 op = not (member_id_s (get_id op) s1)
+
+let pre_cond_prop_oper tr s1 op = true
 
 val appendt : l1:O.s
             -> l2:O.s
@@ -217,7 +219,7 @@ let rec flatten t =
 val app_op : s1:s
            -> op1:(nat * op)
            -> Pure (s * rval)
-             (requires pre_cond_op s1 op1)
+             (requires pre_cond_app_op s1 op1)
              (ensures (fun res -> (O.opa op1 ==> (get_rval res = O.Bot) /\ (forall e. memt e s1 /\ snd e <> O.get_ele op1 <==> 
                                                    memt e (get_st res) /\ snd e <> O.get_ele op1) /\
                                (forall e. memt e (get_st res) /\ fst e <> get_id op1 /\ member_id_s (fst e) (get_st res) <==> 
@@ -314,31 +316,14 @@ val diff : a:s
 let diff a l =
   totree (O.diff (flatten a) (flatten l))
 
-let pre_cond_merge1 l a b = O.pre_cond_merge1 (flatten l) (flatten a) (flatten b)
-let pre_cond_merge ltr l atr a btr b = true
+let pre_cond_merge l a b = O.pre_cond_merge (flatten l) (flatten a) (flatten b)
+let pre_cond_prop_merge ltr l atr a btr b = true
 
-val merge1 : l:s -> a:s -> b:s
+val merge : l:s -> a:s -> b:s
            -> Pure s 
-             (requires pre_cond_merge1 l a b)
-             (ensures (fun res -> res = totree (O.merge1 (flatten l) (flatten a) (flatten b))))
-let merge1 l a b = totree (O.merge1 (flatten l) (flatten a) (flatten b))
-
-val merge : ltr:ae op
-          -> l:s
-          -> atr:ae op
-          -> a:s
-          -> btr:ae op
-          -> b:s
-          -> Pure s (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (fun res -> pre_cond_merge1 l a b /\ res = merge1 l a b))
-
-#set-options "--z3rlimit 10000000"
-let merge ltr l atr a btr b =
-  let m = O.merge ltr (flatten l) atr (flatten a) btr (flatten b) in
-  totree m
+             (requires pre_cond_merge l a b)
+             (ensures (fun res -> res = totree (O.merge (flatten l) (flatten a) (flatten b))))
+let merge l a b = totree (O.merge (flatten l) (flatten a) (flatten b))
 
 val prop_merge : ltr:ae op
                -> l:s
@@ -350,7 +335,7 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)))
+                       (ensures (pre_cond_merge l a b) /\ (sim (absmerge ltr atr btr) (merge l a b)))
 
 #set-options "--z3rlimit 10000000"
 let prop_merge ltr l atr a btr b =
@@ -389,15 +374,15 @@ let prop_spec tr st op = ()
 
 instance orset_bst : mrdt s op rval = {
   Library.init = init;
-  Library.spec = O.spec;
+  Library.spec = O.spec;   
   Library.sim = sim;
-  Library.pre_cond_op = pre_cond_op;
-  Library.app_op = app_op;
-  Library.prop_oper = prop_oper;
-  Library.pre_cond_merge1 = pre_cond_merge1;
+  Library.pre_cond_app_op = pre_cond_app_op;
+  Library.pre_cond_prop_oper = pre_cond_prop_oper;
   Library.pre_cond_merge = pre_cond_merge;
-  Library.merge1 = merge1;
+  Library.pre_cond_prop_merge = pre_cond_prop_merge;
+  Library.app_op = app_op;
   Library.merge = merge;
+  Library.prop_oper = prop_oper;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence
@@ -432,8 +417,8 @@ val take_element : l:O.s
                  -> Pure O.s
                    (requires (pos1 < length l) /\ length l >= 1 /\ sorted l)
                    (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e = pos1) /\ length r = 1 /\ sorted r /\
-                                   (forall e. mem e r /\ O.member_id (fst e) r <==>
-                                   mem e l /\ O.member_id (fst e) l /\ pos l e = pos1)))
+                                   (forall e. mem e r /\ O.member_id_s (fst e) r <==>
+                                   mem e l /\ O.member_id_s (fst e) l /\ pos l e = pos1)))
                    (decreases %[(length l); pos1])
 #set-options "--z3rlimit 10000000"
 let rec take_element l n =
@@ -444,8 +429,8 @@ val takemiddle : l:O.s
                -> Pure O.s
                  (requires (sorted l /\ length l >= 1))
                  (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e = length l/2) /\
-                                 (forall e. mem e r /\ O.member_id (fst e) r <==> mem e l /\ 
-                                 O.member_id (fst e) l /\ pos l e = length l/2)/\ length r = 1))
+                                 (forall e. mem e r /\ O.member_id_s (fst e) r <==> mem e l /\ 
+                                 O.member_id_s (fst e) l /\ pos l e = length l/2)/\ length r = 1))
 let takemiddle l = take_element l (length l/2)
 
 val take : pos1:nat
@@ -453,9 +438,9 @@ val take : pos1:nat
          -> Pure O.s
            (requires (pos1 < length l /\ sorted l))
            (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e < pos1) /\
-                           (forall e. mem e r /\ O.member_id (fst e) r <==> 
-                                 mem e l /\ O.member_id (fst e) l /\ pos l e < pos1) 
-                            /\ O.unique_id r /\ length r = pos1 /\
+                           (forall e. mem e r /\ O.member_id_s (fst e) r <==> 
+                                 mem e l /\ O.member_id_s (fst e) l /\ pos l e < pos1) 
+                            /\ O.unique_id_s r /\ length r = pos1 /\
                            (forall e. mem e r ==> pos l e < pos1))) 
            (decreases %[pos1;l])
 #set-options "--z3rlimit 10000000"
@@ -479,8 +464,8 @@ val takefront : l:O.s
               -> Pure O.s
                 (requires (sorted l /\ length l >= 1))
                 (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e < (length l/2)) /\
-                                (forall e. mem e r /\ O.member_id (fst e) r <==> 
-                                      mem e l /\ O.member_id (fst e) l /\ pos l e < (length l/2)) 
+                                (forall e. mem e r /\ O.member_id_s (fst e) r <==> 
+                                      mem e l /\ O.member_id_s (fst e) l /\ pos l e < (length l/2)) 
                                       /\ sorted r /\ length r = (length l)/2))
                 (decreases l)
 #set-options "--z3rlimit 10000000"
@@ -494,8 +479,8 @@ val drop : pos1:nat
          -> Pure O.s
            (requires (pos1 <= length l /\ sorted l))
              (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e >= pos1) /\
-                             (forall e. mem e r /\ O.member_id (fst e) r <==> 
-                                   mem e l /\ O.member_id (fst e) l /\ pos l e >= pos1)
+                             (forall e. mem e r /\ O.member_id_s (fst e) r <==> 
+                                   mem e l /\ O.member_id_s (fst e) l /\ pos l e >= pos1)
                                    /\ sorted r /\ length r = length l - pos1))
            (decreases %[pos1;l])
 let rec drop n l =
@@ -507,8 +492,8 @@ val takeback : l:O.s
              -> Pure O.s
                (requires (sorted l /\ length l >= 1))
                (ensures (fun r -> (forall e. mem e r <==> mem e l /\ pos l e > (length l/2)) /\
-                               (forall e. mem e r /\ O.member_id (fst e) r <==> 
-                                     mem e l /\ O.member_id (fst e) l /\ pos l e > (length l/2)) 
+                               (forall e. mem e r /\ O.member_id_s (fst e) r <==> 
+                                     mem e l /\ O.member_id_s (fst e) l /\ pos l e > (length l/2)) 
                                      /\ sorted r /\ length r = ((length l) - (length l)/2 - 1)))
                (decreases l)
 let takeback l = drop (length l/2 + 1) l

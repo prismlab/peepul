@@ -8,50 +8,29 @@ module A = Alpha_map
 
 module G = Gset
 
-val pre_cond_merge1_a : l:A.s G.s -> a:A.s G.s -> b:A.s G.s 
+val pre_cond_merge_a : l:A.s G.s -> a:A.s G.s -> b:A.s G.s 
                       -> Pure bool
                         (requires true)
                         (ensures (fun b1 -> (b1 = true <==> (forall e. A.mem_key_s e l ==> A.mem_key_s e a /\ A.mem_key_s e b) /\
                         (forall ch. A.mem_key_s ch a \/ A.mem_key_s ch b ==> 
-                                           G.pre_cond_merge1 (A.get_val_s #G.s #G.op #G.rval ch l) 
+                                           G.pre_cond_merge (A.get_val_s #G.s #G.op #G.rval ch l) 
                                            (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b)))))
 
-let pre_cond_merge1_a l a b = A.pre_cond_merge1_a #G.s #G.op #G.rval l a b 
- (*) forallb (fun e -> A.mem_key_s (A.get_key_s #G.s e) a && A.mem_key_s (A.get_key_s #G.s e) b) l &&
-  forallb (fun ch -> G.pre_cond_merge1 (A.get_val_s #G.s #G.op #G.rval ch l) 
-          (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b)) (A.get_key_lst l a b)*)
+let pre_cond_merge_a l a b = A.pre_cond_merge_a #G.s #G.op #G.rval l a b 
 
-val merge2 : l:A.s G.s -> a:A.s G.s -> b:A.s G.s 
-           -> lst:list nat
-           -> Pure (A.s G.s)
-             (requires pre_cond_merge1_a l a b /\ A.unique_keys lst /\
-                       (forall ch. mem ch lst ==> A.mem_key_s ch a \/ A.mem_key_s ch b))
-             (ensures (fun r -> (forall ch. A.mem_key_s ch r <==> mem ch lst) /\ A.unique_key r /\
-                             (forall ch. mem ch lst ==> (A.get_val_s #G.s #G.op #G.rval ch r) =
-                       (G.merge1 (A.get_val_s #G.s #G.op #G.rval ch l) (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b)))))
-                (decreases lst)
-
-let rec merge2 l a b lst = A.merge2 #G.s #G.op #G.rval l a b lst
- (*) match lst with
-  |[] -> []
-  |x::xs -> (x, G.merge1 (A.get_val_s #G.s #G.op #G.rval x l) (A.get_val_s #G.s #G.op #G.rval x a) (A.get_val_s #G.s #G.op #G.rval x b))::merge2 l a b xs*)
-
-val merge1_a : l:A.s G.s
+val merge_a : l:A.s G.s
              -> a:A.s G.s
              -> b:A.s G.s
              -> Pure (A.s G.s)
-               (requires pre_cond_merge1_a l a b)
+               (requires pre_cond_merge_a l a b)
                (ensures (fun r -> (forall ch. A.mem_key_s ch r <==> A.mem_key_s ch a \/ A.mem_key_s ch b) /\ A.unique_key r /\
                              (forall ch. A.mem_key_s ch a \/ A.mem_key_s ch b ==> (A.get_val_s #G.s #G.op #G.rval ch r) =
-                             (G.merge1 (A.get_val_s #G.s #G.op #G.rval ch l) (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b)))))
-
-let merge1_a l a b = A.merge1_a #G.s #G.op #G.rval l a b
-  (*)let lst = A.get_key_lst l a b in
-  merge2 l a b lst*)
+                             (G.merge (A.get_val_s #G.s #G.op #G.rval ch l) (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b)))))
+let merge_a l a b = A.merge_a #G.s #G.op #G.rval l a b
 
 val lemma2 : s1:A.s G.s
            -> Lemma (requires true)
-         (ensures (forall e. mem e s1 ==> (A.get_val_s #G.s #G.op #G.rval (A.get_key_s e) s1 = A.get_val_s1 #G.s e)))
+                   (ensures (forall e. mem e s1 ==> (A.get_val_s #G.s #G.op #G.rval (A.get_key_s e) s1 = A.get_val_s1 #G.s e)))
 let rec lemma2  s1 =
   match s1 with
   |[] -> ()
@@ -67,7 +46,7 @@ val lemma1 : tr:ae (A.op G.op)
          -> op1:(nat * (A.op G.op))
          -> Lemma (requires (A.sim_a #G.s #G.op #G.rval tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                            (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
-                          G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1))
+                          G.pre_cond_app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1))
                  (ensures (forall i. A.mem_key_s i (get_st (A.app_op_a #G.s #G.op #G.rval st op1)) /\ i <> A.get_key op1 ==>
                  ((forall e. mem e (A.project i (append tr op1)).l <==> mem e (A.project i tr).l) /\
              (forall e e1. mem e (A.project i (append tr op1)).l /\ mem e1 (A.project i (append tr op1)).l /\ get_id e <> get_id e1 /\
@@ -87,14 +66,14 @@ val lemma7 : tr:ae G.op -> s1:G.s -> tr1:ae G.op
 #set-options "--z3rlimit 10000000"
 let lemma7 tr s1 tr1 = ()
 
-val pre_cond_merge_a : ltr:ae (A.op G.op) 
+val pre_cond_prop_merge_a : ltr:ae (A.op G.op) 
                      -> l:A.s G.s 
                      -> atr:ae (A.op G.op)
                      -> a:A.s G.s 
                      -> btr:ae (A.op G.op)
                      -> b:A.s G.s
                      -> Tot (b1:bool {b1=true <==> (forall ch. A.mem_key_s ch a \/ A.mem_key_s ch b ==>
-                          (G.pre_cond_merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
+                          (G.pre_cond_prop_merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
                                             (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a)
                                             (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b)) /\
                               (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch atr).l)) /\
@@ -104,8 +83,8 @@ val pre_cond_merge_a : ltr:ae (A.op G.op)
                       G.sim (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a) /\
                      G.sim (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b)))})
 
-let pre_cond_merge_a ltr l atr a btr b =
-  forallb (fun ch -> (G.pre_cond_merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
+let pre_cond_prop_merge_a ltr l atr a btr b =
+  forallb (fun ch -> (G.pre_cond_prop_merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
                                     (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a)
                                     (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b)) &&
   (forallb (fun e -> not (mem_id (get_id e) (A.project ch atr).l)) (A.project ch ltr).l) &&
@@ -115,58 +94,48 @@ let pre_cond_merge_a ltr l atr a btr b =
   (G.sim (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a)) &&
   (G.sim (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b))) (A.get_key_lst l a b)
 
-val merge_a : ltr:ae (A.op G.op)
-          -> l:A.s G.s
-          -> atr:ae (A.op G.op)
-          -> a:A.s G.s
-          -> btr:ae (A.op G.op)
-          -> b:A.s G.s
-          -> Pure (A.s G.s) (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                                   (A.sim_a #G.s #G.op #G.rval ltr l /\ A.sim_a #G.s #G.op #G.rval (union ltr atr) a /\ A.sim_a #G.s #G.op #G.rval (union ltr btr) b) /\
-                             pre_cond_merge1_a l a b /\ pre_cond_merge_a ltr l atr a btr b)
-                 (ensures (fun r -> (forall i. A.mem_key_s i l ==> A.mem_key_s i a /\ A.mem_key_s i b) /\
-                                 (forall i. A.mem_key_s i r <==> A.mem_key_s i a \/ A.mem_key_s i b) /\
-                                 (forall ch. A.mem_key_s ch r ==> (A.get_val_s #G.s #G.op #G.rval ch r) =
-                 (G.merge1 (A.get_val_s #G.s #G.op #G.rval ch l) (A.get_val_s #G.s #G.op #G.rval ch a) (A.get_val_s #G.s #G.op #G.rval ch b))) /\
-                  (forall ch. A.mem_key_s ch r ==> (A.get_val_s #G.s #G.op #G.rval ch r) =
-                  (G.merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l) (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a) (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b))) /\
-                        (r = merge1_a l a b)))
-
-#set-options "--z3rlimit 10000000"
-let merge_a ltr l atr a btr b = A.merge_a #G.s #G.op #G.rval ltr l atr a btr b
-  (*)let keys = A.get_key_lst l a b in
-  A.lem_merge1 #G.s #G.op #G.rval ltr l atr a btr b keys;
-  let r = merge1_a l a b in
-  r*)
-
-instance _ : A.alpha_map (G.s) (G.op) (G.rval) G.gset = {
+instance _ : A.alpha_map G.s G.op G.rval G.gset = {
   A.lemma1 = lemma1;
   A.lemma4 = lemma4;
   A.lemma2 = lemma2;
   A.lemma7 = lemma7
 }
 
-val prop_oper : tr:ae (A.op G.op)
+val pre_cond_app_op_a : s1:(A.s G.s) -> op1:(nat * (A.op G.op))
+                      -> Tot (b:bool {b = true <==> 
+                           G.pre_cond_app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) s1) (A.project_op op1)})
+let pre_cond_app_op_a s1 op = 
+  G.pre_cond_app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) s1) (A.project_op op)
+
+val pre_cond_prop_oper_a : tr:ae (A.op G.op)
+                         -> st:(A.s G.s)
+                         -> op1:(nat * (A.op G.op)) 
+                         -> Pure bool
+                           (requires (not (mem_id (get_id op1) tr.l) /\
+                                     (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0))
+                           (ensures (fun b -> (b=true <==> (G.pre_cond_prop_oper (A.project (A.get_key op1) (append tr op1))
+                                    (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1)) /\
+                                    G.pre_cond_app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) /\
+                           (G.sim (A.project (A.get_key op1) (append tr op1)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) (get_st (A.app_op_a #G.s #G.op #G.rval st op1)))))))
+
+let pre_cond_prop_oper_a tr st op1 =
+    G.pre_cond_prop_oper (A.project (A.get_key op1) (append tr op1))
+                         (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) &&
+    G.pre_cond_app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) &&
+    G.sim (A.project (A.get_key op1) (append tr op1)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) 
+                     (get_st (A.app_op_a #G.s #G.op #G.rval st op1)))
+
+val prop_oper_a : tr:ae (A.op G.op)
               -> st:A.s G.s
               -> op1:(nat * (A.op G.op)) 
               -> Lemma (requires (A.sim_a #G.s #G.op #G.rval tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
-                                A.pre_cond_op_a #G.s #G.op #G.rval st op1)
+                                pre_cond_app_op_a st op1 /\ pre_cond_prop_oper_a tr st op1)
                       (ensures (A.sim_a #G.s #G.op #G.rval (append tr op1) (get_st (A.app_op_a #G.s #G.op #G.rval st op1))))
 
 #set-options "--z3rlimit 10000000"
-let prop_oper tr st op = A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op
-  (*)assert (G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op));
-  G.prop_oper (A.project (A.get_key op) tr) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op);
-  assert (G.sim (append (A.project (A.get_key op) tr) (A.project_op op)) (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))));
-  A.lem_oper tr op; 
-  assert (A.opset op ==>
-         (forall e. mem e (get_st (G.app_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) st) (A.project_op op))) <==>
-         mem e (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))))); 
-  assert (G.sim (A.project (A.get_key op) (append tr op)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op) (get_st (A.app_op_a #G.s #G.op #G.rval st op))));
-  A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op*)
+let prop_oper_a tr st op = 
+    A.prop_oper_a #G.s #G.op #G.rval #G.gset tr st op
 
 val convergence_a : tr:ae (A.op G.op)
                   -> a:A.s G.s
@@ -190,16 +159,16 @@ val prop_merge_a : ltr:ae (A.op G.op)
                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                             (A.sim_a #G.s #G.op #G.rval ltr l /\ A.sim_a #G.s #G.op #G.rval (union ltr atr) a /\ A.sim_a #G.s #G.op #G.rval (union ltr btr) b) /\
-                             pre_cond_merge1_a l a b /\
+                             pre_cond_merge_a l a b /\
                              (forall ch. A.mem_key_s ch a \/ A.mem_key_s ch b ==> 
-                         (pre_cond_merge #G.s #G.op #G.rval (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
+                         (pre_cond_prop_merge #G.s #G.op #G.rval (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
                                              (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a)
                                              (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b)) /\
                             (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch atr).l)) /\
                             (forall e. mem e (A.project ch atr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
                             (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
                 (sim #G.s #G.op #G.rval (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l) /\ sim #G.s #G.op #G.rval (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a) /\ sim #G.s #G.op #G.rval (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b))))
-                (ensures (A.sim_a #G.s #G.op #G.rval (absmerge ltr atr btr) (merge_a ltr l atr a btr b)))
+                (ensures (A.sim_a #G.s #G.op #G.rval (absmerge ltr atr btr) (merge_a l a b)))
 
 #set-options "--z3rlimit 10000000"
 let prop_merge_a ltr l atr a btr b = 
@@ -207,12 +176,6 @@ let prop_merge_a ltr l atr a btr b =
 
 val extract : r:G.rval {r <> G.Bot} -> G.s
 let extract (G.Val s) = s
-
-val pre_cond_op_a : s1:(A.s G.s) -> op1:(nat * (A.op G.op))
-                  -> Tot (b:bool {b = true <==> 
-                        G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) s1) (A.project_op op1)})
-let pre_cond_op_a s1 op = 
-    G.pre_cond_op (A.get_val_s #G.s #G.op #G.rval (A.get_key op) s1) (A.project_op op)
 
 val spec_a : o1:(nat * (A.op G.op))
            -> tr:ae (A.op G.op)
@@ -226,7 +189,7 @@ val prop_spec_a : tr:ae (A.op G.op)
                   -> op:(nat * (A.op G.op))
                   -> Lemma (requires (A.sim_a #G.s #G.op #G.rval tr st1) /\ (not (mem_id (get_id op) tr.l)) /\
                                     (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0 /\
-                                    pre_cond_op_a st1 op)
+                                    pre_cond_app_op_a st1 op)
                     (ensures (A.opget op ==>
                              ((G.opa (A.project_op op) ==> (get_rval (A.app_op_a #G.s #G.op #G.rval st1 op)) =
                                                   ((A.spec_a #G.s #G.op #G.rval) op tr)) /\
@@ -239,24 +202,25 @@ let prop_spec_a tr st op = ()
 
 val sim_a : tr:ae (A.op G.op)
           -> s1:(A.s G.s)
-          -> Tot (b:bool {(b = true) <==> (forall k. A.mem_key_s k s1 ==> (exists e. mem e tr.l /\ get_id e = k /\ A.opset e)) /\
+          -> Tot (b:bool {(b = true) <==> (forall e1. mem e1 s1 ==> (exists e. mem e tr.l /\ A.get_key_s e1 = A.get_key e /\ A.opset e)) /\
                 (forall k. A.mem_key_s k s1 ==> G.sim (A.project k tr) (A.get_val_s #G.s #G.op #G.rval k s1)) /\
-              (forall e. mem e tr.l /\ A.opset e ==> (exists e1. mem e1 s1 /\ A.get_key e = A.get_key_s e1))})
-let sim_a tr s1 = A.sim_a #G.s #G.op #G.rval tr s1
+                (forall e. mem e tr.l /\ A.opset e ==> (exists e1. mem e1 s1 /\ A.get_key e = A.get_key_s e1))})
+let sim_a tr s1 = 
+    A.sim_a #G.s #G.op #G.rval tr s1
 
 #set-options "--z3rlimit 10000000" 
 instance gset_map : mrdt (A.s G.s) (A.op G.op) (G.rval) = {
   Library.init = A.init_a;
   Library.spec = spec_a;
   Library.sim = sim_a;
-  Library.pre_cond_op = pre_cond_op_a;
-  Library.app_op = A.app_op_a;
-  Library.prop_oper = prop_oper;
-  Library.pre_cond_merge1 = pre_cond_merge1_a;
+  Library.pre_cond_app_op = pre_cond_app_op_a;
+  Library.pre_cond_prop_oper = pre_cond_prop_oper_a;
   Library.pre_cond_merge = pre_cond_merge_a;
-  Library.merge1 = merge1_a;
+  Library.pre_cond_prop_merge = pre_cond_prop_merge_a;
+  Library.app_op = A.app_op_a;
   Library.merge = merge_a;
+  Library.prop_oper = prop_oper_a;
   Library.prop_merge = prop_merge_a;
   Library.prop_spec = prop_spec_a;
-  Library.convergence = convergence_a;
+  Library.convergence = convergence_a
 }
