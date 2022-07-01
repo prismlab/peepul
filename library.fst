@@ -36,15 +36,20 @@ let rec get_eve id l =
 (* Abstract state *)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-     -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
-                                                    get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') 
-                                                    ==> vis e e'') (*transitive*) /\ 
-                                      (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') 
-                                                ==> not (vis e' e)) (*asymmetric*) /\
-                                      (forall e. mem e l ==> not (vis e e) (*irreflexive*)) /\
-                                      (forall e e'. mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e' ==> get_id e < get_id e') /\
-                                      (forall e e'. mem e l /\ mem e' l /\ get_id e = get_id e' ==> e = e') /\
-                                      (forall e. mem e l ==> get_id e > 0)} -> ae op
+     -> l:list (nat * op) {unique_id l} 
+     -> ae op
+
+assume val axiom_ae : #op:eqtype
+                 -> l:ae op
+                 -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
+                                               get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'')
+                                               ==> l.vis e e'') (*transitive*)/\ 
+                                  (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') 
+                                           ==> not (l.vis e' e)) (*asymmetric*) /\
+                                  (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)) /\
+                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e' ==> get_id e < get_id e') /\
+                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e = get_id e' ==> e = e') /\
+                                  (forall e. mem e l.l ==> get_id e > 0))
 
 val append : #op:eqtype 
            -> tr:ae op
