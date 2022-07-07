@@ -5,9 +5,11 @@ open FStar.List.Tot
 
 open Library
 
+module I = Ictr
+
 type s = nat * bool
 
-type rval = |Val : s -> rval
+type rval = |Val : bool -> rval
             |Bot
 
 type op = 
@@ -15,35 +17,20 @@ type op =
   |Disable
   |Rd
 
-val ope : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Enable))})
-let ope op1 =
-  match op1 with
-  |(id,Enable) -> true
-  |_ -> false
-
-val opd : op1:(nat * op) -> Tot (b:bool {b = true <==> (exists id. op1 = (id,Disable))})
-let opd op1 = 
-  match op1 with
-  |(id,Disable) -> true
-  |_ -> false
-
-val opr : op1:(nat * op) -> Tot (b:bool {b=true <==> (exists id. op1 = (id,Rd))})
-let opr op1 = not (ope op1 || opd op1)
-
 val init : nat * bool
 let init = (0, false)
 
 let pre_cond_do s1 op = true
 let pre_cond_prop_do tr s1 op = true
 
-val do : s1:s -> op:(nat * op) -> Tot (s2:(s * rval) {(ope op ==> s2 = ((fst s1 + 1, true), Bot)) /\
-                                                  (opd op ==> s2 = ((fst s1, false), Bot)) /\
-                                                  (opr op ==> s2 = (s1, Val s1))})
+val do : s1:s -> o:(nat * op) -> Tot (s2:(s * rval) {(get_op o = Enable ==> s2 = ((fst s1 + 1, true), Bot)) /\
+                                                 (get_op o = Disable ==> s2 = ((fst s1, false), Bot)) /\
+                                                 (get_op o = Rd ==> s2 = (s1, Val (snd s1)))})
 let do (c,f) e = 
   match e with
   |(_,Enable) -> ((c + 1, true), Bot)
   |(_,Disable) -> ((c, false), Bot)
-  |(_,Rd) -> ((c,f), Val (c,f))
+  |(_,Rd) -> ((c,f), Val f)
 
 val sum : l:(list (nat * op))
         -> Tot (n:nat {n = (List.Tot.length (filter (fun a -> get_op a = Enable) l))}) (decreases %[l])
@@ -70,7 +57,7 @@ let spec o tr =
   match o with
   |(_,Enable) -> Bot
   |(_,Disable) -> Bot
-  |(_,Rd) -> Val (sum tr.l, flag tr)
+  |(_,Rd) -> Val (flag tr)
 
 val sim : tr:ae op
         -> s1:s
@@ -166,7 +153,8 @@ let lemma2 l a b = lemma21 l.l a.l b.l
 val lem_sum : l:list (nat * op)
             -> Lemma (requires (unique_id l))
                     (ensures (sum l > 0 <==> (exists e. mem e l /\ get_op e = Enable)) /\
-                             (sum l = 0 <==> ((forall e. mem e l ==> (get_op e = Disable \/ get_op e = Rd) /\ l <> []) \/ l = [])))
+                             (sum l = 0 <==> ((forall e. mem e l ==> 
+                                    (get_op e = Disable \/ get_op e = Rd) /\ l <> []) \/ l = [])))
                              (decreases l)
 let rec lem_sum l = 
   match l with
