@@ -1,6 +1,8 @@
 module Orset_space
 open FStar.List.Tot
 
+#set-options "--query_stats"
+
 open Library
 
 val member_id_s : id:nat 
@@ -47,17 +49,16 @@ let rec mem_ele_s ele s =
   |[] -> false
   |(_,ele1)::xs -> ele = ele1 || mem_ele_s ele xs
 
-  val filter_uni : f:((nat * nat) -> bool)
-                 -> l:list (nat * nat) 
-                 -> Lemma (requires (unique_id_s l /\ unique_ele_s l))
-                         (ensures (unique_id_s (filter f l) /\ unique_ele_s (filter f l)))
+val filter_uni : f:((nat * nat) -> bool)
+               -> l:list (nat * nat) 
+               -> Lemma (requires (unique_id_s l /\ unique_ele_s l))
+                       (ensures (unique_id_s (filter f l) /\ unique_ele_s (filter f l)))
                                   [SMTPat (filter f l)]
 
-  #set-options "--z3rlimit 1000000"
-  let rec filter_uni f l =
-    match l with
-    |[] -> ()
-    |x::xs -> filter_uni f xs
+let rec filter_uni f l =
+  match l with
+  |[] -> ()
+  |x::xs -> filter_uni f xs
 
 type op =
   |Add : nat (*element*) -> op
@@ -90,9 +91,9 @@ let get_ele op =
   |(_, (Add ele)) -> ele
   |(_, (Rem ele)) -> ele
 
-let pre_cond_app_op s1 op = not (member_id_s (get_id op) s1)
+let pre_cond_do s1 op = not (member_id_s (get_id op) s1)
 
-let pre_cond_prop_oper tr s1 op = true
+let pre_cond_prop_do tr s1 op = true
 
 val get_set_s : s1:s -> Tot (l:list nat {(forall e. mem e l <==> mem_ele_s e s1)})
 let rec get_set_s s1 = 
@@ -127,17 +128,18 @@ let rec remove_ele s1 ele =
   |[] -> []
   |(id1,ele1)::xs -> if ele = ele1 then xs else (id1,ele1):: remove_ele xs ele
   
-val app_op : s1:s
-           -> op:(nat * op)
-           -> Pure (s * rval)
-             (requires pre_cond_app_op s1 op)
-             (ensures (fun res -> (opa op ==> (get_rval res = Bot) /\ (forall e. mem e s1 /\ snd e <> get_ele op <==> mem e (get_st res) /\ snd e <> get_ele op) /\
-                                          (forall e. mem e (get_st res) /\ fst e <> get_id op /\ member_id_s (fst e) (get_st res) <==> mem e s1 /\ snd e <> get_ele op /\ member_id_s (fst e) s1) /\
-                                          (forall e. member_ele_s e s1 \/ e = get_ele op <==> member_ele_s e (get_st res)) /\
-                                          (forall e. mem e (get_st res) /\ e <> ((get_id op), (get_ele op)) <==> mem e s1 /\ snd e <> get_ele op) /\
-                                            mem ((get_id op), (get_ele op)) (get_st res)) /\
-                               (opr op ==> (get_rval res = Bot) /\ (forall e. mem e (get_st res) <==> mem e s1 /\ snd e <> get_ele op)) /\ (get_op op = Rd ==> get_rval res = Val (get_set_s s1) /\ get_st res = s1)))
-let app_op s1 op =
+val do : s1:s
+       -> op:(nat * op)
+       -> Pure (s * rval)
+         (requires pre_cond_do s1 op)
+         (ensures (fun res -> (opa op ==> (get_rval res = Bot) /\ (forall e. mem e s1 /\ snd e <> get_ele op <==> mem e (get_st res) /\ snd e <> get_ele op) /\
+                           (forall e. mem e (get_st res) /\ fst e <> get_id op /\ member_id_s (fst e) (get_st res) <==> mem e s1 /\ snd e <> get_ele op /\ member_id_s (fst e) s1) /\
+                           (forall e. member_ele_s e s1 \/ e = get_ele op <==> member_ele_s e (get_st res)) /\
+                     (forall e. mem e (get_st res) /\ e <> ((get_id op), (get_ele op)) <==> mem e s1 /\ snd e <> get_ele op) /\
+                                   mem ((get_id op), (get_ele op)) (get_st res)) /\
+                     (opr op ==> (get_rval res = Bot) /\ (forall e. mem e (get_st res) <==> mem e s1 /\ snd e <> get_ele op)) /\ (get_op op = Rd ==> get_rval res = Val (get_set_s s1) /\ get_st res = s1)))
+
+let do s1 op =
   match op with
   |(_, Add _) -> if member_ele_s (get_ele op) s1 then (update s1 (get_ele op) (get_id op), Bot)
                     else (((get_id op),(get_ele op))::s1, Bot)
@@ -166,17 +168,17 @@ val filtero : f:((nat * op) -> bool)
              -> l:list (nat * op) {unique_id l}
              -> Tot (l1:list (nat * op) {(forall e. mem e l1 <==> mem e l /\ (f e)) /\ unique_id l1})
 let rec filtero f l =
-    match l with
-    |[] -> []
-    |hd::tl -> if (f hd) then hd::(filtero f tl) else filtero f tl
+  match l with
+  |[] -> []
+  |hd::tl -> if (f hd) then hd::(filtero f tl) else filtero f tl
 
 val existsb : f:((nat * op) -> bool)
             -> l:list (nat * op)
             -> Tot (b:bool{(exists e. mem e l /\ f e) <==> b = true})
 let rec existsb f l =
-    match l with
-    |[] -> false
-    |hd::tl -> if f hd then true else existsb f tl
+  match l with
+  |[] -> false
+  |hd::tl -> if f hd then true else existsb f tl
 
 val get_set : tr:list (nat * op){unique_id tr} -> Tot (s1:list nat {(forall e. mem e s1 <==> mem_ele e tr)})
 let rec get_set l =
@@ -202,6 +204,7 @@ val spec : o:(nat * op) -> tr:ae op
                                     (forall r. mem r tr.l /\ id <> get_id r /\ opr r ==>
                                               not (e = get_ele r && (tr.vis (id, Add e) r)))))) /\
                        (opa o ==> r = Bot) /\ (opr o ==> r = Bot)})
+
 let spec o tr =
   match o with
   |(_, Add _) -> Bot
@@ -215,7 +218,6 @@ let fst (id,ele) = id
 val snd : (nat * nat) -> nat
 let snd (id,ele) = ele
 
-#set-options "--query_stats"
 val sim : tr:ae op
         -> s1:s 
         -> Tot (b:bool {(b = true <==> (forall e. mem e s1 ==> (forall a. mem a tr.l /\ opa a /\ snd e = get_ele a ==>
@@ -225,7 +227,7 @@ val sim : tr:ae op
    (forall r. mem r tr.l /\ opr r /\ get_ele r = snd e /\ fst e <> get_id r ==> not (tr.vis ((fst e), Add (snd e)) r)))) /\
                  (forall a. mem a tr.l /\ opa a ==> (forall r. mem r tr.l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not (tr.vis a r)) ==> member_ele_s (get_ele a) s1))})
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let sim tr s1 = 
   let lsta = (filtero (fun a -> opa a) tr.l) in
   let lstr = (filtero (fun r -> opr r) tr.l) in
@@ -237,15 +239,15 @@ let sim tr s1 =
                   (filtero (fun r -> get_op r <> Rd && snd e = get_ele r && fst e <> get_id r) lstr)))) s1) &&
   (forallo (fun a -> get_op a <> Rd && member_ele_s (get_ele a) s1) lst)
 
-val prop_oper : tr:ae op
-              -> st:s
-              -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
-                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (get_st (app_op st op))))
+val prop_do : tr:ae op
+            -> st:s
+            -> op:(nat * op)
+            -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                    (ensures (sim (abs_do tr op) (get_st (do st op))))
 
-#set-options "--z3rlimit 1000000"
-let prop_oper tr st op = ()
+#set-options "--z3rlimit 1000"
+let prop_do tr st op = ()
 
 val convergence : tr:ae op
                 -> a:s
@@ -278,7 +280,7 @@ val diff : a:s
                                         mem e a /\ member_ele_s (snd e) a /\ not (mem e l)) /\
                              (forall e. mem e a /\ mem e l ==> not (member_ele_s (snd e) d) /\ not (member_id_s (fst e) d))))
                              (decreases %[l;a])
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 100"
 let rec diff a l = 
   match a, l with
   |_,[] -> a
@@ -312,7 +314,7 @@ val lemma5 : a:s
            -> Lemma (requires (forall e. member_id_s e a ==> not (member_id_s e b)))
                    (ensures (forall e e1. mem e a /\ not (member_ele_s (snd e) b) /\ 
                                      mem e1 a /\ member_ele_s (snd e1) b ==> fst e <> fst e1))
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 1000"
 let rec lemma5 a b = 
   match a, b with
   |[],[] -> ()
@@ -320,7 +322,7 @@ let rec lemma5 a b =
   |[],_ -> ()
 
 val pre_cond_merge : l:s -> a:s -> b:s
-                    -> Tot (b1:bool {b1=true <==> (forall e. member_id_s e (diff a l) ==> not (member_id_s e (diff b l))) /\
+                   -> Tot (b1:bool {b1=true <==> (forall e. member_id_s e (diff a l) ==> not (member_id_s e (diff b l))) /\
                         (forall e. (mem e l /\ mem e a /\ mem e b) ==> 
                               not (member_ele_s (snd e) (diff a l)) /\ not (member_ele_s (snd e) (diff b l)) /\
                               not (member_id_s (fst e) (diff a l)) /\ not (member_id_s (fst e) (diff b l))) /\
@@ -329,7 +331,7 @@ val pre_cond_merge : l:s -> a:s -> b:s
                         (forall e. mem e (diff b l) /\ member_ele_s (snd e) (diff a l) ==> 
                               fst (get_node b (snd e)) <> fst (get_node a (snd e)))})
 
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 1000"
 let pre_cond_merge l a b =
   forallb (fun e -> not (member_id_s (fst e) (diff b l))) (diff a l) &&
   forallb (fun e -> not (member_ele_s (snd e) (diff a l)) && not (member_ele_s (snd e) (diff b l)) &&
@@ -355,7 +357,7 @@ val merge : l:s
                            fst (get_node b (snd e)) > fst (get_node a (snd e))))))
                               (decreases %[(length l); (length a); (length b)])
 
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 100000"
 let merge l a b = 
   let i = filter (fun e -> mem e a && mem e b) l in
   assert (forall e. mem e i <==> mem e l /\ mem e a /\ mem e b);
@@ -388,7 +390,7 @@ val lem_sim : tr:ae op
              (forall r. mem r tr.l /\ opr r /\ get_ele r = snd e /\ fst e <> get_id r ==>
                        not (tr.vis ((fst e), Add (snd e)) r)))))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lem_sim tr s1 = ()
 
 val lemma1 : ltr:ae op
@@ -405,7 +407,7 @@ val lemma1 : ltr:ae op
                    (ensures (forall e. (mem e (diff a l)) ==> (mem ((fst e), Add (snd e)) atr.l)) /\
                             (forall e. (mem e (diff b l)) ==> (mem ((fst e), Add (snd e)) btr.l)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma1 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -424,7 +426,7 @@ val lemma6 : ltr:ae op
                              (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                    (ensures (forall e. member_id_s e (diff a l) ==> not (member_id_s e (diff b l))))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma6 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -444,7 +446,7 @@ val lemma12 : ltr:ae op
                               pre_cond_merge l a b /\ pre_cond_prop_merge ltr l atr a btr b)
                     (ensures (forall e. mem e (diff a l) ==> member_ele_s (snd e) (merge l a b)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma12 ltr l atr a btr b = 
   lemma6 ltr l atr a btr b
 
@@ -461,7 +463,7 @@ val lemma13 : ltr:ae op
                               pre_cond_merge l a b /\ pre_cond_prop_merge ltr l atr a btr b)
                     (ensures (forall e. mem e (diff b l) ==> member_ele_s (snd e) (merge l a b)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma13 ltr l atr a btr b =
   lemma6 ltr l atr a btr b
 
@@ -478,11 +480,11 @@ val lemma4 : ltr:ae op
                              pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                              (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                    (ensures (forall e. mem e (merge l aa b) ==>
-                            (mem ((fst e), Add (snd e)) (absmerge ltr atr btr).l /\
-                    (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele r = snd e /\ fst e <> get_id r ==> 
-                                  not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r)))))
+                            (mem ((fst e), Add (snd e)) (abs_merge ltr atr btr).l /\
+                    (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele r = snd e /\ fst e <> get_id r ==> 
+                                  not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r)))))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma4 ltr l atr a btr b = 
   lemma1 ltr l atr a btr b
 
@@ -499,11 +501,11 @@ val lemma31 : ltr:ae op
                               pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\ 
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                     (ensures (forall e. mem e l /\ mem e aa /\ mem e b ==> 
-                             (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-             (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                             (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+             (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma31 ltr l atr a btr b = ()
 
 val lemma32 : ltr:ae op
@@ -520,11 +522,11 @@ val lemma32 : ltr:ae op
                                 (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                     (ensures (forall e. (mem e (diff aa l) /\ member_ele_s (snd e) (diff aa l) /\ 
                                    not (member_ele_s (snd e) (diff b l))) ==> 
-                                  (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-             (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                  not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                                  (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+             (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                  not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma32 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -548,11 +550,11 @@ val lemma33 : ltr:ae op
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                     (ensures (forall e. (mem e (diff b l) /\ member_ele_s (snd e) (diff b l) /\ 
                                 not (member_ele_s (snd e) (diff aa l))) ==> 
-                                    (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-           (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                    not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                                    (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+           (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                    not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma33 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -577,11 +579,11 @@ val lemma34 : ltr:ae op
                     (ensures (forall e. (mem e (diff aa l) /\ member_ele_s (snd e) (diff aa l) /\ 
                                 member_ele_s (snd e) (diff b l) /\
                                   fst (get_node aa (snd e)) > fst (get_node b (snd e))) ==> 
-                                    (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-            (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                    not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                                    (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+            (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                    not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma34 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -606,11 +608,11 @@ val lemma35 : ltr:ae op
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                     (ensures (forall e. (mem e (diff b l) /\ member_ele_s (snd e) (diff b l) /\ member_ele_s (snd e) (diff aa l) /\
                                   fst (get_node b (snd e)) > fst (get_node aa (snd e))) ==> 
-                                    (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-           (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                    not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                                    (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+           (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                    not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma35 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -634,11 +636,11 @@ val lemma3 : ltr:ae op
                              pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                              (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
                    (ensures (forall e. mem e (merge l aa b) ==> 
-                                (forall a. mem a (absmerge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
-       (forall r. mem r (absmerge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                not ((absmerge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
+                                (forall a. mem a (abs_merge ltr atr btr).l /\ opa a /\ snd e = get_ele a ==>
+       (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
+                                not ((abs_merge ltr atr btr).vis a r)) ==> fst e >= get_id a)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma3 ltr l atr a btr b =
   lemma31 ltr l atr a btr b;
   lemma32 ltr l atr a btr b;
@@ -646,7 +648,7 @@ let lemma3 ltr l atr a btr b =
   lemma34 ltr l atr a btr b;
   lemma35 ltr l atr a btr b; ()
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 val lemma21 : ltr:ae op
             -> l:s 
             -> atr:ae op
@@ -659,11 +661,11 @@ val lemma21 : ltr:ae op
                               (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\
                               pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
-                    (ensures (forall a. mem a ltr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
+                    (ensures (forall a. mem a ltr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
                                opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                               not ((absmerge ltr atr btr).vis a r)) ==> member_ele_s (get_ele a) (merge l aa b)))
+                               not ((abs_merge ltr atr btr).vis a r)) ==> member_ele_s (get_ele a) (merge l aa b)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 100000"
 let lemma21 ltr l atr a btr b = 
   lem_sim ltr l;
   lem_sim (union ltr atr) a;
@@ -688,9 +690,9 @@ val lemma22 : ltr:ae op
                               (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\
                               pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
-                    (ensures (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
+                    (ensures (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
                                  opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> 
-                                 not ((absmerge ltr atr btr).vis a r)) ==> member_ele_s (get_ele a) (merge l aa b)))
+                                 not ((abs_merge ltr atr btr).vis a r)) ==> member_ele_s (get_ele a) (merge l aa b)))
 
 #set-options "--z3rlimit 10000000"
 let lemma22 ltr l atr aa btr b = 
@@ -702,11 +704,11 @@ let lemma22 ltr l atr aa btr b =
   lemma13 ltr l atr aa btr b;
   assert (forall e e1. mem e l /\ mem e1 aa /\ snd e = snd e1 ==> fst e <= fst e1);
   assert (forall e e1. mem e l /\ mem e1 b /\ snd e = snd e1 ==> fst e <= fst e1);
-  assert (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
-         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r))
+  assert (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
+         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r))
                   ==> member_ele_s (get_ele a) aa);
-  assert (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
-         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r)) 
+  assert (forall a. mem a atr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
+         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r)) 
                                      ==> not (mem (get_id a, get_ele a) l)); 
   ()
 
@@ -722,8 +724,8 @@ val lemma23 : ltr:ae op
                               (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\
                               pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                               (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
-                    (ensures (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
-           opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r)) 
+                    (ensures (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
+           opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r)) 
                                         ==> member_ele_s (get_ele a) (merge l aa b)))
 
 #set-options "--z3rlimit 10000000"
@@ -736,11 +738,11 @@ let lemma23 ltr l atr aa btr b =
   lemma13 ltr l atr aa btr b;
   assert (forall e e1. mem e l /\ mem e1 aa /\ snd e = snd e1 ==> fst e <= fst e1);
   assert (forall e e1. mem e l /\ mem e1 b /\ snd e = snd e1 ==> fst e <= fst e1);
-  assert (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
-        opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r)) 
+  assert (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
+        opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r)) 
                                ==> member_ele_s (get_ele a) b);
-  assert (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (absmerge ltr atr btr).l /\ 
-      opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r)) 
+  assert (forall a. mem a btr.l /\ opa a ==> (forall r. mem r (abs_merge ltr atr btr).l /\ 
+      opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r)) 
                                ==> not (mem (get_id a, get_ele a) l)); 
   ()
 
@@ -756,9 +758,9 @@ val lemma2 : ltr:ae op
                              (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\
                              pre_cond_merge l aa b /\ pre_cond_prop_merge ltr l atr aa btr b /\
                              (forall e. member_id_s e (diff aa l) ==> not (member_id_s e (diff b l))))
-                   (ensures (forall a. mem a (absmerge ltr atr btr).l /\ opa a ==> 
-                               (forall r. mem r (absmerge ltr atr btr).l /\ 
-         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((absmerge ltr atr btr).vis a r)) 
+                   (ensures (forall a. mem a (abs_merge ltr atr btr).l /\ opa a ==> 
+                               (forall r. mem r (abs_merge ltr atr btr).l /\ 
+         opr r /\ get_ele a = get_ele r /\ get_id a <> get_id r ==> not ((abs_merge ltr atr btr).vis a r)) 
                                      ==> member_ele_s (get_ele a) (merge l aa b)))
 
 #set-options "--z3rlimit 10000000"
@@ -777,7 +779,7 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures  (pre_cond_merge l a b) /\ (sim (absmerge ltr atr btr) (merge l a b)))
+                       (ensures  (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
 
 #set-options "--z3rlimit 10000000"
 let prop_merge ltr l atr a btr b = 
@@ -792,9 +794,9 @@ val prop_spec : tr:ae op
                 -> op:(nat * op)
                 -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                    (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                         (ensures (get_op op = Rd ==> (forall e. mem e (extract (get_rval (app_op st op))) <==>
+                         (ensures (get_op op = Rd ==> (forall e. mem e (extract (get_rval (do st op))) <==>
                                                   mem e (extract (spec op tr)))) /\
-                                  (get_op op <> Rd ==> (get_rval (app_op st op) = spec op tr)))
+                                  (get_op op <> Rd ==> (get_rval (do st op) = spec op tr)))
 #set-options "--z3rlimit 1000000"
 let prop_spec tr st op = ()
 
@@ -802,13 +804,13 @@ instance orset_space : mrdt s op rval = {
   Library.init = init;
   Library.spec = spec;
   Library.sim = sim;
-  Library.pre_cond_app_op = pre_cond_app_op;
-  Library.pre_cond_prop_oper = pre_cond_prop_oper;
+  Library.pre_cond_do = pre_cond_do;
+  Library.pre_cond_prop_do = pre_cond_prop_do;
   Library.pre_cond_merge = pre_cond_merge;
   Library.pre_cond_prop_merge = pre_cond_prop_merge;
-  Library.app_op = app_op;
+  Library.do = do;
   Library.merge = merge;
-  Library.prop_oper = prop_oper;
+  Library.prop_do = prop_do;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence

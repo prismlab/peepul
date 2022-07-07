@@ -1,14 +1,14 @@
 module Orset_bst
-
 open FStar.List.Tot
+
+#set-options "--query_stats"
+
 module O = Orset_space
 open Library
 
 type tree =
   |Leaf : tree
   |Node : (nat (*unique id*) * nat (*unique element*)) -> tree -> tree -> tree
-
-#set-options "--query_stats"
 
 val memt1 : (nat * nat) 
           -> tree 
@@ -84,7 +84,7 @@ type op = O.op
 
 val help : t1:s -> Lemma (ensures unique_ele_s t1)
                   [SMTPat (is_bst t1)]
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let rec help tr = 
   match tr with
   |Leaf -> ()
@@ -109,10 +109,9 @@ val find_max : t1:tree {Node? t1}
                (ensures (fun r -> (forallt (ge r) t1) /\ memt1 r t1))
 let rec find_max t1 =
   match t1 with
-  | Node v _ t2 -> 
-    match t2 with
-    | Leaf -> v
-    | _ -> find_max t2
+  | Node v _ t2 -> match t2 with
+                  | Leaf -> v
+                  | _ -> find_max t2
 
 val delete_ele : x:nat
                -> t1:s
@@ -122,7 +121,7 @@ val delete_ele : x:nat
                                    is_bst r /\ unique_id_s r)) 
                  (decreases (size t1))
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 10000"
 let rec delete_ele x tr = 
   match tr with
   | Leaf -> Leaf
@@ -155,7 +154,7 @@ let rec delete x tr =
                    else if snd x < snd n then Node n (delete x t1) t2
                      else Node n t1 (delete x t2)*)
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 val update : ele:nat
            -> id:nat
            -> t1:s
@@ -168,7 +167,7 @@ val update : ele:nat
                                (forall e. memt1 e res /\ e <> (id,ele) <==> memt e t1 /\ snd e <> ele) /\ 
                                      memt1 (id,ele) res /\ is_bst res /\ unique_id_s res))
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let rec update ele id tr =
   match tr with
   |Leaf -> Node (id,ele) Leaf Leaf
@@ -176,11 +175,11 @@ let rec update ele id tr =
                               else if ele < ele1 then (Node (id1,ele1) (update ele id t1) t2)
                                  else Node (id1,ele1) t1 (update ele id t2)
 
-let pre_cond_app_op s1 op = not (member_id_s (get_id op) s1)
+let pre_cond_do s1 op = not (member_id_s (get_id op) s1)
 
-let pre_cond_prop_oper tr s1 op = true
+let pre_cond_prop_do tr s1 op = true
 
-val appendt : l1:O.s
+val abs_dot : l1:O.s
             -> l2:O.s
             -> Pure O.s
               (requires (forall e. O.member_ele_s e l1 ==> not (O.member_ele_s e l2)) /\
@@ -188,10 +187,10 @@ val appendt : l1:O.s
               (ensures (fun res -> (forall e. mem e res <==> mem e l1 \/ mem e l2) /\
                                 (forall e. O.member_id_s e res <==> O.member_id_s e l1 \/ O.member_id_s e l2) /\
                                 (forall e. O.member_ele_s e res <==> O.member_ele_s e l1 \/ O.member_ele_s e l2)))
-let rec appendt l1 l2 =
+let rec abs_dot l1 l2 =
   match l1,l2 with
   |[],[] -> []
-  |x::xs,_ -> x::(appendt xs l2)
+  |x::xs,_ -> x::(abs_dot xs l2)
   |[],_ -> l2
 
 val flatten : tree1:s
@@ -202,7 +201,7 @@ val flatten : tree1:s
                                 (forall e. member_id_s e tree1 <==> O.member_id_s e res)))
               (decreases (size tree1))
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let rec flatten t =
   match t with
   |Leaf -> []
@@ -212,25 +211,25 @@ let rec flatten t =
                            not (O.member_ele_s (snd n) (flatten t1)) /\
                            not (O.member_id_s (fst n) (flatten t2)) /\
                            not (O.member_ele_s (snd n) (flatten t2)));
-                  assert (not (O.member_id_s (fst n) (appendt (flatten t1) (flatten t2))) /\
-                          not (O.member_ele_s (snd n) (appendt (flatten t1) (flatten t2))));
-                  n::(appendt (flatten t1) (flatten t2))
+                  assert (not (O.member_id_s (fst n) (abs_dot (flatten t1) (flatten t2))) /\
+                          not (O.member_ele_s (snd n) (abs_dot (flatten t1) (flatten t2))));
+                  n::(abs_dot (flatten t1) (flatten t2))
 
-val app_op : s1:s
-           -> op1:(nat * op)
-           -> Pure (s * rval)
-             (requires pre_cond_app_op s1 op1)
-             (ensures (fun res -> (O.opa op1 ==> (get_rval res = O.Bot) /\ (forall e. memt e s1 /\ snd e <> O.get_ele op1 <==> 
-                                                   memt e (get_st res) /\ snd e <> O.get_ele op1) /\
-                               (forall e. memt e (get_st res) /\ fst e <> get_id op1 /\ member_id_s (fst e) (get_st res) <==> 
-                                     memt e s1 /\ snd e <> O.get_ele op1 /\ member_id_s (fst e) s1) /\
-                               (forall e. member_ele_s e s1 \/ e = O.get_ele op1 <==> member_ele_s e (get_st res)) /\
-                               (forall e. memt e (get_st res) /\ e <> ((get_id op1), (O.get_ele op1)) <==> 
-                                     memt e s1 /\ snd e <> O.get_ele op1) /\
-                                     memt ((get_id op1), (O.get_ele op1)) (get_st res)) /\
-                                  (O.opr op1 ==> (get_rval res = O.Bot) /\ (forall e. memt e (get_st res) <==> memt e s1 /\ snd e <> O.get_ele op1)) /\ (get_op op1 = O.Rd ==> get_rval res = O.Val (O.get_set_s (flatten s1)) /\ get_st res = s1)))
+val do : s1:s
+       -> op1:(nat * op)
+       -> Pure (s * rval)
+         (requires pre_cond_do s1 op1)
+         (ensures (fun res -> (O.opa op1 ==> (get_rval res = O.Bot) /\ (forall e. memt e s1 /\ snd e <> O.get_ele op1 <==> 
+                                            memt e (get_st res) /\ snd e <> O.get_ele op1) /\
+                           (forall e. memt e (get_st res) /\ fst e <> get_id op1 /\ member_id_s (fst e) (get_st res) <==> 
+                                 memt e s1 /\ snd e <> O.get_ele op1 /\ member_id_s (fst e) s1) /\
+                           (forall e. member_ele_s e s1 \/ e = O.get_ele op1 <==> member_ele_s e (get_st res)) /\
+                           (forall e. memt e (get_st res) /\ e <> ((get_id op1), (O.get_ele op1)) <==> 
+                                 memt e s1 /\ snd e <> O.get_ele op1) /\
+                                 memt ((get_id op1), (O.get_ele op1)) (get_st res)) /\
+                           (O.opr op1 ==> (get_rval res = O.Bot) /\ (forall e. memt e (get_st res) <==> memt e s1 /\ snd e <> O.get_ele op1)) /\ (get_op op1 = O.Rd ==> get_rval res = O.Val (O.get_set_s (flatten s1)) /\ get_st res = s1)))
 
-let app_op s1 op =
+let do s1 op =
   match op with
   |(_, O.Add _) -> (update (O.get_ele op) (get_id op) s1, O.Bot)
   |(_, O.Rem _) -> (delete_ele (O.get_ele op) s1, O.Bot)
@@ -243,7 +242,7 @@ val insert : x:(nat * nat)
              (ensures (fun r -> is_bst r /\ (forall y. memt1 y r <==> (memt y t1 \/ x = y)) /\ unique_id_s r))
              (decreases (size t1))
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let rec insert x t =
   match t with
   | Leaf -> Node x Leaf Leaf
@@ -258,7 +257,7 @@ val totree1 : s1:O.s
                         (forall e. member_ele_s e acc ==> not (O.member_ele_s e s1)))
               (ensures (fun t1 -> (forall e. memt e t1 <==> mem e s1 \/ memt e acc)))
 
-#set-options "--z3rlimit 1000000"
+#set-options "--z3rlimit 1000"
 let rec totree1 l acc =
   match l with
   |[] -> acc
@@ -279,7 +278,6 @@ let fst (id,ele) = id
 val snd : (nat * nat) -> nat
 let snd (id,ele) = ele
 
-#set-options "--query_stats"
 val sim : tr:ae op
         -> s1:s
         -> Tot (b:bool {(b = true <==> (forall e. memt e s1 ==> (forall a. mem a tr.l /\ O.opa a /\ snd e = O.get_ele a ==>
@@ -289,18 +287,7 @@ val sim : tr:ae op
   (forall r. mem r tr.l /\ O.opr r /\ O.get_ele r = snd e /\ fst e <> get_id r ==> not (tr.vis ((fst e), O.Add (snd e)) r)))) /\
                  (forall a. mem a tr.l /\ O.opa a ==> (forall r. mem r tr.l /\ O.opr r /\ O.get_ele a = O.get_ele r /\ get_id a <> get_id r ==> not (tr.vis a r)) ==> member_ele_s (O.get_ele a) s1))})
 
-#set-options "--z3rlimit 1000000"
 let sim tr s1 = O.sim tr (flatten s1)
-  (*)let lsta = (O.filtero (fun a -> O.opa a) tr.l) in
-  let lstr = (O.filtero (fun r -> O.opr r) tr.l) in
-  let lst = O.filtero (fun a -> not (existsb (fun r -> get_id a <> get_id r && 
-            O.get_ele r = O.get_ele a && tr.vis a r) lstr)) lsta in
-
-  (forallt (fun e -> (O.forallo (fun a -> fst e >= get_id a) (O.filtero (fun a -> O.get_ele a = snd e) lst)) &&
-                  (mem ((fst e), O.Add (snd e)) tr.l &&
-                   not (existsb (fun r -> fst e <> get_id r && tr.vis ((fst e), O.Add (snd e)) r ) 
-                  (filter (fun r -> snd e = O.get_ele r) lstr)))) s1) &&
-  (forallb (fun a -> member_ele_s (O.get_ele a) s1) lst)*)
 
 val diff : a:s
          -> l:s
@@ -335,23 +322,23 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures (pre_cond_merge l a b) /\ (sim (absmerge ltr atr btr) (merge l a b)))
+                       (ensures (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 1000"
 let prop_merge ltr l atr a btr b =
   O.prop_merge ltr (flatten l) atr (flatten a) btr (flatten b)
 
-val prop_oper : tr:ae op
-              -> st:s
-              -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
-                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (get_st (app_op st op))))
+val prop_do : tr:ae op
+            -> st:s
+            -> op:(nat * op)
+            -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                    (ensures (sim (abs_do tr op) (get_st (do st op))))
 
-#set-options "--z3rlimit 10000000"
-let prop_oper tr st op =
+#set-options "--z3rlimit 1000"
+let prop_do tr st op =
   assert (not (member_id_s (get_id op) st));
-  O.prop_oper tr (flatten st) op
+  O.prop_do tr (flatten st) op
 
 val convergence : tr:ae op
                 -> a:s
@@ -366,23 +353,23 @@ val prop_spec : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (get_op op = O.Rd ==> (forall e. mem e (O.extract (get_rval (app_op st op))) <==>
+                      (ensures (get_op op = O.Rd ==> (forall e. mem e (O.extract (get_rval (do st op))) <==>
                                                mem e (O.extract (O.spec op tr)))) /\
-                               (get_op op <> O.Rd ==> (get_rval (app_op st op) = O.spec op tr)))
-#set-options "--z3rlimit 1000000"
+                               (get_op op <> O.Rd ==> (get_rval (do st op) = O.spec op tr)))
+#set-options "--z3rlimit 1000"
 let prop_spec tr st op = ()
 
 instance orset_bst : mrdt s op rval = {
   Library.init = init;
   Library.spec = O.spec;   
   Library.sim = sim;
-  Library.pre_cond_app_op = pre_cond_app_op;
-  Library.pre_cond_prop_oper = pre_cond_prop_oper;
+  Library.pre_cond_do = pre_cond_do;
+  Library.pre_cond_prop_do = pre_cond_prop_do;
   Library.pre_cond_merge = pre_cond_merge;
   Library.pre_cond_prop_merge = pre_cond_prop_merge;
-  Library.app_op = app_op;
+  Library.do = do;
   Library.merge = merge;
-  Library.prop_oper = prop_oper;
+  Library.prop_do = prop_do;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence

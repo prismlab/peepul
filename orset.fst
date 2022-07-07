@@ -1,6 +1,8 @@
 module Orset
 open FStar.List.Tot
 
+#set-options "--query_stats"
+
 open Library
 
 val member_s : id:nat 
@@ -61,7 +63,8 @@ let opr op1 =
   |(_, Rem _) -> true
   |_ -> false
 
-val mem_ele : ele:nat -> l:list (nat * op) -> Tot (b:bool {b = true <==> (exists id. mem (id, (Add ele)) l) \/ (exists id. mem (id, (Rem ele)) l)})
+val mem_ele : ele:nat -> l:list (nat * op) 
+            -> Tot (b:bool {b = true <==> (exists id. mem (id, (Add ele)) l) \/ (exists id. mem (id, (Rem ele)) l)})
 let rec mem_ele ele l =
   match l with
   |[] -> false
@@ -69,18 +72,18 @@ let rec mem_ele ele l =
   |(_, (Rem ele1))::xs -> ele = ele1 || mem_ele ele xs
   |(_, Rd)::xs -> mem_ele ele xs
 
-val get_ele : op1:(nat * op){get_op op1 <> Rd} -> Tot (ele:nat {(exists id. op1 = (id, Add ele) \/ op1 = (id, Rem ele))})
+val get_ele : op1:(nat * op){get_op op1 <> Rd} 
+            -> Tot (ele:nat {(exists id. op1 = (id, Add ele) \/ op1 = (id, Rem ele))})
 let get_ele op =
   match op with
   |(_, (Add ele)) -> ele
   |(_, (Rem ele)) -> ele
 
-val pre_cond_app_op : s1:s
-             -> op:(nat * op)
-             -> Tot (b:bool {b=true <==> not (member_s (get_id op) s1)})
-let pre_cond_app_op s1 op = not (member_s (get_id op) s1)
+val pre_cond_do : s1:s -> op:(nat * op)
+                -> Tot (b:bool {b=true <==> not (member_s (get_id op) s1)})
+let pre_cond_do s1 op = not (member_s (get_id op) s1)
 
-let pre_cond_prop_oper tr s1 op = true
+let pre_cond_prop_do tr s1 op = true
 
 val get_set_s : s1:s -> Tot (l:list nat {(forall e. mem e l <==> mem_ele_s e s1)})
 let rec get_set_s s1 = 
@@ -88,13 +91,13 @@ let rec get_set_s s1 =
   |[] -> []
   |(_,ele)::xs -> if mem_ele_s ele xs then get_set_s xs else ele::get_set_s xs
 
-val app_op : s1:s
-           -> op:(nat * op)
-           -> Pure (s * rval)
-                 (requires pre_cond_app_op s1 op)
-                 (ensures (fun res -> (opa op ==> (get_rval res = Bot) /\ (forall e. mem e s1 \/ e = ((get_id op), (get_ele op)) <==> mem e (get_st res))) /\
-                                   (opr op ==> (get_rval res = Bot) /\ (forall e. mem e (get_st res) <==> mem e s1 /\ snd e <> get_ele op)) /\ (not (opa op || opr op) ==> (get_rval res = Val (get_set_s s1)) /\ (get_st res = s1))))
-let app_op s1 op1 =
+val do : s1:s
+       -> op:(nat * op)
+       -> Pure (s * rval)
+         (requires pre_cond_do s1 op)
+         (ensures (fun res -> (opa op ==> (get_rval res = Bot) /\ (forall e. mem e s1 \/ e = ((get_id op), (get_ele op)) <==> mem e (get_st res))) /\
+                           (opr op ==> (get_rval res = Bot) /\ (forall e. mem e (get_st res) <==> mem e s1 /\ snd e <> get_ele op)) /\ (not (opa op || opr op) ==> (get_rval res = Val (get_set_s s1)) /\ (get_st res = s1))))
+let do s1 op1 =
   match op1 with
   |(id, Add ele) -> ((id, ele)::s1, Bot)
   |(id, Rem ele) -> (filter (fun e -> snd e <> ele) s1, Bot)
@@ -158,7 +161,6 @@ let spec o tr =
   let lstr = (filter (fun r -> opr r) tr.l) in
   let lst = except (fun a -> get_op a <> Rd && opa a && (existsb (fun r -> get_op r <> Rd && get_op a <> Rd && opa a && opr r && get_id a <> get_id r && get_ele r = get_ele a && tr.vis a r) lstr)) lsta in Val (get_set lst)
 
-#set-options "--query_stats"
 val sim : tr:ae op
         -> s1:s 
         -> Tot (b:bool {b = true <==> (forall a. mem a s1 <==> (mem ((fst a), Add (snd a)) tr.l /\
@@ -225,15 +227,15 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures (sim (absmerge ltr atr btr) (merge l a b)))
+                       (ensures (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 1000"
 let prop_merge ltr l atr a btr b = 
     assert ((forall e. mem e (diff2 a l) ==> not (member_s (fst e) b)) /\
             (forall e. mem e (diff2 b l) ==> not (member_s (fst e) a))); 
     assert (forall e. (mem e l /\ mem e a /\ mem e b) <==> (mem ((fst e), Add (snd e)) ltr.l /\ 
-           (forall r. mem r (absmerge ltr atr btr).l /\ fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> 
-           not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r)))); 
+           (forall r. mem r (abs_merge ltr atr btr).l /\ fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> 
+           not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r)))); 
 
     assert (forall e. (mem e (diff2 a l)) <==> (mem ((fst e), Add (snd e)) atr.l /\ (forall r. mem r atr.l /\ fst e <> get_id r /\
            opr r /\ snd e = get_ele r ==> not (atr.vis ((fst e), Add (snd e)) r)))); 
@@ -241,31 +243,31 @@ let prop_merge ltr l atr a btr b =
     assert (forall e. (mem e (diff2 b l)) <==> (mem ((fst e), Add (snd e)) btr.l /\ (forall r. mem r btr.l /\ fst e <> get_id r /\
            opr r /\ snd e = get_ele r ==> not (btr.vis ((fst e), Add (snd e)) r)))); 
 
-    assert (forall e. (mem ((fst e), Add (snd e)) ltr.l /\ (forall r. mem r (absmerge ltr atr btr).l /\ fst e <> get_id r /\
-           opr r /\ snd e = get_ele r ==> not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r))) \/ 
+    assert (forall e. (mem ((fst e), Add (snd e)) ltr.l /\ (forall r. mem r (abs_merge ltr atr btr).l /\ fst e <> get_id r /\
+           opr r /\ snd e = get_ele r ==> not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r))) \/ 
            (mem ((fst e), Add (snd e)) atr.l /\ (forall r. mem r atr.l /\ fst e <> get_id r /\ 
            opr r /\ snd e = get_ele r ==> not (atr.vis ((fst e), Add (snd e)) r))) \/
            (mem ((fst e), Add (snd e)) btr.l /\ (forall r. mem r btr.l /\ fst e <> get_id r /\ 
            opr r /\ snd e = get_ele r ==> not (btr.vis ((fst e), Add (snd e)) r))) <==>
-           (mem ((fst e), Add (snd e)) (absmerge ltr atr btr).l /\ (forall r. mem r (absmerge ltr atr btr).l /\ 
-           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r))));
+           (mem ((fst e), Add (snd e)) (abs_merge ltr atr btr).l /\ (forall r. mem r (abs_merge ltr atr btr).l /\ 
+           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r))));
 
     assert (forall e. ((mem e l /\ mem e a /\ mem e b) \/ (mem e (diff2 a l)) \/ (mem e (diff2 b l))) <==> 
-           (mem ((fst e), Add (snd e)) (absmerge ltr atr btr).l /\ (forall r. mem r (absmerge ltr atr btr).l /\ 
-           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r))));
+           (mem ((fst e), Add (snd e)) (abs_merge ltr atr btr).l /\ (forall r. mem r (abs_merge ltr atr btr).l /\ 
+           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r))));
 
     assert (forall e. (mem e (merge l a b)) <==> 
-           (mem ((fst e), Add (snd e)) (absmerge ltr atr btr).l /\ (forall r. mem r (absmerge ltr atr btr).l /\ 
-           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((absmerge ltr atr btr).vis ((fst e), Add (snd e)) r))));
+           (mem ((fst e), Add (snd e)) (abs_merge ltr atr btr).l /\ (forall r. mem r (abs_merge ltr atr btr).l /\ 
+           fst e <> get_id r /\ opr r /\ snd e = get_ele r ==> not ((abs_merge ltr atr btr).vis ((fst e), Add (snd e)) r))));
     ()
 
-val prop_oper : tr:ae op
-              -> st:s
-              -> op:(nat * op)
-              -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
-                                (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (get_st (app_op st op))))
-let prop_oper tr st op = ()
+val prop_do : tr:ae op
+            -> st:s
+            -> op:(nat * op)
+            -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                    (ensures (sim (abs_do tr op) (get_st (do st op))))
+let prop_do tr st op = ()
 
 val convergence : tr:ae op
                 -> a:s
@@ -279,23 +281,22 @@ val prop_spec : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (get_op op = Rd ==> (forall e. mem e (extract (get_rval (app_op st op))) <==>
+                      (ensures (get_op op = Rd ==> (forall e. mem e (extract (get_rval (do st op))) <==>
                                                 mem e (extract (spec op tr)))) /\
-                               (get_op op <> Rd ==> (get_rval (app_op st op) = spec op tr)))
-#set-options "--z3rlimit 1000000"
+                               (get_op op <> Rd ==> (get_rval (do st op) = spec op tr)))
 let prop_spec tr st op = ()
 
 instance orset : mrdt s op rval = {
   Library.init = init;
   Library.spec = spec;
   Library.sim = sim;
-  Library.pre_cond_app_op = pre_cond_app_op;
-  Library.pre_cond_prop_oper = pre_cond_prop_oper;
+  Library.pre_cond_do = pre_cond_do;
+  Library.pre_cond_prop_do = pre_cond_prop_do;
   Library.pre_cond_merge = pre_cond_merge;
   Library.pre_cond_prop_merge = pre_cond_prop_merge;
-  Library.app_op = app_op;
+  Library.do = do;
   Library.merge = merge;
-  Library.prop_oper = prop_oper;
+  Library.prop_do = prop_do;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence

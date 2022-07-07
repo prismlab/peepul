@@ -1,6 +1,8 @@
 module Gset
 open FStar.List.Tot
 
+#set-options "--query_stats"
+
 open Library
 
 val unique_s : l:list nat
@@ -45,16 +47,16 @@ let rec mem_ele ele l =
   |(_, (Add ele1))::xs -> ele = ele1 || mem_ele ele xs
   |(_, Rd)::xs -> mem_ele ele xs
 
-let pre_cond_app_op s1 op = true
-let pre_cond_prop_oper tr s1 op = true
+let pre_cond_do s1 op = true
+let pre_cond_prop_do tr s1 op = true
 
-val app_op : s1:s
+val do : s1:s
            -> op:(nat * op)
            -> Pure (s * rval)
              (requires true)
              (ensures (fun res -> (opa op ==> (forall e. mem e (fst res) <==> mem e s1 \/ e = get_ele op)) /\
                                (not (opa op) ==> (forall e. mem e (fst res) <==> mem e s1))))
-let app_op s1 op =
+let do s1 op =
   match op with
   |(id, (Add ele)) -> if (mem ele s1) then (s1, Bot) else (ele::s1, Bot)
   |(id, Rd) -> (s1, Val s1)
@@ -75,11 +77,9 @@ let spec o tr =
 val extract : r:rval {exists v. r = Val v} -> s
 let extract (Val s) = s
 
-#set-options "--query_stats"
 val sim : tr:ae op
         -> s1:s
         -> Tot (b:bool {b = true <==> (forall e. mem e s1 <==> mem_ele e tr.l)})
-#set-options "--z3rlimit 1000000"
 let sim tr s1 =
  forallb (fun e -> mem_ele e tr.l) s1 &&
  forallo (fun e -> opa e && mem (get_ele e) s1) (filter (fun e1 -> opa e1) tr.l)
@@ -96,31 +96,19 @@ val lemma7 : tr:ae op -> s1:s -> tr1:ae op
                            (forall e e1. mem e tr1.l /\ mem e1 tr1.l /\ get_id e <> get_id e1 /\ tr1.vis e e1 <==>
                                     mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1))
                    (ensures (sim tr1 s1))
-                   (decreases %[tr.l;s1;tr1.l])
-
-#set-options "--z3rlimit 10000000"
-let rec lemma7 tr s1 tr1 = 
-  (*)match tr.l, tr1.l with
-  |[], [] -> ()
-  |(id, (Add v))::xs, _ -> 
-        if (mem_ele v xs) then lemma7 (remove_op tr (id, (Add v))) s1 (remove_op tr (id, (Add v)))
-          else lemma7 (remove_op tr (id, (Add v))) (remove_st v s1) (remove_op tr (id, (Add v)))
-             |[], (_, (Add v))::xs -> ()*) ()
+let lemma7 tr s1 tr1 = ()
 
 val pre_cond_merge : l:s -> a:s -> b:s
-                    -> Tot (b1:bool {b1=true <==> (forall e. mem e l ==> mem e a /\ mem e b)})
+                   -> Tot (b1:bool {b1=true <==> (forall e. mem e l ==> mem e a /\ mem e b)})
 let pre_cond_merge l a b = 
   forallb (fun e -> mem e a && mem e b) l
 
 val merge : l:s
-           -> a:s
-           -> b:s
-           -> Pure s
-             (requires pre_cond_merge l a b)
-             (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b)))
-             (decreases %[l;a;b])
-
-#set-options "--z3rlimit 10000000"
+          -> a:s
+          -> b:s
+          -> Pure s (requires pre_cond_merge l a b)
+                   (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b)))
+                   (decreases %[l;a;b])
 let rec merge l a b =
   match l, a, b with
   |[],[],[] -> []
@@ -141,20 +129,16 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                       (ensures (sim (absmerge ltr atr btr) (merge l a b)))
-
-#set-options "--z3rlimit 10000000"
+                       (ensures (sim (abs_merge ltr atr btr) (merge l a b)))
 let prop_merge ltr l atr a btr b = ()
 
-val prop_oper : tr:ae op
+val prop_do : tr:ae op
               -> st:s
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (sim (append tr op) (get_st (app_op st op))))
-
-#set-options "--z3rlimit 1000000"
-let prop_oper tr st op = ()
+                      (ensures (sim (abs_do tr op) (get_st (do st op))))
+let prop_do tr st op = ()
 
 val convergence : tr:ae op
                 -> a:s
@@ -168,23 +152,22 @@ val prop_spec : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures (not (opa op) ==> (forall e. mem e (extract (get_rval (app_op st op))) <==>
+                      (ensures (not (opa op) ==> (forall e. mem e (extract (get_rval (do st op))) <==>
                                                 mem e (extract (spec op tr)))) /\
-                               (opa op ==> get_rval (app_op st op) = spec op tr))
-#set-options "--z3rlimit 1000000"
+                               (opa op ==> get_rval (do st op) = spec op tr))
 let prop_spec tr st op = ()
 
 instance gset : mrdt s op rval = {
   Library.init = init;
   Library.spec = spec;
   Library.sim = sim;
-  Library.pre_cond_app_op = pre_cond_app_op;
-  Library.pre_cond_prop_oper = pre_cond_prop_oper;
+  Library.pre_cond_do = pre_cond_do;
+  Library.pre_cond_prop_do = pre_cond_prop_do;
   Library.pre_cond_merge = pre_cond_merge;
   Library.pre_cond_prop_merge = pre_cond_prop_merge;
-  Library.app_op = app_op;
+  Library.do = do;
   Library.merge = merge;
-  Library.prop_oper = prop_oper;
+  Library.prop_do = prop_do;
   Library.prop_merge = prop_merge;
   Library.prop_spec = prop_spec;
   Library.convergence = convergence
