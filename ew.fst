@@ -5,8 +5,6 @@ open FStar.List.Tot
 
 open Library
 
-module I = Ictr
-
 type s = nat * bool
 
 type rval = |Val : bool -> rval
