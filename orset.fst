@@ -40,7 +40,6 @@ val filter_uni : f:((nat * nat) -> bool)
                        (ensures (unique_s (filter f l)))
                                [SMTPat (filter f l)]
 
-#set-options "--z3rlimit 1000000"
 let rec filter_uni f l =
   match l with
   |[] -> ()
@@ -103,16 +102,6 @@ let do s1 op1 =
   |(id, Rem ele) -> (filter (fun e -> snd e <> ele) s1, Bot)
   |(_, Rd) -> (s1, Val (get_set_s s1))
 
-val filter_uni1 : f:((nat * op) -> bool)
-                -> l:list (nat * op) 
-                -> Lemma (requires (unique_id l))
-                        (ensures (unique_id (filter f l)))
-                        [SMTPat (filter f l)]
-let rec filter_uni1 f l = 
-  match l with
-  |[] -> ()
-  |x::xs -> filter_uni1 f xs
-
 val except : f:((nat * op) -> bool)
            -> l:list (nat * op) {unique_id l}
            -> Tot (l1:list (nat * op) {(forall e. mem e l1 <==> mem e l /\ not (f e)) /\ unique_id l1})
@@ -171,7 +160,7 @@ let sim tr s1 =
   let lstr = (filter (fun r -> opr r) tr.l) in
   let lst = except (fun a -> get_op a <> Rd && opa a &&  (existsb (fun r -> get_op r <> Rd && get_op a <> Rd && get_id a <> get_id r && get_ele r = get_ele a && tr.vis a r) lstr)) lsta in
 
-  forallo (fun e -> get_op e <> Rd && mem ((get_id e), (get_ele e)) s1) lst &&
+  forallb (fun (e:(nat & op)) -> get_op e <> Rd && mem ((get_id e), (get_ele e)) s1) lst &&
   forallb (fun e -> mem ((fst e), Add (snd e)) lst) s1
 
 val diff2 : a:list (nat * nat)

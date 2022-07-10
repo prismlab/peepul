@@ -33,6 +33,7 @@ let rec get_eve id l =
   match l with
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
+(*Abstract state*)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
      -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
@@ -44,9 +45,10 @@ noeq type ae (op:eqtype) =
                                     (forall e. mem e l ==> get_id e > 0)} 
      -> ae op
 
+(*Abstract do*)
 val abs_do : #op:eqtype 
            -> tr:ae op
-           -> op1:(nat *op)
+           -> op1:(nat * op)
            -> Pure (ae op)
              (requires (forall e. mem e tr.l ==> get_id e < get_id op1) /\
                              get_id op1 > 0 /\ not (mem_id (get_id op1) tr.l))
@@ -139,6 +141,7 @@ let rec abs_merge1 #op l a b =
   |[],x::xs,_ -> x::(abs_merge1 [] xs b)
   |[],[],_ -> b
 
+(*Abstract merge*)
 val abs_merge : #op:eqtype 
              -> l:ae op
              -> a:ae op
@@ -217,10 +220,10 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
 
   (*Pre-condition for prop_do*)
   pre_cond_prop_do : tr:ae op -> st:s -> o:(nat * op) 
-                     -> Pure bool
-                       (requires (not (mem_id (get_id o) tr.l) /\
-                                 (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0))
-                       (ensures (fun b -> true));
+                   -> Pure bool
+                     (requires (not (mem_id (get_id o) tr.l) /\
+                               (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0))
+                     (ensures (fun b -> true));
 
   (*Pre-condition for three-way merge*)
   pre_cond_merge : s -> s -> s -> Tot bool;
@@ -230,9 +233,9 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
 
   (*Implementation of operations*)
   do : st:s
-         -> op:(nat (*timestamp*) * op)
-         -> Pure (s * rval) (requires pre_cond_do st op)
-                           (ensures (fun r -> true));
+     -> op:(nat (*timestamp*) * op)
+     -> Pure (s * rval) (requires pre_cond_do st op)
+                       (ensures (fun r -> true));
 
   (*Implementation of three-way merge*)
   merge : l:s
@@ -243,12 +246,12 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
 
   (*Proof of apply operation*)
   prop_do : tr:ae op 
-            -> st:s 
-            -> o:(nat * op)
-            -> Lemma (requires (sim tr st) /\ pre_cond_do st o /\
-                              (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\
-                              not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
-                    (ensures (sim (abs_do tr o) (get_st (do st o))));
+          -> st:s 
+          -> o:(nat * op)
+          -> Lemma (requires (sim tr st) /\ pre_cond_do st o /\
+                            (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\
+                            not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
+                  (ensures (sim (abs_do tr o) (get_st (do st o))));
 
   (*Proof of three-way merge*)
   prop_merge : ltr:ae op
@@ -278,6 +281,6 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
               -> a:s
               -> b:s
               -> Lemma (requires (sim tr a /\ sim tr b))
-                      (ensures true)
+                      (ensures (*a = b*) true)
   }
  

@@ -33,7 +33,7 @@ let rec sum l =
   |(_, Add)::xs -> sum xs + 1
   |(_, Rd)::xs -> sum xs
 
-val spec : o:(nat * op) -> tr:ae op -> r:rval
+val spec : o:(nat * op) -> tr:ae op -> rval
 let spec o tr =
   match o with
   |(_, Add) -> Bot
@@ -109,7 +109,7 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                        (ensures (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 1000"
 let prop_merge ltr l atr a btr b = 
   lemma1 ltr atr; 
   lemma1 ltr btr;

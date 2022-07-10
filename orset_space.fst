@@ -201,10 +201,9 @@ let rec forallo f l =
 
 val spec : o:(nat * op) -> tr:ae op
          -> Tot (r:rval {(get_op o = Rd ==> r <> Bot /\ (forall e. mem e (extract r) <==> (exists id. mem (id, Add e) tr.l /\
-                                    (forall r. mem r tr.l /\ id <> get_id r /\ opr r ==>
-                                              not (e = get_ele r && (tr.vis (id, Add e) r)))))) /\
-                       (opa o ==> r = Bot) /\ (opr o ==> r = Bot)})
-
+                                      (forall r. mem r tr.l /\ id <> get_id r /\ opr r /\ e = get_ele r ==>
+                                                not (tr.vis (id, Add e) r))))) /\
+                         (opa o ==> r = Bot) /\ (opr o ==> r = Bot)})
 let spec o tr =
   match o with
   |(_, Add _) -> Bot

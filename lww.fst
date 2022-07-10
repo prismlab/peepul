@@ -120,10 +120,7 @@ val prop_merge : ltr:ae op
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
                         (ensures (sim (abs_merge ltr atr btr) (merge l a b)))
-
-#set-options "--z3rlimit 1000"
-let prop_merge ltr l atr a btr b =
-  lemma (abs_merge ltr atr btr).l
+let prop_merge ltr l atr a btr b = ()
 
 val prop_spec : tr:ae op
               -> st:s

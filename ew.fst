@@ -39,16 +39,13 @@ let rec sum l =
   |_::xs -> sum xs
 
 val flag : tr:ae op
-         -> Tot (b:bool {((b = true) <==> ((exists e. (mem e tr.l /\ get_op e = Enable /\ 
-                                       (forall d. (mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (tr.vis e d)))))) /\
-                       ((b = false) <==> ((forall e. (mem e tr.l /\ get_op e = Enable ==> 
-                                        (exists d. mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable /\ tr.vis e d))) \/ 
-                                        (forall d. mem d tr.l ==> get_op d = Disable \/ get_op d = Rd) \/ tr.l = []))})
+         -> Tot (b:bool {(b = true) <==> (exists e. (mem e tr.l /\ get_op e = Enable /\ 
+                   (forall d. (mem d tr.l /\ get_id e <> get_id d /\ get_op d = Disable) ==> not (tr.vis e d))))})
 
-let flag tr = if ((forallb (fun e -> (existsb (fun d -> (get_op d = Disable) && get_id e <> get_id d && tr.vis e d) tr.l))
-                                  (filter (fun e -> (get_op e = Enable)) tr.l))
-                 || (forallb (fun d -> (get_op d = Disable || get_op d = Rd)) tr.l)
-                 || tr.l = []) then false else true
+let flag tr = 
+  existsb (fun e -> (forallb (fun d -> not (tr.vis e d)) 
+                 (filter (fun d -> get_op d = Disable && get_id e <> get_id d) tr.l))) 
+          (filter (fun e -> get_op e = Enable) tr.l)
 
 val spec : o:(nat * op) -> tr:ae op -> rval
 let spec o tr = 
@@ -177,8 +174,7 @@ let prop_merge ltr l atr a btr b =
   lemma1 ltr btr;
   lemma2 ltr atr btr;
   lem_sum atr.l;
-  lem_sum btr.l;
-  ()
+  lem_sum btr.l
 
 val prop_do : tr:ae op
             -> st:s
@@ -220,77 +216,104 @@ instance ew : mrdt s op rval = {
 }
 
 
-(* Additional lemmas for prop_merge 
+(* Additional lemmas for prop_merge  
 
-val lemma4 : ltr:ae op
-           -> l:s 
-           -> atr:ae op
-           -> a:s 
-           -> btr:ae op
-           -> b:s 
-           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (snd a = true /\ snd b = false /\ fst a = fst l ==> flag (abs_merge ltr atr btr) = false) /\
-                            (snd b = true /\ snd a = false /\ fst b = fst l ==> flag (abs_merge ltr atr btr) = false))
+val prop_merge1 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                  (pre_cond_merge l a b))
+                        (ensures ((snd a = true /\ snd b = true) ==> flag (abs_merge ltr atr btr) = true) /\
+                                 ((snd a = false /\ snd b = false) ==> flag (abs_merge ltr atr btr) = false))
+let prop_merge1 ltr l atr a btr b = ()
 
-#set-options "--z3rlimit 1000000"
-let lemma4 ltr l atr a btr b = 
+val prop_merge2 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                  (pre_cond_merge l a b))
+                        (ensures ((snd a = true /\ snd b = false /\ fst a = fst l) ==> 
+                                       flag (abs_merge ltr atr btr) = false) /\
+                                 ((snd b = true /\ snd a = false /\ fst b = fst l) ==> 
+                                       flag (abs_merge ltr atr btr) = false))
+
+#set-options "--z3rlimit 10000"
+let prop_merge2 ltr l atr a btr b = 
   lemma1 ltr atr; lemma1 ltr btr;
-  lem_sum atr.l; lem_sum btr.l;
-  ()
+  lem_sum atr.l; lem_sum btr.l
 
-val lemma5 : ltr:ae op
-           -> l:s 
-           -> atr:ae op
-           -> a:s 
-           -> btr:ae op
-           -> b:s 
-           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (snd a = true /\ snd b = false /\ fst a > fst l ==> flag (abs_merge ltr atr btr) = true) /\
-                            (snd b = true /\ snd a = false /\ fst b > fst l ==> flag (abs_merge ltr atr btr) = true))
+val prop_merge3 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                  (pre_cond_merge l a b))
+                        (ensures ((snd a = true /\ snd b = false /\ fst a > fst l) ==> 
+                                       flag (abs_merge ltr atr btr) = true) /\
+                                 ((snd b = true /\ snd a = false /\ fst b > fst l) ==> 
+                                       flag (abs_merge ltr atr btr) = true))
 
-#set-options "--z3rlimit 1000000"
-let lemma5 ltr l atr a btr b = 
+#set-options "--z3rlimit 10000"
+let prop_merge3 ltr l atr a btr b = 
   lemma1 ltr atr; lemma1 ltr btr;
-  lem_sum atr.l; lem_sum btr.l;
-  ()
+  lemma2 ltr atr btr; 
+  lem_sum atr.l; lem_sum btr.l
 
-val lemma3 : ltr:ae op
-           -> l:s 
-           -> atr:ae op
-           -> a:s 
-           -> btr:ae op
-           -> b:s 
-           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (snd a = true /\ snd b = true ==> flag (abs_merge ltr atr btr) = true) /\
-                            (snd a = false /\ snd b = false ==> flag (abs_merge ltr atr btr) = false))
+val prop_merge4 : ltr:ae op
+                -> l:s 
+                -> atr:ae op
+                -> a:s 
+                -> btr:ae op
+                -> b:s 
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
+                                  (pre_cond_merge l a b))
+                        (ensures (sum (abs_merge ltr atr btr).l = fst (merge l a b)))
 
-#set-options "--z3rlimit 1000000"
-let lemma3 ltr l atr a btr b = ()
-
-val lemma0 : ltr:ae op
-           -> l:s 
-           -> atr:ae op
-           -> a:s 
-           -> btr:ae op
-           -> b:s 
-           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                             (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                             (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
-                   (ensures (sum (abs_merge ltr atr btr).l = fst (merge ltr l atr a btr b)))
-
-#set-options "--z3rlimit 1000000"
-let lemma0 ltr l atr a btr b = 
+#set-options "--z3rlimit 1000"
+let prop_merge4 ltr l atr a btr b = 
   lemma1 ltr atr; 
   lemma1 ltr btr;
   lemma2 ltr atr btr; ()
+
+val prop_merge5 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                        (ensures (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
+
+#set-options "--z3rlimit 10000"
+let prop_merge5 ltr l atr a btr b =
+  lemma1 ltr atr; 
+  lemma1 ltr btr;
+  lemma2 ltr atr btr;
+  prop_merge1 ltr l atr a btr b;
+  prop_merge2 ltr l atr a btr b;
+  prop_merge3 ltr l atr a btr b;
+  prop_merge4 ltr l atr a btr b
 *)
