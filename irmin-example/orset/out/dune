@@ -1,0 +1,14 @@
+(env
+ (dev
+  (flags (:standard -w -A))))
+
+(executable
+ (name test)
+ (ocamlopt_flags (-I %{env:FSTAR_HOME=/home/adharsh/Sources/FStar}/bin))
+ (modules Orset_opt_detailed config test)
+ (libraries astring cohttp fmt git irmin irmin-git irmin-unix ppx_irmin lwt
+            lwt.unix fstarlib core_kernel)
+ (preprocess
+  (pps ppx_irmin)))
+
+
