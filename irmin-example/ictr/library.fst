@@ -33,40 +33,22 @@ let rec get_eve id l =
   match l with
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
-(* Abstract state *)
+(*Abstract state*)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-     -> l:list (nat * op) {unique_id l} 
+     -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
+                                    get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') ==> vis e e'') (*transitive*) /\ 
+                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> not (vis e' e)) (*asymmetric*) /\
+                                    (forall e. mem e l ==> not (vis e e)) (*irreflexive*) /\
+                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> get_id e < get_id e') /\
+                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e = get_id e') ==> e = e') /\
+                                    (forall e. mem e l ==> get_id e > 0)} 
      -> ae op
 
-assume val axiom_ae : #op:eqtype
-                 -> l:ae op
-                 -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
-                                               get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'')
-                                               ==> l.vis e e'') (*transitive*)/\ 
-                                  (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') 
-                                           ==> not (l.vis e' e)) (*asymmetric*) /\
-                                  (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)) /\
-                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e' ==> get_id e < get_id e') /\
-                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e = get_id e' ==> e = e') /\
-                                  (forall e. mem e l.l ==> get_id e > 0))
-                                  [SMTPat (unique_id l.l)]
-
-(*)noeq type ae (op:eqtype) = 
-  |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-     -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
-                                                    get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') 
-                                                    ==> vis e e'') (*transitive*) /\ 
-                                      (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') 
-                                                ==> not (vis e' e)) (*asymmetric*) /\
-                                      (forall e. mem e l ==> not (vis e e) (*irreflexive*)) /\
-                                      (forall e e'. mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e' ==> get_id e < get_id e') /\
-                                      (forall e e'. mem e l /\ mem e' l /\ get_id e = get_id e' ==> e = e') /\
-                                      (forall e. mem e l ==> get_id e > 0)} -> ae op*)
-
-val append : #op:eqtype 
+(*Abstract do*)
+val abs_do : #op:eqtype 
            -> tr:ae op
-           -> op1:(nat *op)
+           -> op1:(nat * op)
            -> Pure (ae op)
              (requires (forall e. mem e tr.l ==> get_id e < get_id op1) /\
                              get_id op1 > 0 /\ not (mem_id (get_id op1) tr.l))
@@ -76,7 +58,7 @@ val append : #op:eqtype
                                       (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1))))
 
 #set-options "--z3rlimit 100000000"
-let append tr op = 
+let abs_do tr op = 
   (A (fun o o1 -> ((mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                 (mem o tr.l && o1 = op && get_id o <> get_id op))) (op::tr.l))
 
@@ -117,19 +99,18 @@ let visib #op id id1 l =
     then true else false
 
 val union1 : #op:eqtype
-           -> l:ae op
-           -> a:ae op
+           -> l:list(nat * op) {unique_id l}
+           -> a:list(nat * op) {unique_id a}
            -> Pure (list (nat * op))
-             (requires (forall e. (mem e l.l ==> not (mem_id  (get_id e) a.l))))
-             (ensures (fun u -> (forall e. mem e u <==> mem e l.l \/ mem e a.l) /\ (unique_id u))) 
-             (decreases %[l.l;a.l])
+               (requires (forall e. (mem e l ==> not (mem_id  (get_id e) a))))
+               (ensures (fun u -> (forall e. mem e u <==> mem e l \/ mem e a) /\ (unique_id u))) 
+               (decreases %[l;a])
 
-#set-options "--z3rlimit 10000"
 let rec union1 #op l a =
   match l,a with
-  |(A _ []), (A _ []) -> []
-  |(A _ (x::xs)), _ -> x::(union1  (A l.vis xs) a)
-  |(A _ []), (A _ (x::xs)) -> x::(union1 l (A a.vis xs))
+  |[],[] -> []
+  |x::xs, _ -> x::(union1 xs a)
+  |[],_ -> a
 
 val union : #op:eqtype 
           -> l:ae op
@@ -141,27 +122,27 @@ val union : #op:eqtype
                                      (mem e u.l /\ mem e1 u.l /\ get_id e <> get_id e1 /\ u.vis e e1)))) 
 let union l a =
   (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) ||
-               (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1)) (union1 l a))
+               (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1)) (union1 l.l a.l))
 
-val absmerge1 : #op:eqtype 
-              -> l:ae op
-              -> a:ae op
-              -> b:ae op
+val abs_merge1 : #op:eqtype 
+              -> l:list(nat * op) {unique_id l}
+              -> a:list(nat * op) {unique_id a}
+              -> b:list(nat * op) {unique_id b}
               -> Pure (list (nat * op))
-                (requires (forall e. mem e l.l ==> not (mem_id (get_id e) a.l)) /\
-                          (forall e. mem e a.l ==> not (mem_id (get_id e) b.l)) /\
-                          (forall e. mem e l.l ==> not (mem_id (get_id e) b.l)))
-                (ensures (fun u -> (forall e. mem e u <==> mem e a.l \/ mem e b.l \/ mem e l.l) /\ (unique_id u))) 
-                (decreases %[l.l;a.l;b.l])
-#set-options "--z3rlimit 100000000"
-let rec absmerge1 #op l a b =
+                (requires (forall e. mem e l ==> not (mem_id (get_id e) a)) /\
+                          (forall e. mem e a ==> not (mem_id (get_id e) b)) /\
+                          (forall e. mem e l ==> not (mem_id (get_id e) b)))
+                (ensures (fun u -> (forall e. mem e u <==> mem e a \/ mem e b \/ mem e l) /\ (unique_id u))) 
+                (decreases %[l;a;b])
+let rec abs_merge1 #op l a b =
   match l,a,b with
-  |(A _ []), (A _ []), (A _ []) -> []
-  |(A _ (x::xs)), _, _ -> x::(absmerge1 (A l.vis xs) a b)
-  |(A _ []), (A _ (x::xs)), _ -> x::(absmerge1 l (A a.vis xs) b)
-  |(A _ []), (A _ []), (A _ (x::xs)) -> x::(absmerge1 l a (A b.vis xs))
+  |[],[],[] -> []
+  |x::xs,_,_ -> x::(abs_merge1 xs a b)
+  |[],x::xs,_ -> x::(abs_merge1 [] xs b)
+  |[],[],_ -> b
 
-val absmerge : #op:eqtype 
+(*Abstract merge*)
+val abs_merge : #op:eqtype 
              -> l:ae op
              -> a:ae op
              -> b:ae op
@@ -175,10 +156,10 @@ val absmerge : #op:eqtype
                                          (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) ==>
                                          (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2))))
 #set-options "--z3rlimit 10000"
-let absmerge l a b = 
+let abs_merge l a b = 
   (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) || 
                (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) || 
-               (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1)) (absmerge1 l a b))
+               (mem o b.l && mem o1 b.l && get_id o <> get_id o1 && b.vis o o1)) (abs_merge1 l.l a.l b.l))
 
 val remove_op1 : #op:eqtype 
                -> tr:ae op 
@@ -217,84 +198,89 @@ let rec filter_uni f l =
   |[] -> ()
   |x::xs -> filter_uni f xs
 
-class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
+val get_st : #s:eqtype ->  #rval:eqtype -> (s * rval) -> s
+let get_st (s,r) = s
 
+val get_rval : #s:eqtype ->  #rval:eqtype -> (s * rval) -> rval
+let get_rval (s,r) = r
+
+class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return value of op*)) = {
+
+  (*Initial state*)
   init : s;
 
-  (*Pre-condition for apply operation*)
-  pre_cond_op : s
-              -> (nat (*timestamp*) * op)
-              -> Tot bool;
+  (*Specification*)
+  spec : (nat * op) -> ae op -> rval;
 
-  (*Implementation of operations*)
-  app_op : st:s
-         -> op:(nat (*timestamp*) * op)
-         -> Pure s (requires pre_cond_op st op)
-                  (ensures (fun r -> true));
-
-  (* Simulation relation *)
+  (*Simulation relation*)
   sim : ae op -> s -> Tot bool;
 
+  (*Pre-condition for apply operation*)
+  pre_cond_do : s -> (nat * op) -> Tot bool;
+
+  (*Pre-condition for prop_do*)
+  pre_cond_prop_do : tr:ae op -> st:s -> o:(nat * op) 
+                   -> Pure bool
+                     (requires (not (mem_id (get_id o) tr.l) /\
+                               (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0))
+                     (ensures (fun b -> true));
+
   (*Pre-condition for three-way merge*)
-  pre_cond_merge : ltr:ae op 
-                 -> l:s 
-                 -> atr:ae op 
-                 -> a:s
-                 -> btr:ae op 
-                 -> b:s 
-                 -> Tot bool;
+  pre_cond_merge : s -> s -> s -> Tot bool;
 
-  pre_cond_merge1 : s -> s -> s 
-                  -> Tot bool;
+  (*Pre-condition for prop_merge*)
+  pre_cond_prop_merge : ae op -> s -> ae op -> s -> ae op -> s -> Tot bool;
 
-  merge1 : l:s
-         -> a:s
-         -> b:s
-         -> Pure s (requires pre_cond_merge1 l a b)
-                  (ensures (fun r -> true));
-  
-  (*Implementation of three-way*)
-  merge : ltr:ae op 
-        -> l:s 
-        -> atr:ae op 
+  (*Implementation of operations*)
+  do : st:s
+     -> op:(nat (*timestamp*) * op)
+     -> Pure (s * rval) (requires pre_cond_do st op)
+                       (ensures (fun r -> true));
+
+  (*Implementation of three-way merge*)
+  merge : l:s
         -> a:s
-        -> btr:ae op 
-        -> b:s 
-        -> Pure s (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                           (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                           (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                           (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                           pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
-                 (ensures (fun r -> r = merge1 l a b));
+        -> b:s
+        -> Pure s (requires pre_cond_merge l a b)
+                 (ensures (fun r -> true));
+
+  (*Proof of apply operation*)
+  prop_do : tr:ae op 
+          -> st:s 
+          -> o:(nat * op)
+          -> Lemma (requires (sim tr st) /\ pre_cond_do st o /\
+                            (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\
+                            not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
+                  (ensures (sim (abs_do tr o) (get_st (do st o))));
 
   (*Proof of three-way merge*)
-  prop_merge : ltr:ae op 
-             -> l:s 
-             -> atr:ae op 
-             -> a:s 
+  prop_merge : ltr:ae op
+             -> l:s
+             -> atr:ae op
+             -> a:s
              -> btr:ae op
              -> b:s
              -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
                                (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
                                (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
-                               pre_cond_merge1 l a b /\ pre_cond_merge ltr l atr a btr b)
-                     (ensures (sim (absmerge ltr atr btr) (merge ltr l atr a btr b)));
+                               pre_cond_merge l a b /\ pre_cond_prop_merge ltr l atr a btr b)
+                     (ensures (sim (abs_merge ltr atr btr) (merge l a b)));
 
-  (*Proof of apply operation*)
-  prop_oper : tr:ae op 
+  (*Proof of spec*)
+  prop_spec : tr:ae op 
             -> st:s 
-            -> op:(nat * op)
-            -> Lemma (requires (sim tr st) /\ pre_cond_op st op /\ 
-                              (forall e. mem e tr.l ==> get_id e < get_id op) /\
-                              get_id op > 0 /\ not (mem_id (get_id op) tr.l))
-                    (ensures (sim (append tr op) (app_op st op)));
+            -> o:(nat * op)
+            -> Lemma (requires (sim tr st) /\ pre_cond_do st o /\ 
+                              (forall e. mem e tr.l ==> get_id e < get_id o) /\ get_id o > 0 /\ 
+                              not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
+                    (ensures (*get_rval (do st op) = spec op tr*) true);
 
   (*Convergence modulo observable behavior*)
   convergence : tr:ae op
               -> a:s
               -> b:s
               -> Lemma (requires (sim tr a /\ sim tr b))
-                      (ensures true)
+                      (ensures (*a = b*) true)
   }
  
