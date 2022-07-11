@@ -5,99 +5,117 @@ open FStar.List.Tot
 
 open Library
 
+(** Concrete state of the MRDT*)
 type s = nat
 
-type rval = |Val : s -> rval
-            |Bot
 
+(** Operations supported by the MRDT*)
 type op = |Add
           |Rd
 
+
+(** Return value of the operations*)
+type rval = |Val : s -> rval
+            |Bot
+
+
+(** Initial state*)
 let init = 0
+
 
 let pre_cond_do s1 op = true
 let pre_cond_prop_do tr s1 op = true
 
-val do : s1:s -> op:(nat * op) -> Tot (s2:(s * rval) {get_op op = Add ==> s2 = (s1 + 1, Bot) /\
-                                                  get_op op = Rd ==> s2 = (s1, Val s1)})
-let do s op1 =
-  match op1 with
-  |(_,Add) -> (s + 1, Bot)
-  |(_,Rd) -> (s, Val s)
+
+(** Concrete DO function*)
+val do : s1:s -> o:(nat * op) -> Tot (s2:(s * rval) {get_op o = Add ==> s2 = (s1 + 1, Bot) /\
+                                                 get_op o = Rd ==> s2 = (s1, Val s1)})
+let do s1 o =
+  match o with
+  |(_,Add) -> (s1 + 1, Bot)
+  |(_,Rd) -> (s1, Val s1)
 
 val sum : l:(list (nat * op))
-        -> Tot (n:nat {n = (List.Tot.length (filter (fun e -> get_op e = Add) l))}) (decreases %[l])
+        -> Tot (n:nat {n = (List.Tot.length (filter (fun e -> get_op e = Add) l))}) 
+          (decreases %[l])
 let rec sum l =
   match l with
   |[] -> 0
   |(_, Add)::xs -> sum xs + 1
   |(_, Rd)::xs -> sum xs
 
+
+(** Specification of the MRDT*)
 val spec : o:(nat * op) -> tr:ae op -> rval
 let spec o tr =
   match o with
   |(_, Add) -> Bot
   |(_, Rd) -> Val (sum tr.l)
 
+
+(** Simulation relation*)
 val sim : tr:ae op
         -> s1:s
         -> Tot (b:bool {b = true <==> (s1 = sum tr.l)})
 let sim tr s1 = (s1 = sum tr.l)
 
-val lemma11 : l:list(nat * op) {unique_id l}
-            -> a:list(nat * op) {unique_id a}
-            -> Lemma (requires (forall e. mem e l ==> not (mem_id (get_id e) a)))
-                    (ensures (sum (union1 l a) = sum l + sum a))
-let rec lemma11 l a =
-  match l,a with
-  |[],[] -> ()
-  |x::xs,_ -> lemma11 xs a
-  |[],_ -> ()
 
-val lemma1 : l:ae op
-           -> a:ae op
-           -> Lemma (requires (forall e. mem e l.l ==> not (mem_id (get_id e) a.l)))
-                   (ensures (forall e. mem e (union l a).l <==> mem e l.l \/ mem e a.l) /\
-                            (sum (union l a).l = sum l.l + sum a.l))
-let lemma1 l a = lemma11 l.l a.l
+(** Proof of no. of Add operations seen by branch A = no. of Add ops seen by LCA + 
+                                                      no. of Add ops seen by branch A which are not seen by LCA
+    This is needed to show that the concrete state of a >= concrete state of lca.
+    The result of the 3-way merge (a + b - l) is a natural number. 
+    Only with this additional lemma, the merge function will type check. *)
+val sum_union : l_l:list(nat * op) {unique_id l_l}
+              -> a_l:list(nat * op) {unique_id a_l}
+              -> Lemma (requires (forall e. mem e l_l ==> not (mem_id (get_id e) a_l)))
+                      (ensures (sum (union1 l_l a_l) = sum l_l + sum a_l))
+let rec sum_union l_l a_l =
+  match l_l, a_l with
+  |[],[] -> ()
+  |x::xs,_ -> sum_union xs a_l
+  |[],_ -> ()
 
 let pre_cond_merge l a b = a >= l && b >= l
 
 let pre_cond_prop_merge ltr l atr a btr b = true
 
+
+(** Concrete THREE_WAY MERGE function*)
 val merge : l:s -> a:s -> b:s
-          -> Pure s
-            (requires pre_cond_merge l a b)
-            (ensures (fun r -> r = a + b - l))
+          -> Pure s (requires pre_cond_merge l a b)
+                   (ensures (fun r -> r = a + b - l))
 let merge l a b = a + b - l
 
-val lemma21 : l:list(nat * op) {unique_id l}
-            -> a:list(nat * op) {unique_id a}
-            -> b:list(nat * op) {unique_id b}
-            -> Lemma (requires (forall e. mem e l ==> not (mem_id (get_id e) a)) /\
-                              (forall e. mem e a ==> not (mem_id (get_id e) b)) /\
-                              (forall e. mem e l ==> not (mem_id (get_id e) b)))
-                    (ensures (forall e. mem e (abs_merge1 l a b) <==> mem e l \/ mem e a \/ mem e b) /\
-                             (sum (abs_merge1 l a b) = sum a + sum b + sum l))
-                             (decreases %[l;a;b])
+
+val sum_absmerge : l_l:list(nat * op) {unique_id l_l}
+                 -> a_l:list(nat * op) {unique_id a_l}
+                 -> b_l:list(nat * op) {unique_id b_l}
+                 -> Lemma (requires (forall e. mem e l_l ==> not (mem_id (get_id e) a_l)) /\
+                                   (forall e. mem e a_l ==> not (mem_id (get_id e) b_l)) /\
+                                   (forall e. mem e l_l ==> not (mem_id (get_id e) b_l)))
+                         (ensures (forall e. mem e (abs_merge1 l_l a_l b_l) <==> mem e l_l \/ mem e a_l \/ mem e b_l) /\
+                                  (sum (abs_merge1 l_l a_l b_l) = sum a_l + sum b_l + sum l_l))
+                         (decreases %[l_l;a_l;b_l])
 #set-options "--z3rlimit 1000"
-let rec lemma21 l a b =
-  match l,a,b with
+let rec sum_absmerge l_l a_l b_l =
+  match l_l,a_l,b_l with
   |[],[],[] -> ()
-  |x::xs,_,_ -> lemma21 xs a b
-  |[],x::xs,_ -> lemma21 [] xs b
+  |x::xs,_,_ -> sum_absmerge xs a_l b_l
+  |[],x::xs,_ -> sum_absmerge [] xs b_l
   |[],[],_ -> ()
 
-val lemma2 : l:ae op
-           -> a:ae op
-           -> b:ae op
-           -> Lemma (requires (forall e. mem e l.l ==> not (mem_id (get_id e) a.l)) /\
-                             (forall e. mem e a.l ==> not (mem_id (get_id e) b.l)) /\
-                             (forall e. mem e l.l ==> not (mem_id (get_id e) b.l)))
-                   (ensures (forall e. mem e (abs_merge l a b).l <==> mem e l.l \/ mem e a.l \/ mem e b.l) /\
-                            (sum (abs_merge l a b).l = sum a.l + sum b.l + sum l.l))
-let lemma2 l a b = lemma21 l.l a.l b.l
 
+(** Proof of operations*)
+val prop_do : tr:ae op
+            -> st:s
+            -> op:(nat * op)
+            -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
+                              (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
+                    (ensures (sim (abs_do tr op) (get_st (do st op))))
+let prop_do tr st op = ()
+
+
+(** Proof of three-way merge*)
 val prop_merge : ltr:ae op
                -> l:s
                -> atr:ae op
@@ -111,26 +129,13 @@ val prop_merge : ltr:ae op
                        (ensures (pre_cond_merge l a b) /\ (sim (abs_merge ltr atr btr) (merge l a b)))
 #set-options "--z3rlimit 1000"
 let prop_merge ltr l atr a btr b = 
-  lemma1 ltr atr; 
-  lemma1 ltr btr;
-  lemma2 ltr atr btr;
-  ()
+  sum_union ltr.l atr.l; assert (a >= l);
+  sum_union ltr.l btr.l; assert (b >= l);
+  sum_absmerge ltr.l atr.l btr.l
 
-val prop_do : tr:ae op
-            -> st:s
-            -> op:(nat * op)
-            -> Lemma (requires (sim tr st) /\ (not (mem_id (get_id op) tr.l)) /\
-                              (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                    (ensures (sim (abs_do tr op) (get_st (do st op))))
-let prop_do tr st op = ()
 
-val convergence : tr:ae op
-                -> a:s
-                -> b:s
-                -> Lemma (requires (sim tr a /\ sim tr b))
-                        (ensures a = b)
-let convergence tr a b = ()
 
+(** Proof of implementation satisfying the specification*)
 val prop_spec : tr:ae op
               -> st:s
               -> op:(nat * op)
@@ -139,6 +144,17 @@ val prop_spec : tr:ae op
                       (ensures (get_rval (do st op) = spec op tr))
 let prop_spec tr st op = ()
 
+
+(** Proof of convergence*)
+val convergence : tr:ae op
+                -> a:s
+                -> b:s
+                -> Lemma (requires (sim tr a /\ sim tr b))
+                        (ensures a = b)
+let convergence tr a b = ()
+
+
+(** ictr is an instance of the MRDT type class satisfying the conditions*)
 instance ictr : mrdt s op rval = {
   Library.init = init;
   Library.spec = spec;

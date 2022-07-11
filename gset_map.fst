@@ -88,12 +88,12 @@ let pre_cond_prop_merge_a ltr l atr a btr b =
   forallb (fun ch -> (G.pre_cond_prop_merge (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
                                     (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a)
                                     (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b)) &&
-  (forallb (fun e -> not (mem_id (get_id e) (A.project ch atr).l)) (A.project ch ltr).l) &&
-  (forallb (fun e -> not (mem_id (get_id e) (A.project ch btr).l)) (A.project ch atr).l) &&
-  (forallb (fun e -> not (mem_id (get_id e) (A.project ch btr).l)) (A.project ch ltr).l) &&
-  (G.sim (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)) &&
-  (G.sim (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a)) &&
-  (G.sim (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b))) (A.get_key_lst l a b)
+  forallb (fun e -> not (mem_id (get_id e) (A.project ch atr).l)) (A.project ch ltr).l &&
+  forallb (fun e -> not (mem_id (get_id e) (A.project ch btr).l)) (A.project ch atr).l &&
+  forallb (fun e -> not (mem_id (get_id e) (A.project ch btr).l)) (A.project ch ltr).l &&
+  G.sim (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l) &&
+  G.sim (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a) &&
+  G.sim (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b)) (A.get_key_lst l a b)
 
 instance _ : A.alpha_map G.s G.op G.rval G.gset = {
   A.lemma1 = lemma1;
@@ -114,13 +114,13 @@ val pre_cond_prop_do_a : tr:ae (A.op G.op)
                        -> Pure bool
                          (requires (not (mem_id (get_id op1) tr.l) /\
                                    (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0))
-                         (ensures (fun b -> (b=true <==> (G.pre_cond_prop_do (A.project (A.get_key op1) (abs_do tr op1))
+                         (ensures (fun b -> (b=true <==> (G.pre_cond_prop_do (A.project (A.get_key op1) tr)
                                   (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1)) /\
                               G.pre_cond_do (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) /\
                            (G.sim (A.project (A.get_key op1) (abs_do tr op1)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) (get_st (A.do_a #G.s #G.op #G.rval st op1)))))))
 
 let pre_cond_prop_do_a tr st op1 =
-    G.pre_cond_prop_do (A.project (A.get_key op1) (abs_do tr op1))
+    G.pre_cond_prop_do (A.project (A.get_key op1) tr)
                          (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) &&
     G.pre_cond_do (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) st) (A.project_op op1) &&
     G.sim (A.project (A.get_key op1) (abs_do tr op1)) (A.get_val_s #G.s #G.op #G.rval (A.get_key op1) 
@@ -165,9 +165,6 @@ val prop_merge_a : ltr:ae (A.op G.op)
                          (pre_cond_prop_merge #G.s #G.op #G.rval (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l)
                                              (A.project ch atr) (A.get_val_s #G.s #G.op #G.rval ch a)
                                              (A.project ch btr) (A.get_val_s #G.s #G.op #G.rval ch b)) /\
-                            (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch atr).l)) /\
-                            (forall e. mem e (A.project ch atr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
-                            (forall e. mem e (A.project ch ltr).l ==> not (mem_id (get_id e) (A.project ch btr).l)) /\
                 (sim #G.s #G.op #G.rval (A.project ch ltr) (A.get_val_s #G.s #G.op #G.rval ch l) /\ sim #G.s #G.op #G.rval (union (A.project ch ltr) (A.project ch atr)) (A.get_val_s #G.s #G.op #G.rval ch a) /\ sim #G.s #G.op #G.rval (union (A.project ch ltr) (A.project ch btr)) (A.get_val_s #G.s #G.op #G.rval ch b))))
                 (ensures (A.sim_a #G.s #G.op #G.rval (abs_merge ltr atr btr) (merge_a l a b)))
 

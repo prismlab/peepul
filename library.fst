@@ -33,19 +33,26 @@ let rec get_eve id l =
   match l with
   |(id1, x)::xs -> if id = id1 then (id1, x) else get_eve id xs 
 
-(*Abstract state*)
+
+(** - ABSTRACT STATE consists of events in execution of the distributed store, 
+      along with a visibility relation among them.
+    - 'vis' is an irreflexive, asymmetric and transitive visibility relation. *)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-     -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
-                                    get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') ==> vis e e'') (*transitive*) /\ 
-                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> not (vis e' e)) (*asymmetric*) /\
-                                    (forall e. mem e l ==> not (vis e e)) (*irreflexive*) /\
-                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> get_id e < get_id e') /\
-                                    (forall e e'. (mem e l /\ mem e' l /\ get_id e = get_id e') ==> e = e') /\
-                                    (forall e. mem e l ==> get_id e > 0)} 
+     -> l:list (nat * op) {unique_id l /\ 
+                       (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ get_id e' <> get_id e'' 
+                            /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') ==> vis e e'') (*transitive*) /\ 
+                       (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') 
+                                ==> not (vis e' e)) (*asymmetric*) /\
+                       (forall e. mem e l ==> not (vis e e)) (*irreflexive*) /\
+                       (forall e e'. (mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e') ==> get_id e < get_id e') /\
+                       (forall e e'. (mem e l /\ mem e' l /\ get_id e = get_id e') ==> e = e') /\
+                       (forall e. mem e l ==> get_id e > 0)}
      -> ae op
 
-(*Abstract do*)
+
+(** - ABSTRACT DO adds the new event 'op1' to the set of events in the abstract state 'tr', 
+      and makes all the events in 'tr' visible to the new event 'op1'.*)
 val abs_do : #op:eqtype 
            -> tr:ae op
            -> op1:(nat * op)
@@ -57,7 +64,7 @@ val abs_do : #op:eqtype
                                       (mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1) \/
                                       (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1))))
 
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 100"
 let abs_do tr op = 
   (A (fun o o1 -> ((mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                 (mem o tr.l && o1 = op && get_id o <> get_id op))) (op::tr.l))
@@ -141,7 +148,11 @@ let rec abs_merge1 #op l a b =
   |[],x::xs,_ -> x::(abs_merge1 [] xs b)
   |[],[],_ -> b
 
-(*Abstract merge*)
+
+(** ABSTRACT MERGE takes the union of the events and their visibility relation in the two branches A and B.
+    - In this function, l is the abstract state of LCA
+                        a is the delta abstract state of the branch A and LCA 
+                        b is the delta abstract state of the branch B and LCA *)
 val abs_merge : #op:eqtype 
              -> l:ae op
              -> a:ae op
@@ -155,7 +166,7 @@ val abs_merge : #op:eqtype
                                          (mem e1 a.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ a.vis e1 e2) \/ 
                                          (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) ==>
                                          (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2))))
-#set-options "--z3rlimit 10000"
+#set-options "--z3rlimit 100"
 let abs_merge l a b = 
   (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) || 
                (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) || 
@@ -204,18 +215,25 @@ let get_st (s,r) = s
 val get_rval : #s:eqtype ->  #rval:eqtype -> (s * rval) -> rval
 let get_rval (s,r) = r
 
+
+(** MRDT typeclass that captures the sufficient conditions to be proved for each MRDT. 
+    - It takes as input the concrete state, the operations supported by the MRDT and their return values.*)
 class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return value of op*)) = {
 
   (*Initial state*)
   init : s;
 
-  (*Specification*)
-  spec : (nat * op) -> ae op -> rval;
 
-  (*Simulation relation*)
-  sim : ae op -> s -> Tot bool;
+  (*Specification is a function that given an operation 'o' and an abstract state 'tr' 
+    specifies the return value of the operation 'o' based on prior operations applied to the object*)
+  spec : o:(nat * op) -> tr:ae op -> rval;
 
-  (*Pre-condition for apply operation*)
+
+  (*Simulation relation connects the concrete state 'st' and the abstract state 'tr'. *)
+  sim : tr:ae op -> st:s -> Tot bool;
+
+
+  (*Pre-condition for do*)
   pre_cond_do : s -> (nat * op) -> Tot bool;
 
   (*Pre-condition for prop_do*)
@@ -231,20 +249,24 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
   (*Pre-condition for prop_merge*)
   pre_cond_prop_merge : ae op -> s -> ae op -> s -> ae op -> s -> Tot bool;
 
-  (*Implementation of operations*)
+
+  (*CONCRETE DO takes the current state 'st' of the object, applies the operation 'o' and
+    produces the updated object state and the return value of the operation*)
   do : st:s
-     -> op:(nat (*timestamp*) * op)
-     -> Pure (s * rval) (requires pre_cond_do st op)
+     -> o:(nat (*timestamp*) * op)
+     -> Pure (s * rval) (requires pre_cond_do st o)
                        (ensures (fun r -> true));
 
-  (*Implementation of three-way merge*)
+
+  (*CONCRETE MERGE takes the current states 'a' & 'b' of the two branches and the LCA 'l' and performs 3-way merge*)
   merge : l:s
         -> a:s
         -> b:s
         -> Pure s (requires pre_cond_merge l a b)
                  (ensures (fun r -> true));
 
-  (*Proof of apply operation*)
+
+  (*Verifying operations*)
   prop_do : tr:ae op 
           -> st:s 
           -> o:(nat * op)
@@ -253,7 +275,8 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
                             not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
                   (ensures (sim (abs_do tr o) (get_st (do st o))));
 
-  (*Proof of three-way merge*)
+
+  (*Verifying three-way merge*)
   prop_merge : ltr:ae op
              -> l:s
              -> atr:ae op
@@ -267,6 +290,7 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
                                pre_cond_merge l a b /\ pre_cond_prop_merge ltr l atr a btr b)
                      (ensures (sim (abs_merge ltr atr btr) (merge l a b)));
 
+
   (*Proof of spec*)
   prop_spec : tr:ae op 
             -> st:s 
@@ -276,7 +300,8 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) (rval:eqtype (*return
                               not (mem_id (get_id o) tr.l) /\ pre_cond_prop_do tr st o)
                     (ensures (*get_rval (do st op) = spec op tr*) true);
 
-  (*Convergence modulo observable behavior*)
+
+  (*Verifying convergence modulo observable behavior*)
   convergence : tr:ae op
               -> a:s
               -> b:s

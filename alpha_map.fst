@@ -342,7 +342,7 @@ val prop_do1 : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
              -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
                             pre_cond_do #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-                            pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1)) 
+                            pre_cond_prop_do #st1 #o #r (project (get_key op1) tr) 
                                                (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))
                      (ensures (forall e. mem e (abs_do tr op1).l /\ opset e ==> (exists e1. mem e1 (get_st (do_a #st1 #o #r st op1)) /\ get_key e = get_key_s e1)))
 
@@ -356,7 +356,7 @@ val prop_do2 : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
              -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
                                pre_cond_do #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-                               pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1)) 
+                               pre_cond_prop_do #st1 #o #r (project (get_key op1) tr) 
                                                   (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))
                      (ensures (forall e1. mem e1 (get_st (do_a #st1 #o #r st op1)) ==> (exists e. mem e (abs_do tr op1).l /\ get_key e = get_key_s e1 /\ opset e)))
 
@@ -372,7 +372,7 @@ val prop_do3 : #st1:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st1 o r) -> {|a
              -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
                                pre_cond_do #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-                               pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1)) 
+                               pre_cond_prop_do #st1 #o #r (project (get_key op1) tr) 
                                                   (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))
                      (ensures (forall k. mem_key_s k (get_st (do_a #st1 #o #r st op1)) /\ k <> get_key op1 ==>
    (sim #st1 #o #r) (project k (abs_do tr op1)) (get_val_s #st1 #o #r k (get_st (do_a #st1 #o #r st op1)))))
@@ -391,13 +391,16 @@ val prop_do_a : #st1:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st1 o r) -> {|
               -> Lemma (requires (sim_a #st1 #o #r tr st) /\ (not (mem_id (get_id op1) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0 /\
                                 pre_cond_do #st1 #o #r (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-                                pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1)) 
+                                pre_cond_prop_do #st1 #o #r (project (get_key op1) tr) 
                                                    (get_val_s #st1 #o #r (get_key op1) st) (project_op op1) /\
-     ((sim #st1 #o #r) (project (get_key op1) (abs_do tr op1)) (get_val_s #st1 #o #r (get_key op1) (get_st (do_a #st1 #o #r st op1)))))
+                                ((sim #st1 #o #r) (project (get_key op1) (abs_do tr op1)) 
+                                      (get_val_s #st1 #o #r (get_key op1) (get_st (do_a #st1 #o #r st op1)))))
                      (ensures (sim_a #st1 #o #r (abs_do tr op1) (get_st (do_a #st1 #o #r st op1))))
 
 #set-options "--z3rlimit 1000"
 let prop_do_a #st1 #o #r #m tr st op = 
+  lemma4 #st1 #o #r #m tr st;
+  (prop_do #st1 #o #r) (project (get_key op) tr) (get_val_s #st1 #o #r (get_key op) st) (project_op op);
   lem_oper tr op;
   prop_do1 #st1 #o #r tr st op;
   prop_do2 #st1 #o #r tr st op;
@@ -563,6 +566,7 @@ val lemma9 : #o:eqtype
 #set-options "--z3rlimit 10000000"
 let lemma9 #o ltr atr btr = ()
 
+#set-options "--z3rlimit 10000"
 val prop_merge1 : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {|alpha_map st o r m|}
                 -> ltr:ae (op o)
                 -> l:s st
@@ -574,22 +578,17 @@ val prop_merge1 : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {|
                 -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
                                   (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                   (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                                  (forall i e. mem e (project i ltr).l ==> not (mem_id (get_id e) (project i atr).l)) /\
-                                  (forall i e. mem e (project i atr).l ==> not (mem_id (get_id e) (project i btr).l)) /\
-                                  (forall i e. mem e (project i ltr).l ==> not (mem_id (get_id e) (project i btr).l)) /\
-                    (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
+            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
                                   (forall i. mem_key_s i l ==> mem_key_s i a /\ mem_key_s i b) /\
-                                  (forall i. mem i chs ==> mem_key_s i a \/ mem_key_s i b) /\
                                   pre_cond_merge_a #st #o #r l a b /\
-                                  (forall i. mem_key_s i a \/ mem_key_s i b ==> 
+                                  (forall i. mem_key_s i a \/ mem_key_s i b ==>
                                   pre_cond_prop_merge #st #o #r (project i ltr) (get_val_s #st #o #r i l)
-                                                           (project i atr) (get_val_s #st #o #r i a)
-                                                           (project i btr) (get_val_s #st #o #r i b) /\
-                                  (forall e. mem e (project i ltr).l ==> not (mem_id (get_id e) (project i atr).l)) /\
-                                  (forall e. mem e (project i atr).l ==> not (mem_id (get_id e) (project i btr).l)) /\
-                                  (forall e. mem e (project i ltr).l ==> not (mem_id (get_id e) (project i btr).l)) /\
-                                  (sim #st #o #r (project i ltr) (get_val_s #st #o #r i l) /\ sim #st #o #r (union (project i ltr) (project i atr)) (get_val_s #st #o #r i a) /\ sim #st #o #r (union (project i ltr) (project i btr)) (get_val_s #st #o #r i b))) /\
-                                  (forall i. mem i chs ==> mem_key_s i (merge_a #st #o #r l a b)))
+                                                                (project i atr) (get_val_s #st #o #r i a)
+                                                                (project i btr) (get_val_s #st #o #r i b) /\
+                                  (sim #st #o #r (project i ltr) (get_val_s #st #o #r i l) /\ 
+                           sim #st #o #r (union (project i ltr) (project i atr)) (get_val_s #st #o #r i a) /\
+                           sim #st #o #r (union (project i ltr) (project i btr)) (get_val_s #st #o #r i b))) /\
+                           (forall i. mem i chs ==> mem_key_s i (merge_a #st #o #r l a b)))
                         (ensures (forall i. mem i chs ==> 
              ((sim #st #o #r) (project i (abs_merge ltr atr btr)) (get_val_s #st #o #r i (merge_a #st #o #r l a b)))))
                         (decreases chs)
@@ -619,18 +618,17 @@ val prop_merge21 : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {
           -> btr:ae (op o)
           -> b:s st
           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                            (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
-                             pre_cond_merge_a #st #o #r l a b /\
-                            (forall ch. mem_key_s ch a \/ mem_key_s ch b ==> 
-                            (pre_cond_prop_merge #st #o #r (project ch ltr) (get_val_s #st #o #r ch l)
-                                                      (project ch atr) (get_val_s #st #o #r ch a)
-                                                      (project ch btr) (get_val_s #st #o #r ch b)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch atr).l)) /\
-                            (forall e. mem e (project ch atr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (sim #st #o #r (project ch ltr) (get_val_s #st #o #r ch l) /\ sim #st #o #r (union (project ch ltr) (project ch atr)) (get_val_s #st #o #r ch a) /\ sim #st #o #r (union (project ch ltr) (project ch btr)) (get_val_s #st #o #r ch b))))
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
+                                  pre_cond_merge_a #st #o #r l a b /\
+                                  (forall i. mem_key_s i a \/ mem_key_s i b ==> 
+                                  pre_cond_prop_merge #st #o #r (project i ltr) (get_val_s #st #o #r i l)
+                                                                (project i atr) (get_val_s #st #o #r i a)
+                                                                (project i btr) (get_val_s #st #o #r i b) /\
+                                  (sim #st #o #r (project i ltr) (get_val_s #st #o #r i l) /\ 
+                           sim #st #o #r (union (project i ltr) (project i atr)) (get_val_s #st #o #r i a) /\
+                           sim #st #o #r (union (project i ltr) (project i btr)) (get_val_s #st #o #r i b))))
                   (ensures (forall e1. mem e1 (merge_a #st #o #r l a b) ==> (exists e. mem e (abs_merge ltr atr btr).l /\ get_key e = get_key_s e1 /\ opset e)))
 
 #set-options "--z3rlimit 10000"
@@ -647,18 +645,17 @@ val prop_merge22 : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {
           -> btr:ae (op o)
           -> b:s st
           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                            (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
-                             pre_cond_merge_a #st #o #r l a b /\
-                            (forall ch. mem_key_s ch a \/ mem_key_s ch b ==> 
-                            (pre_cond_prop_merge #st #o #r (project ch ltr) (get_val_s #st #o #r ch l)
-                                                      (project ch atr) (get_val_s #st #o #r ch a)
-                                                      (project ch btr) (get_val_s #st #o #r ch b)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch atr).l)) /\
-                            (forall e. mem e (project ch atr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (sim #st #o #r (project ch ltr) (get_val_s #st #o #r ch l) /\ sim #st #o #r (union (project ch ltr) (project ch atr)) (get_val_s #st #o #r ch a) /\ sim #st #o #r (union (project ch ltr) (project ch btr)) (get_val_s #st #o #r ch b))))
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
+                                  pre_cond_merge_a #st #o #r l a b /\
+                                  (forall i. mem_key_s i a \/ mem_key_s i b ==> 
+                                  pre_cond_prop_merge #st #o #r (project i ltr) (get_val_s #st #o #r i l)
+                                                                (project i atr) (get_val_s #st #o #r i a)
+                                                                (project i btr) (get_val_s #st #o #r i b) /\
+                                  (sim #st #o #r (project i ltr) (get_val_s #st #o #r i l) /\ 
+                           sim #st #o #r (union (project i ltr) (project i atr)) (get_val_s #st #o #r i a) /\
+                           sim #st #o #r (union (project i ltr) (project i btr)) (get_val_s #st #o #r i b))))
                   (ensures (forall e. mem e (abs_merge ltr atr btr).l /\ opset e ==> (exists e1. mem e1 (merge_a #st #o #r l a b) /\ get_key e = get_key_s e1)))
 
 #set-options "--z3rlimit 10000"
@@ -675,18 +672,17 @@ val prop_merge_a : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {
           -> btr:ae (op o)
           -> b:s st
           -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
-                            (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
-                            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
-                             pre_cond_merge_a #st #o #r l a b /\
-                            (forall ch. mem_key_s ch a \/ mem_key_s ch b ==> 
-                            (pre_cond_prop_merge #st #o #r (project ch ltr) (get_val_s #st #o #r ch l)
-                                                      (project ch atr) (get_val_s #st #o #r ch a)
-                                                      (project ch btr) (get_val_s #st #o #r ch b)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch atr).l)) /\
-                            (forall e. mem e (project ch atr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (forall e. mem e (project ch ltr).l ==> not (mem_id (get_id e) (project ch btr).l)) /\
-                            (sim #st #o #r (project ch ltr) (get_val_s #st #o #r ch l) /\ sim #st #o #r (union (project ch ltr) (project ch atr)) (get_val_s #st #o #r ch a) /\ sim #st #o #r (union (project ch ltr) (project ch btr)) (get_val_s #st #o #r ch b))))
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+            (sim_a #st #o #r ltr l /\ sim_a #st #o #r (union ltr atr) a /\ sim_a #st #o #r (union ltr btr) b) /\
+                                  pre_cond_merge_a #st #o #r l a b /\
+                                  (forall i. mem_key_s i a \/ mem_key_s i b ==> 
+                                  pre_cond_prop_merge #st #o #r (project i ltr) (get_val_s #st #o #r i l)
+                                                                (project i atr) (get_val_s #st #o #r i a)
+                                                                (project i btr) (get_val_s #st #o #r i b) /\
+                                  (sim #st #o #r (project i ltr) (get_val_s #st #o #r i l) /\ 
+                           sim #st #o #r (union (project i ltr) (project i atr)) (get_val_s #st #o #r i a) /\
+                           sim #st #o #r (union (project i ltr) (project i btr)) (get_val_s #st #o #r i b))))
                  (ensures (sim_a #st #o #r (abs_merge ltr atr btr) (merge_a #st #o #r l a b)))
 
 #set-options "--z3rlimit 10000"
