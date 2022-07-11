@@ -17,7 +17,7 @@ let rec print_path path acc = match path with
 let incr store path =
   let info = info "incrementing counter at %s" (print_path path "") in
   let* ctr = Store.get store path in
-  Store.set_exn store path (Ictr.app_op ctr ((Random.int 1000000), Ictr.Add)) ~info
+  Store.set_exn store path (fst (Ictr.do1 ctr ((Random.int 1000000), Ictr.Add))) ~info
 
 let main =
   let path = [ "foo"; "bar" ] in
@@ -34,8 +34,8 @@ let main =
   let* _ = incr t path in
   let* _ = incr t1 path in
   let* _ = incr t1 path in
-  let* _ = incr t1 path in
-  let* _ = incr t1 path in
+  let* _ = incr t path in
+  let* _ = incr t path in
   let* a = Store.get t [ "foo"; "bar" ] in
   let* b = Store.get t1 [ "foo"; "bar" ] in
   let* _ = Store.merge_into ~into:t t1 ~info:(info "Merging T1 into T") in

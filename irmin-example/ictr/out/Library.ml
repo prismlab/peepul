@@ -30,7 +30,7 @@ let __proj__A__item__vis :
   fun projectee -> match projectee with | A (vis, l) -> vis
 let __proj__A__item__l : 'op . 'op ae -> (int * 'op) list =
   fun projectee -> match projectee with | A (vis, l) -> l
-let append : 'op . 'op ae -> (int * 'op) -> 'op ae =
+let abs_do : 'op . 'op ae -> (int * 'op) -> 'op ae =
   fun tr ->
     fun op1 ->
       A
@@ -77,15 +77,17 @@ let visib : 'op . int -> int -> 'op ae -> bool =
                     (__proj__A__item__l l))) (__proj__A__item__l l)
         then true
         else false
-let rec union1 : 'op . 'op ae -> 'op ae -> (int * 'op) list =
+let rec union1 :
+  'op .
+    (int * 'op) list ->
+      (int * 'op) list -> (int * 'op) list
+  =
   fun l ->
     fun a ->
       match (l, a) with
-      | (A (uu___, []), A (uu___1, [])) -> []
-      | (A (uu___, x::xs), uu___1) -> x ::
-          (union1 (A ((__proj__A__item__vis l), xs)) a)
-      | (A (uu___, []), A (uu___1, x::xs)) -> x ::
-          (union1 l (A ((__proj__A__item__vis a), xs)))
+      | ([], []) -> []
+      | (x::xs, uu___) -> x :: (union1 xs a)
+      | ([], uu___) -> a
 let union : 'op . 'op ae -> 'op ae -> 'op ae =
   fun l ->
     fun a ->
@@ -100,21 +102,23 @@ let union : 'op . 'op ae -> 'op ae -> 'op ae =
                 ((((FStar_List_Tot_Base.mem o (__proj__A__item__l a)) &&
                      (FStar_List_Tot_Base.mem o1 (__proj__A__item__l a)))
                     && ((get_id o) <> (get_id o1)))
-                   && (__proj__A__item__vis a o o1))), (union1 l a))
-let rec absmerge1 :
-  'op . 'op ae -> 'op ae -> 'op ae -> (int * 'op) list =
+                   && (__proj__A__item__vis a o o1))),
+          (union1 (__proj__A__item__l l) (__proj__A__item__l a)))
+let rec abs_merge1 :
+  'op .
+    (int * 'op) list ->
+      (int * 'op) list ->
+        (int * 'op) list -> (int * 'op) list
+  =
   fun l ->
     fun a ->
       fun b ->
         match (l, a, b) with
-        | (A (uu___, []), A (uu___1, []), A (uu___2, [])) -> []
-        | (A (uu___, x::xs), uu___1, uu___2) -> x ::
-            (absmerge1 (A ((__proj__A__item__vis l), xs)) a b)
-        | (A (uu___, []), A (uu___1, x::xs), uu___2) -> x ::
-            (absmerge1 l (A ((__proj__A__item__vis a), xs)) b)
-        | (A (uu___, []), A (uu___1, []), A (uu___2, x::xs)) -> x ::
-            (absmerge1 l a (A ((__proj__A__item__vis b), xs)))
-let absmerge : 'op . 'op ae -> 'op ae -> 'op ae -> 'op ae =
+        | ([], [], []) -> []
+        | (x::xs, uu___, uu___1) -> x :: (abs_merge1 xs a b)
+        | ([], x::xs, uu___) -> x :: (abs_merge1 [] xs b)
+        | ([], [], uu___) -> b
+let abs_merge : 'op . 'op ae -> 'op ae -> 'op ae -> 'op ae =
   fun l ->
     fun a ->
       fun b ->
@@ -134,7 +138,9 @@ let absmerge : 'op . 'op ae -> 'op ae -> 'op ae -> 'op ae =
                   ((((FStar_List_Tot_Base.mem o (__proj__A__item__l b)) &&
                        (FStar_List_Tot_Base.mem o1 (__proj__A__item__l b)))
                       && ((get_id o) <> (get_id o1)))
-                     && (__proj__A__item__vis b o o1))), (absmerge1 l a b))
+                     && (__proj__A__item__vis b o o1))),
+            (abs_merge1 (__proj__A__item__l l) (__proj__A__item__l a)
+               (__proj__A__item__l b)))
 let rec remove_op1 :
   'op . 'op ae -> (int * 'op) -> (int * 'op) list =
   fun tr ->
@@ -155,101 +161,149 @@ let remove_op : 'op . 'op ae -> (int * 'op) -> 'op ae =
                  && ((get_id o) <> (get_id o1)))
                 && (__proj__A__item__vis tr o o1)), (remove_op1 tr x))
 
-type ('s, 'op) mrdt =
+let get_st : 's 'rval . ('s * 'rval) -> 's =
+  fun uu___ -> match uu___ with | (s1, r) -> s1
+let get_rval : 's 'rval . ('s * 'rval) -> 'rval =
+  fun uu___ -> match uu___ with | (s1, r) -> r
+type ('s, 'op, 'rval) mrdt =
   {
   init: 's ;
-  pre_cond_op: 's -> (int * 'op) -> bool ;
-  app_op: 's -> (int * 'op) -> 's ;
+  spec: (int * 'op) -> 'op ae -> 'rval ;
   sim: 'op ae -> 's -> bool ;
-  pre_cond_merge: 'op ae -> 's -> 'op ae -> 's -> 'op ae -> 's -> bool ;
-  pre_cond_merge1: 's -> 's -> 's -> bool ;
-  merge1: 's -> 's -> 's -> 's ;
-  merge: 'op ae -> 's -> 'op ae -> 's -> 'op ae -> 's -> 's ;
+  pre_cond_do: 's -> (int * 'op) -> bool ;
+  pre_cond_prop_do: 'op ae -> 's -> (int * 'op) -> bool ;
+  pre_cond_merge: 's -> 's -> 's -> bool ;
+  pre_cond_prop_merge:
+    'op ae -> 's -> 'op ae -> 's -> 'op ae -> 's -> bool ;
+  do1: 's -> (int * 'op) -> ('s * 'rval) ;
+  merge: 's -> 's -> 's -> 's ;
+  prop_do: unit ;
   prop_merge: unit ;
-  prop_oper: unit ;
+  prop_spec: unit ;
   convergence: unit }
-let __proj__Mkmrdt__item__init : 's 'op . ('s, 'op) mrdt -> 's =
+let __proj__Mkmrdt__item__init : 's 'op 'rval . ('s, 'op, 'rval) mrdt -> 's =
   fun projectee ->
     match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> init
-let __proj__Mkmrdt__item__pre_cond_op :
-  's 'op . ('s, 'op) mrdt -> 's -> (int * 'op) -> bool =
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> init
+let __proj__Mkmrdt__item__spec :
+  's 'op 'rval .
+    ('s, 'op, 'rval) mrdt -> (int * 'op) -> 'op ae -> 'rval
+  =
   fun projectee ->
     match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> pre_cond_op
-let __proj__Mkmrdt__item__app_op :
-  's 'op . ('s, 'op) mrdt -> 's -> (int * 'op) -> 's =
-  fun projectee ->
-    match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> app_op
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> spec
 let __proj__Mkmrdt__item__sim :
-  's 'op . ('s, 'op) mrdt -> 'op ae -> 's -> bool =
+  's 'op 'rval . ('s, 'op, 'rval) mrdt -> 'op ae -> 's -> bool =
   fun projectee ->
     match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> sim
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> sim
+let __proj__Mkmrdt__item__pre_cond_do :
+  's 'op 'rval .
+    ('s, 'op, 'rval) mrdt -> 's -> (int * 'op) -> bool
+  =
+  fun projectee ->
+    match projectee with
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> pre_cond_do
+let __proj__Mkmrdt__item__pre_cond_prop_do :
+  's 'op 'rval .
+    ('s, 'op, 'rval) mrdt -> 'op ae -> 's -> (int * 'op) -> bool
+  =
+  fun projectee ->
+    match projectee with
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> pre_cond_prop_do
 let __proj__Mkmrdt__item__pre_cond_merge :
-  's 'op .
-    ('s, 'op) mrdt ->
+  's 'op 'rval . ('s, 'op, 'rval) mrdt -> 's -> 's -> 's -> bool =
+  fun projectee ->
+    match projectee with
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> pre_cond_merge
+let __proj__Mkmrdt__item__pre_cond_prop_merge :
+  's 'op 'rval .
+    ('s, 'op, 'rval) mrdt ->
       'op ae -> 's -> 'op ae -> 's -> 'op ae -> 's -> bool
   =
   fun projectee ->
     match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} ->
-        pre_cond_merge
-let __proj__Mkmrdt__item__pre_cond_merge1 :
-  's 'op . ('s, 'op) mrdt -> 's -> 's -> 's -> bool =
-  fun projectee ->
-    match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} ->
-        pre_cond_merge1
-let __proj__Mkmrdt__item__merge1 :
-  's 'op . ('s, 'op) mrdt -> 's -> 's -> 's -> 's =
-  fun projectee ->
-    match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> merge1
-let __proj__Mkmrdt__item__merge :
-  's 'op .
-    ('s, 'op) mrdt -> 'op ae -> 's -> 'op ae -> 's -> 'op ae -> 's -> 's
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> pre_cond_prop_merge
+let __proj__Mkmrdt__item__do :
+  's 'op 'rval .
+    ('s, 'op, 'rval) mrdt -> 's -> (int * 'op) -> ('s * 'rval)
   =
   fun projectee ->
     match projectee with
-    | { init; pre_cond_op; app_op; sim; pre_cond_merge; pre_cond_merge1;
-        merge1; merge; prop_merge; prop_oper; convergence;_} -> merge
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> do1
+let __proj__Mkmrdt__item__merge :
+  's 'op 'rval . ('s, 'op, 'rval) mrdt -> 's -> 's -> 's -> 's =
+  fun projectee ->
+    match projectee with
+    | { init; spec; sim; pre_cond_do; pre_cond_prop_do; pre_cond_merge;
+        pre_cond_prop_merge; do1; merge; prop_do; prop_merge; prop_spec;
+        convergence;_} -> merge
 
 
 
-let init : 's . unit -> ('s, Obj.t) mrdt -> 's =
-  fun op -> fun d -> __proj__Mkmrdt__item__init d
-let pre_cond_op :
-  's . unit -> ('s, Obj.t) mrdt -> 's -> (int * Obj.t) -> bool =
-  fun op -> fun d -> __proj__Mkmrdt__item__pre_cond_op d
-let app_op : 's . unit -> ('s, Obj.t) mrdt -> 's -> (int * Obj.t) -> 's
-  = fun op -> fun d -> __proj__Mkmrdt__item__app_op d
-let sim : 's . unit -> ('s, Obj.t) mrdt -> Obj.t ae -> 's -> bool =
-  fun op -> fun d -> __proj__Mkmrdt__item__sim d
+
+let init : 's . unit -> unit -> ('s, Obj.t, Obj.t) mrdt -> 's =
+  fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__init d
+let spec :
+  's .
+    unit ->
+      unit ->
+        ('s, Obj.t, Obj.t) mrdt -> (int * Obj.t) -> Obj.t ae -> Obj.t
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__spec d
+let sim :
+  's .
+    unit -> unit -> ('s, Obj.t, Obj.t) mrdt -> Obj.t ae -> 's -> bool
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__sim d
+let pre_cond_do :
+  's .
+    unit ->
+      unit ->
+        ('s, Obj.t, Obj.t) mrdt -> 's -> (int * Obj.t) -> bool
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__pre_cond_do d
+let pre_cond_prop_do :
+  's .
+    unit ->
+      unit ->
+        ('s, Obj.t, Obj.t) mrdt ->
+          Obj.t ae -> 's -> (int * Obj.t) -> bool
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__pre_cond_prop_do d
 let pre_cond_merge :
   's .
-    unit ->
-      ('s, Obj.t) mrdt ->
-        Obj.t ae -> 's -> Obj.t ae -> 's -> Obj.t ae -> 's -> bool
-  = fun op -> fun d -> __proj__Mkmrdt__item__pre_cond_merge d
-let pre_cond_merge1 :
-  's . unit -> ('s, Obj.t) mrdt -> 's -> 's -> 's -> bool =
-  fun op -> fun d -> __proj__Mkmrdt__item__pre_cond_merge1 d
-let merge1 : 's . unit -> ('s, Obj.t) mrdt -> 's -> 's -> 's -> 's =
-  fun op -> fun d -> __proj__Mkmrdt__item__merge1 d
-let merge :
+    unit -> unit -> ('s, Obj.t, Obj.t) mrdt -> 's -> 's -> 's -> bool
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__pre_cond_merge d
+let pre_cond_prop_merge :
   's .
     unit ->
-      ('s, Obj.t) mrdt ->
-        Obj.t ae -> 's -> Obj.t ae -> 's -> Obj.t ae -> 's -> 's
-  = fun op -> fun d -> __proj__Mkmrdt__item__merge d
+      unit ->
+        ('s, Obj.t, Obj.t) mrdt ->
+          Obj.t ae -> 's -> Obj.t ae -> 's -> Obj.t ae -> 's -> bool
+  =
+  fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__pre_cond_prop_merge d
+let do1 :
+  's .
+    unit ->
+      unit ->
+        ('s, Obj.t, Obj.t) mrdt -> 's -> (int * Obj.t) -> ('s * Obj.t)
+  = fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__do d
+let merge :
+  's . unit -> unit -> ('s, Obj.t, Obj.t) mrdt -> 's -> 's -> 's -> 's =
+  fun op -> fun rval -> fun d -> __proj__Mkmrdt__item__merge d
+
 
 
