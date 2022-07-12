@@ -6,11 +6,11 @@ open FStar.List.Tot
 open Library
 
 type op (alpha_op:eqtype) = 
-  |Get : nat (*key*) -> alpha_op -> op (alpha_op)
-  |Set : nat (*key*) -> alpha_op -> op (alpha_op)
+  |Get : string (*key*) -> alpha_op -> op (alpha_op)
+  |Set : string (*key*) -> alpha_op -> op (alpha_op)
 
-val get_key : #o:eqtype -> op1:(nat * op o) -> Tot (k:nat {(exists id op2. op1 = (id, (Get k op2))) \/ 
-                                                     (exists id op2. op1 = (id, (Set k op2)))})
+val get_key : #o:eqtype -> op1:(nat * op o) -> Tot (k:string {(exists id op2. op1 = (id, (Get k op2))) \/ 
+                                                          (exists id op2. op1 = (id, (Set k op2)))})
 let get_key op1 =
   match op1 with
   |(_, Get k _) -> k
@@ -18,12 +18,15 @@ let get_key op1 =
 
 val opget : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Get k alphaop))))})
 let opget op1 =
-    match op1 with
-    |(_, (Get _ _)) -> true
-    |_ -> false
+  match op1 with
+  |(_, (Get _ _)) -> true
+  |_ -> false
 
 val opset : #o:eqtype -> o1:(nat * (op o)) -> Tot (b:bool {b=true <==> (exists id k alphaop. (o1 = (id, (Set k alphaop))))})
-let opset op1 = not (opget op1)
+let opset op1 = 
+  match op1 with
+  |(_, (Set _ _)) -> true
+  |_ -> false
 
 val get_alpha_op : #o:eqtype -> op1:(nat * op o) -> Tot (s:o {(exists id k. op1 = (id, (Get k s))) \/
                                                           (exists id k. op1 = (id, (Set k s)))})
@@ -32,33 +35,33 @@ let get_alpha_op op1 =
   |(_, Get _ o) -> o
   |(_, Set _ o) -> o
 
-val get_key_s : #st:eqtype -> s:(nat * st) -> Tot (s1:nat {(exists c. s = (s1,c))})
+val get_key_s : #st:eqtype -> s:(string * st) -> Tot (s1:string {(exists c. s = (s1,c))})
 let get_key_s (k, _) = k
 
 val mem_key_s : #st:eqtype 
-              -> ele1:nat
-              -> l:list (nat * st)
+              -> ele1:string
+              -> l:list (string * st)
               -> Tot (b:bool {b=true <==> (exists c. mem (ele1,c) l) /\ (exists e. mem e l /\ get_key_s e = ele1)})
 let rec mem_key_s ele1 l =
   match l with
   |[] -> false
   |x::xs -> get_key_s x = ele1 || mem_key_s ele1 xs
 
-val unique_key : #st:eqtype -> list (nat * st) -> bool
+val unique_key : #st:eqtype -> list (string * st) -> bool
 let rec unique_key l =
   match l with
   |[] -> true
   |(ele,_)::xs -> not (mem_key_s ele xs) && unique_key xs
 
-val get_val_s1 : #st:eqtype -> s:(nat * st) -> Tot (c:st {(exists i. s = (i,c))})
+val get_val_s1 : #st:eqtype -> s:(string * st) -> Tot (c:st {(exists i. s = (i,c))})
 let get_val_s1 (_, c) = c
 
-type s (alpha_st:eqtype) = l:list (nat * alpha_st) {unique_key l}
+type s (alpha_st:eqtype) = l:list (string * alpha_st) {unique_key l}
 
 let init_a = []
 
 val get_val_s : #st:eqtype -> #o:eqtype -> #r:eqtype -> {| mrdt st o r|}
-                -> i:nat -> s1:s st -> Tot (c:st {(mem_key_s i s1 ==> mem (i,c) s1 /\ 
+                -> i:string -> s1:s st -> Tot (c:st {(mem_key_s i s1 ==> mem (i,c) s1 /\ 
                                          (exists e. mem e s1 /\ e = (i,c) /\ c = get_val_s1 #st e)) /\ 
                                          (not (mem_key_s i s1) ==> c = init #st #o #r)})
 let rec get_val_s #st #o #r i s1 =
@@ -74,8 +77,8 @@ let rec mem_op ele2 l =
   |[] -> false
   |(_, ele1)::xs -> ele1 = ele2 || mem_op ele2 xs
 
-val mem_key : #o:eqtype -> i:nat -> l:list (nat * op o) -> Tot (b:bool {b=true <==> (exists id op. mem (id, (Get i op)) l) \/
-                                                                           (exists id op. mem (id, (Set i op)) l)})
+val mem_key : #o:eqtype -> i:string -> l:list (nat * op o) -> Tot (b:bool {b=true <==> (exists id op. mem (id, (Get i op)) l) \/
+                                                                               (exists id op. mem (id, (Set i op)) l)})
 let rec mem_key ele2 l =
   match l with
   |[] -> false
@@ -120,7 +123,7 @@ let project_op op =
   |(id, (Get k alpha_op)) -> (id, alpha_op)
 
 val project1 : #o:eqtype
-             -> i:nat
+             -> i:string
              -> l:ae (op o)
              -> Pure (list (nat * o))
                     (requires true)
@@ -136,7 +139,7 @@ let rec project1 #o i l =
   |x::xs -> if (get_key x = i && opset x) then (project_op x)::project1 i (A l.vis xs) else (project1 i (A l.vis xs))
 
 val project : #o:eqtype
-            -> i:nat
+            -> i:string
             -> l:ae (op o)
             -> Pure (ae o)
                    (requires true)
@@ -163,15 +166,15 @@ val pre_cond_prop_do_a : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r
                        -> Pure bool
                          (requires (not (mem_id (get_id op1) tr.l) /\
                                    (forall e. mem e tr.l ==> get_id e < get_id op1) /\ get_id op1 > 0))
-                      (ensures (fun b -> (b=true <==> pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1))
+                      (ensures (fun b -> (b=true <==> pre_cond_prop_do #st1 #o #r (project (get_key op1) tr)
                                      (get_val_s #st1 #o #r (get_key op1) st) (project_op op1))))
 let pre_cond_prop_do_a #st1 #o #r tr st op1 =
-  pre_cond_prop_do #st1 #o #r (project (get_key op1) (abs_do tr op1))
+  pre_cond_prop_do #st1 #o #r (project (get_key op1) tr)
     (get_val_s #st1 #o #r (get_key op1) st) (project_op op1)
 
 val update : #st1:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st1 o r|}
            -> st:s st1
-           -> k:nat
+           -> k:string
            -> v:st1
            -> Pure (s st1)
                   (requires mem_key_s k st)
@@ -199,13 +202,13 @@ let do_a #st1 #o #r st op1 =
   |(_, Get k ao) -> let (_, ret) = (do #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (st, ret)
   |(_, Set k ao) -> let (v, ret) = (do #st1 #o #r (get_val_s #st1 #o #r k st) (project_op op1)) in (if mem_key_s (get_key op1) st then (update #st1 #o #r st (get_key op1) v, ret) else ((get_key op1, v)::st, ret))
 
-val unique_keys : list nat -> Tot bool
+val unique_keys : list string -> Tot bool
 let rec unique_keys l =
     match l with
     |[] -> true
     |x::xs -> not (mem x xs) && unique_keys xs
 
-val get_lst : #st: eqtype -> m:s st -> Pure (list nat)
+val get_lst : #st: eqtype -> m:s st -> Pure (list string)
                      (requires true)
                      (ensures (fun r -> (forall i. mem i r <==> mem_key_s i m) /\ unique_keys r))
 let rec get_lst m =
@@ -408,7 +411,7 @@ let prop_do_a #st1 #o #r #m tr st op =
 
 val get_key_lst : #st:eqtype 
                 -> l:s st -> a:s st -> b:s st
-                -> Pure (list nat)
+                -> Pure (list string)
                   (requires true)
                   (ensures (fun r -> (forall i. mem i r <==> mem_key_s i a \/ mem_key_s i b) /\ unique_keys r))
                   (decreases %[l;a;b])
@@ -431,7 +434,7 @@ let pre_cond_merge_a #st #o #r l a b =
              (get_val_s #st #o #r ch a) (get_val_s #st #o #r ch b)) (get_key_lst l a b)
 
 val remove_key : #st:eqtype 
-               -> ch:nat
+               -> ch:string
                -> a:s st
                -> Pure (s st)
                  (requires (mem_key_s ch a))
@@ -445,7 +448,7 @@ val merge2 : #st:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st o r|}
            -> l:s st
            -> a:s st
            -> b:s st
-           -> lst:list nat
+           -> lst:list string
            -> Pure (s st)
                 (requires pre_cond_merge_a #st #o #r l a b /\ unique_keys lst /\
                           (forall ch. mem ch lst ==> mem_key_s ch a \/ mem_key_s ch b))
@@ -481,7 +484,7 @@ val lem_merge1 : #st:eqtype -> #o:eqtype -> #r:eqtype -> {|mrdt st o r|}
                -> a:s st
                -> btr:ae (op o)
                -> b:s st
-               -> lst:list nat
+               -> lst:list string
                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
@@ -522,7 +525,7 @@ val lemma61 : #o:eqtype
                                         mem_op e l.l \/ mem_op e a.l \/ mem_op e b.l))
                          (decreases %[l.l;a.l;b.l])
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let rec lemma61 #o l a b = 
   match l,a,b with
   |(A _ []), (A _ []), (A _ []) -> ()
@@ -543,7 +546,7 @@ val lemma8 : #o:eqtype
             (mem e (project i (union ltr atr)).l /\ mem e1 (project i (union ltr atr)).l /\ get_id e <> get_id e1 /\
                    (project i (union ltr atr)).vis e e1))))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 10000"
 let lemma8 #o ltr atr = ()
 
 val lemma9 : #o:eqtype
@@ -563,7 +566,7 @@ val lemma9 : #o:eqtype
                               (abs_merge (project i ltr) (project i atr) (project i btr)).vis e e1 <==>
                                 mem e (project i (abs_merge ltr atr btr)).l /\ mem e1 (project i (abs_merge ltr atr btr)).l /\ get_id e <> get_id e1 /\ (project i (abs_merge ltr atr btr)).vis e e1)))
 
-#set-options "--z3rlimit 10000000"
+#set-options "--z3rlimit 1000"
 let lemma9 #o ltr atr btr = ()
 
 #set-options "--z3rlimit 10000"
@@ -574,7 +577,7 @@ val prop_merge1 : #st:eqtype -> #o:eqtype -> #r:eqtype -> #m:(mrdt st o r) -> {|
                 -> a:s st
                 -> btr:ae (op o)
                 -> b:s st
-                -> chs:list nat
+                -> chs:list string
                 -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
                                   (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
                                   (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\

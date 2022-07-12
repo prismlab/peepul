@@ -160,7 +160,7 @@ let convergence2 tr a b =
 
 val lem_length : a:(A.s L.s)
                -> b:(A.s L.s)
-               -> lst:list nat
+               -> lst:list string
                -> Lemma (requires (forall ch. mem ch lst ==> A.mem_key_s ch a /\ A.mem_key_s ch b) /\
                                           (forall e. A.mem_key_s e a <==> A.mem_key_s e b) /\
                                     A.unique_keys lst /\ (forall ch. mem ch lst ==> 
@@ -176,7 +176,7 @@ let rec lem_length a b lst =
 
 val convergence3 : a:(A.s L.s)
                  -> b:(A.s L.s)
-                 -> lst:list nat
+                 -> lst:list string
                  -> Lemma (requires (forall ch. mem ch lst ==> A.mem_key_s ch a /\ A.mem_key_s ch b) /\
                                    (forall e. A.mem_key_s e a <==> A.mem_key_s e b) /\
                                     A.unique_keys lst /\ (forall ch. mem ch lst ==> 
