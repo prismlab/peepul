@@ -172,3 +172,47 @@ instance gset : mrdt s op rval = {
   Library.prop_spec = prop_spec;
   Library.convergence = convergence
 }
+
+
+(* Additional lemmas for prop_merge  
+val prop_merge1 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                        (ensures (forall e. mem e (merge l a b) ==> mem_ele e (abs_merge ltr atr btr).l))
+let prop_merge1 ltr l atr a btr b = ()
+
+val prop_merge2 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                        (ensures (forall e. mem_ele e (abs_merge ltr atr btr).l ==> mem e (merge l a b)))
+let prop_merge2 ltr l atr a btr b = ()
+
+val prop_merge3 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> a:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b))
+                        (ensures (sim (abs_merge ltr atr btr) (merge l a b)))
+let prop_merge3 ltr l atr a btr b = 
+  prop_merge1 ltr l atr a btr b;
+  prop_merge2 ltr l atr a btr b
+*)

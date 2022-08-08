@@ -290,3 +290,57 @@ instance orset : mrdt s op rval = {
   Library.prop_spec = prop_spec;
   Library.convergence = convergence
 }
+
+
+(* Additional lemmas for prop_merge  
+
+val prop_merge1 : ltr:ae op
+               -> l:s
+               -> atr:ae op
+               -> aa:s
+               -> btr:ae op
+               -> b:s
+               -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                 (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\ pre_cond_merge l aa b)
+                       (ensures (forall a. mem a (merge l aa b) ==> (mem ((fst a), Add (snd a)) (abs_merge ltr atr btr).l /\
+                                (forall r. mem r (abs_merge ltr atr btr).l /\ fst a <> get_id r /\ opr r /\ snd a = get_ele r ==>
+                                          not ((abs_merge ltr atr btr).vis ((fst a), Add (snd a)) r)))))
+#set-options "--z3rlimit 1000"
+let prop_merge1 ltr l atr a btr b = ()
+
+val prop_merge2 : ltr:ae op
+               -> l:s
+               -> atr:ae op
+               -> aa:s
+               -> btr:ae op
+               -> b:s
+               -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                 (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                 (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b) /\ pre_cond_merge l aa b)
+                       (ensures (forall a. mem a (abs_merge ltr atr btr).l /\ opa a ==> 
+                           (forall r. mem r (abs_merge ltr atr btr).l /\ opr r /\ get_id a <> get_id r /\ get_ele a = get_ele r ==>
+                           not ((abs_merge ltr atr btr).vis a r)) ==> mem (get_id a, get_ele a) (merge l aa b)))
+#set-options "--z3rlimit 1000"
+let prop_merge2 ltr l atr a btr b = ()
+
+val prop_merge3 : ltr:ae op
+                -> l:s
+                -> atr:ae op
+                -> aa:s
+                -> btr:ae op
+                -> b:s
+                -> Lemma (requires (forall e. mem e ltr.l ==> not (mem_id (get_id e) atr.l)) /\
+                                  (forall e. mem e atr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (mem_id (get_id e) btr.l)) /\
+                                  (sim ltr l /\ sim (union ltr atr) aa /\ sim (union ltr btr) b))
+                        (ensures (pre_cond_merge l aa b) /\ (sim (abs_merge ltr atr btr) (merge l aa b)))
+#set-options "--z3rlimit 1000"
+let prop_merge3 ltr l atr a btr b = 
+  assert ((forall e. mem e (diff2 a l) ==> not (member_s (fst e) b)) /\
+          (forall e. mem e (diff2 b l) ==> not (member_s (fst e) a)));
+  prop_merge1 ltr l atr a btr b;
+  prop_merge2 ltr l atr a btr b
+*)
