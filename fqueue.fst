@@ -1,7 +1,8 @@
 module Fqueue
 
 open FStar.List.Tot
-open Library
+open Library_old
+open FStar.All
 
 #set-options "--query_stats"
 
@@ -748,20 +749,79 @@ val sorted_union : a:list (nat * nat)
 let sorted_union a b =
     union1 a b
 
-let pre_cond_merge1 (l:list (nat * nat)) a b = unique_id l /\ unique_id a /\ unique_id b /\ sorted l /\ sorted a /\ sorted b /\
-                              (forall e e1. (mem e a /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
-                              (forall e e1. (mem e b /\ mem e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
-                              (forall e e1. mem e l /\ mem e1 a ==> (fst e) <= (fst e1)) /\
-                              (forall e e1. mem e l /\ mem e1 b ==> (fst e) <= (fst e1)) /\
-                              (forall e e1. mem e l /\ mem e1 l /\ mem e a /\ mem e1 a /\ order e e1 l ==> order e e1 a) /\
-                              (forall e e1. mem e l /\ mem e1 l /\ mem e b /\ mem e1 b /\ order e e1 l ==> order e e1 b) /\
-                              (forall e e1. mem e l /\ mem e1 (diff_s a l) ==> fst e < fst e1) /\
-                              (forall e e1. mem e l /\ mem e1 (diff_s b l) ==> fst e < fst e1) /\
-                              (forall e. mem e (diff_s a l) ==> not (mem_id (fst e) (diff_s b l))) /\
-                              (forall e. mem e (diff_s b l) ==> not (mem_id (fst e) (diff_s a l)))
+val forallbq : f:((nat * nat) -> bool)
+                 -> l:s
+                 -> Tot (b:bool{(forall e. memq e l ==> f e) <==> b = true})
 
+let forallbq f l =
+    forallb (fun e -> f e) (tolist l)
 
-val merge_s : l:list (nat * nat)
+val pre_cond_merge1_1 : l:s
+                    -> a:s
+                    -> b:s
+                    -> Tot (b1:bool {b1 = true <==> 
+                              unique_id (tolist l) /\ unique_id (tolist a) /\ unique_id (tolist b) /\ 
+                              sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\
+    (forall e e1. (mem e (tolist a) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+    (forall e e1. (mem e (tolist b) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+       (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+         (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge1_1 l a b = 
+    unique_id (tolist l) && unique_id (tolist a) && unique_id (tolist b) &&
+    sorted (tolist l) && sorted (tolist a) && sorted (tolist b) &&
+    forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <= fst e1) (tolist a))) (tolist l) &&
+    forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <= fst e1) (tolist b))) (tolist l) &&
+    forallbq (fun e -> (forallb (fun e1 -> snd e = snd e1) (filter (fun e1 -> fst e = fst e1) (tolist l)))) a &&
+    forallbq (fun e -> (forallb (fun e1 -> snd e = snd e1) (filter (fun e1 -> fst e = fst e1) (tolist l)))) b
+
+val pre_cond_merge1_2 : l:s
+                    -> a:s
+                    -> b:s
+                    -> Tot (b1:bool {b1 = true <==> 
+                              unique_id (tolist l) /\ unique_id (tolist a) /\ unique_id (tolist b) /\ 
+                              sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\
+    (forall e e1. (mem e (tolist a) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+    (forall e e1. (mem e (tolist b) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+       (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+         (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
+                  (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                    (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge1_2 l a b = 
+  pre_cond_merge1_1 l a b &&
+    forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e (tolist a) && mem e1 (tolist a) && order e e1 (tolist a)) (filter (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e1 (tolist a) && mem e (tolist l) && mem e1 (tolist l) && order e e1 (tolist l)) (tolist l)))) (filter (fun (e:(nat * nat)) -> mem e (tolist a)) (tolist l)) &&
+    forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e (tolist b) && mem e1 (tolist b) && order e e1 (tolist b)) (filter (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e1 (tolist b) && mem e (tolist l) && mem e1 (tolist l) && order e e1 (tolist l)) (tolist l)))) (filter (fun (e:(nat * nat)) -> mem e (tolist b)) (tolist l)) 
+    
+val pre_cond_merge1 : l:s
+                    -> a:s
+                    -> b:s
+                    -> Tot (b1:bool {b1 = true <==> 
+                              unique_id (tolist l) /\ unique_id (tolist a) /\ unique_id (tolist b) /\ 
+                              sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\
+    (forall e e1. (mem e (tolist a) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+    (forall e e1. (mem e (tolist b) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+       (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+         (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
+                  (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                    (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+            (forall e e1. mem e (tolist l) /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+            (forall e e1. mem e (tolist l) /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+              (forall e. mem e (diff_s (tolist a) (tolist l)) ==> not (mem_id (fst e) (diff_s (tolist b) (tolist l)))) /\
+              (forall e. mem e (diff_s (tolist b) (tolist l)) ==> not (mem_id (fst e) (diff_s (tolist a) (tolist l))))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge1 l a b = 
+    pre_cond_merge1_1 l a b &&
+    forallbq (fun e -> (forallb (fun (e1:(nat * nat)) -> fst e < fst e1) (diff_s (tolist a) (tolist l)))) l &&
+    forallbq (fun e -> (forallb (fun (e1:(nat * nat)) -> fst e < fst e1) (diff_s (tolist b) (tolist l)))) l &&
+    pre_cond_merge1_2 l a b &&
+    forallb (fun (e:(nat * nat)) -> not (mem_id (get_id e) (diff_s (tolist b) (tolist l)))) (diff_s (tolist a) (tolist l)) &&
+    forallb (fun (e:(nat * nat)) -> not (mem_id (get_id e) (diff_s (tolist a) (tolist l)))) (diff_s (tolist b) (tolist l))
+    
+val merge_s1 : l:list (nat * nat)
             -> a:list (nat * nat)
             -> b:list (nat * nat)
             -> Pure (list (nat * nat))
@@ -788,7 +848,7 @@ val merge_s : l:list (nat * nat)
                                               (((mem e (diff_s a l) /\ mem e1 (diff_s b l)) \/ (mem e1 (diff_s a l) /\ mem e (diff_s b l))) /\ (fst e < fst e1))) <==>
                                        (mem e res /\ mem e1 res /\ fst e <> fst e1 /\ order e e1 res))))
 
-let merge_s l a b =
+let merge_s1 l a b =
   let ixn = intersection l a b in
   let diff_a = diff_s a l in
   let diff_b = diff_s b l in
@@ -814,7 +874,115 @@ let merge_s l a b =
                   (((mem e (diff_s a l) /\ mem e1 (diff_s b l)) \/ (mem e1 (diff_s a l) /\ mem e (diff_s b l))) /\ (fst e < fst e1))));
   res
 
-let pre_cond_merge ltr l atr a btr b = (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+#set-options "--z3rlimit 10000"
+val merge_s : l:s -> a:s -> b:s 
+            -> Pure s
+              (requires (unique_id (tolist l) /\ unique_id (tolist a) /\ unique_id (tolist b) /\ 
+                         sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\
+                        (forall e e1. (mem e (tolist a) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                        (forall e e1. (mem e (tolist b) /\ mem e1 (tolist l) /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                        (forall e e1. mem e (tolist l) /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
+                        (forall e. mem e (diff_s (tolist a) (tolist l)) ==> not (mem_id (fst e) (diff_s (tolist b) (tolist l)))) /\
+                        (forall e. mem e (diff_s (tolist b) (tolist l)) ==> not (mem_id (fst e) (diff_s (tolist a) (tolist l))))))
+              (ensures (fun res -> unique_id res.front /\ sorted res.front /\ 
+                (forall e. mem e res.front <==> ((mem e (tolist l) /\ mem e (tolist a) /\ mem e (tolist b)) \/
+                (mem e (tolist a) /\ not (mem e (tolist l))) \/ (mem e (tolist b) /\ not (mem e (tolist l))))) /\
+                (forall e. mem e (tolist l) /\ not (mem e (tolist a)) ==> not (mem e res.front)) /\
+                (forall e. mem e (tolist l) /\ not (mem e (tolist b)) ==> not (mem e res.front)) /\
+    (forall e e1. ((mem e (tolist l) /\ mem e1 (tolist l) /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ mem e res.front /\ mem e1 res.front) \/
+    (mem e (tolist a) /\ mem e1 (tolist a) /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ mem e res.front /\ mem e1 res.front) \/
+    (mem e (tolist b) /\ mem e1 (tolist b) /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ mem e res.front /\ mem e1 res.front) \/
+    (mem e (tolist l) /\ mem e1 (diff_s (tolist a) (tolist l)) /\ fst e <> fst e1 /\ mem e res.front /\ mem e1 res.front) \/
+    (mem e (tolist l) /\ mem e1 (diff_s (tolist b) (tolist l)) /\ fst e <> fst e1 /\ mem e res.front /\ mem e1 res.front) \/
+    (((mem e (diff_s (tolist a) (tolist l)) /\ mem e1 (diff_s (tolist b) (tolist l))) \/ (mem e1 (diff_s (tolist a) (tolist l)) /\ mem e (diff_s (tolist b) (tolist l)))) /\ (fst e < fst e1))) <==>
+    (mem e res.front /\ mem e1 res.front /\ fst e <> fst e1 /\ order e e1 res.front))))
+
+#set-options "--z3rlimit 10000"
+let merge_s l a b =
+  (S (merge_s1 (tolist l) (tolist a) (tolist b)) [])
+
+val pre_cond_merge_1 : ltr:ae op
+                   -> l:s
+                   -> atr:ae op
+                   -> a:s
+                   -> btr:ae op
+                   -> b:s
+                   -> Tot (b1:bool {(b1 = true) <==> 
+                              (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ 
+                              (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                              (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
+                              (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                              (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge_1 ltr l atr a btr b = 
+  sorted (tolist l) && sorted (tolist a) && sorted (tolist b) &&
+  forallb (fun e -> not (member (get_id e) atr.l)) ltr.l &&
+  forallb (fun e -> not (member (get_id e) btr.l)) ltr.l &&
+  forallb (fun e -> not (member (get_id e) btr.l)) atr.l &&
+  forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <= fst e1) (tolist a))) (tolist l) &&
+  forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <= fst e1) (tolist b))) (tolist l) &&
+  forallbq (fun e -> (forallb (fun e1 -> snd e = snd e1) (filter (fun e1 -> fst e = fst e1) (tolist l)))) a &&
+  forallbq (fun e -> (forallb (fun e1 -> snd e = snd e1) (filter (fun e1 -> fst e = fst e1) (tolist l)))) b 
+
+#set-options "--z3rlimit 10000"
+val pre_cond_merge_2 : ltr:ae op
+                   -> l:s
+                   -> atr:ae op
+                   -> a:s
+                   -> btr:ae op
+                   -> b:s
+                   -> Tot (b1:bool {(b1 = true) <==> 
+                                  (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ 
+                                  (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
+                                  (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
+                                  (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
+                                  (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
+                                  (forall e e1. mem e (tolist l) /\ mem e1 (tolist b) ==> (fst e) <= (fst e1)) /\
+                                  (forall e e1. (memq e a /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1)) /\
+                                  (forall e e1. (memq e b /\ memq e1 l /\ (fst e = fst e1)) ==> (snd e = snd e1))) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist a) (tolist l)) ==> fst e < fst e1) /\
+                              (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1)})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge_2 ltr l atr a btr b = 
+  pre_cond_merge_1 ltr l atr a btr b &&
+  forallbq (fun e -> (forallb (fun (e1:(nat * nat)) -> fst e < fst e1) (diff_s (tolist a) (tolist l)))) l &&
+  forallbq (fun e -> (forallb (fun (e1:(nat * nat)) -> fst e < fst e1) (diff_s (tolist b) (tolist l)))) l
+
+#set-options "--z3rlimit 10000"
+val pre_cond_merge_3 : ltr:ae op
+                   -> l:s
+                   -> atr:ae op
+                   -> a:s
+                   -> btr:ae op
+                   -> b:s
+                   -> Tot (b1:bool {(b1 = true) <==> 
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
+                          (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge_3 ltr l atr a btr b = 
+  forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e (tolist a) && mem e1 (tolist a) && order e e1 (tolist a)) (filter (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e1 (tolist a) && mem e (tolist l) && mem e1 (tolist l) && order e e1 (tolist l)) (tolist l)))) (filter (fun (e:(nat * nat)) -> mem e (tolist a)) (tolist l)) &&
+  forallb (fun (e:(nat * nat)) -> (forallb (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e (tolist b) && mem e1 (tolist b) && order e e1 (tolist b)) (filter (fun (e1:(nat * nat)) -> fst e <> fst e1 && mem e1 (tolist b) && mem e (tolist l) && mem e1 (tolist l) && order e e1 (tolist l)) (tolist l)))) (filter (fun (e:(nat * nat)) -> mem e (tolist b)) (tolist l))
+  
+val pre_cond_merge : ltr:ae op
+                   -> l:s
+                   -> atr:ae op
+                   -> a:s
+                   -> btr:ae op
+                   -> b:s
+                   -> Tot (b1:bool {(b1 = true) <==> 
+                              (sorted (tolist l) /\ sorted (tolist a) /\ sorted (tolist b) /\ 
+                              (forall e. mem e ltr.l ==> not (member (get_id e) atr.l)) /\
                               (forall e. mem e ltr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e. mem e atr.l ==> not (member (get_id e) btr.l)) /\
                               (forall e e1. mem e (tolist l) /\ mem e1 (tolist a) ==> (fst e) <= (fst e1)) /\
@@ -825,11 +993,21 @@ let pre_cond_merge ltr l atr a btr b = (sorted (tolist l) /\ sorted (tolist a) /
                               (forall e e1. memq e l /\ mem e1 (diff_s (tolist b) (tolist l)) ==> fst e < fst e1) /\
                           (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist a) /\ mem e1 (tolist a) /\ order e e1 (tolist l) ==> order e e1 (tolist a)) /\
                           (forall e e1. mem e (tolist l) /\ mem e1 (tolist l) /\ mem e (tolist b) /\ mem e1 (tolist b) /\ order e e1 (tolist l) ==> order e e1 (tolist b)) /\
-                              (forall e e1. (mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1)) /\
+                              (forall e e1. mem e ltr.l /\ mem e1 atr.l ==> get_id e < get_id e1) /\
                               (forall e e1. (mem e ltr.l /\ mem e1 btr.l ==> get_id e < get_id e1)) /\
                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                               (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
-                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l)))))
+                              (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l)))))})
+
+#set-options "--z3rlimit 10000"
+let pre_cond_merge ltr l atr a btr b = 
+  pre_cond_merge_2 ltr l atr a btr b &&
+  pre_cond_merge_3 ltr l atr a btr b &&
+  forallb (fun (e:(nat * op)) -> forallb (fun (e1:(nat * op)) -> get_id e < get_id e1) atr.l) ltr.l &&
+  forallb (fun (e:(nat * op)) -> forallb (fun (e1:(nat * op)) -> get_id e < get_id e1) btr.l) ltr.l &&
+  sim ltr l && sim (union ltr atr) a && sim (union ltr btr) b &&
+  forallb (fun (e:(nat * nat)) -> not (mem_id (get_id e) (diff_s (tolist b) (tolist l)))) (diff_s (tolist a) (tolist l)) &&
+  forallb (fun (e:(nat * nat)) -> not (mem_id (get_id e) (diff_s (tolist a) (tolist l)))) (diff_s (tolist b) (tolist l))
 
 val merge : ltr:ae op
           -> l:s
@@ -853,21 +1031,16 @@ val merge : ltr:ae op
                               (sim ltr l /\ sim (union ltr atr) a /\ sim (union ltr btr) b) /\
                               (forall e. mem_id e (diff_s (tolist a) (tolist l)) ==> not (mem_id e (diff_s (tolist b) (tolist l))))/\
                               (forall e. mem_id e (diff_s (tolist b) (tolist l)) ==> not (mem_id e (diff_s (tolist a) (tolist l))))))
-                   (ensures (fun res -> unique_id (tolist res) /\ sorted (tolist res) /\ (forall e. memq e res <==> ((memq e l /\ memq e a /\ memq e b) \/
-                                (memq e a /\ not (memq e l)) \/ (memq e b /\ not (memq e l)))) /\
-                                (forall e. memq e l /\ not (memq e a) ==> not (memq e res)) /\
-                                (forall e. memq e l /\ not (memq e b) ==> not (memq e res))))
+                   (ensures (fun res -> res = merge_s l a b))
 
 #set-options "--initial_fuel 5 --ifuel 5 --initial_ifuel 5 --fuel 5 --z3rlimit 100"
 
-let pre_cond_op s1 op = (not (mem_id (get_id op) s1.front)) /\ (not (mem_id (get_id op) s1.back))
-
 let merge ltr l atr a btr b =
-  let res = (S (merge_s (tolist l) (tolist a) (tolist b)) []) in
-  assert(unique_id (tolist res) /\ sorted (tolist res) /\ (forall e. memq e res <==> ((memq e l /\ memq e a /\ memq e b) \/
-                                (memq e a /\ not (memq e l)) \/ (memq e b /\ not (memq e l)))) /\ (forall e. memq e l /\ not (memq e a) ==> not (memq e res)) /\
-                                (forall e. memq e l /\ not (memq e b) ==> not (memq e res)));
-  res
+  merge_s l a b
+
+val pre_cond_op : s1:s -> op1:(nat * op) -> Tot bool
+let pre_cond_op s1 op = (not (mem_id (get_id op) s1.front)) && (not (mem_id (get_id op) s1.back)) && (if is_dequeue op then (return op) = peek s1 else true)
+
 
 val merge0 : ltr:ae op
            -> l:s
@@ -908,7 +1081,7 @@ val merge0 : ltr:ae op
                                             order e e1 (tolist (merge ltr l atr a btr b)))))) [SMTPat (merge ltr l atr a btr b)]
 
 let merge0 ltr l atr a btr b =
-  let res = (S (merge_s (tolist l) (tolist a) (tolist b)) []) in
+  let res = merge_s l a b in
   assert(forall e e1. ((memq e l /\ memq e1 l /\ fst e <> fst e1 /\ order e e1 (tolist l) /\ memq e res /\ memq e1 res) \/
                         (memq e a /\ memq e1 a /\ fst e <> fst e1 /\ order e e1 (tolist a) /\ memq e res /\ memq e1 res) \/
                         (memq e b /\ memq e1 b /\ fst e <> fst e1 /\ order e e1 (tolist b) /\ memq e res /\ memq e1 res) \/
@@ -2764,11 +2937,12 @@ val prop_oper6: tr:ae op
 
 let prop_oper6 tr st op = ()
 
-val prop_oper: tr:ae op
-                -> st:s
-                -> op:o
-                  -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
-                                    (is_dequeue op ==> return op = peek st) /\ (forall e. mem e tr.l ==> get_id e < get_id op))
+val prop_oper : tr:ae op
+              -> st:s
+              -> op:o
+              -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
+                get_id op > 0 /\ pre_cond_op st op /\ 
+                (forall e. mem e tr.l ==> get_id e < get_id op))
                          (ensures (sim (append tr op) (app_op st op)))
 let prop_oper tr st op =
   prop_oper0 tr st op;
@@ -2781,17 +2955,17 @@ let prop_oper tr st op =
   ()
 
 instance _ : mrdt s op = {
-  Library.init = init;
-  Library.sim = sim;
-  Library.pre_cond_op = pre_cond_op;
-  Library.app_op = app_op;
-  Library.prop_oper = prop_oper;
-  Library.pre_cond_merge1 = pre_cond_merge1;
-  Library.pre_cond_merge = pre_cond_merge;
-  Library.merge1 = merge_s;
-  Library.merge = merge;
-  Library.prop_merge = prop_merge;
-  Library.convergence = convergence
+  Library_old.init = init;
+  Library_old.sim = sim;
+  Library_old.pre_cond_op = pre_cond_op;
+  Library_old.app_op = app_op;
+  Library_old.prop_oper = prop_oper;
+  Library_old.pre_cond_merge1 = pre_cond_merge1;
+  Library_old.pre_cond_merge = pre_cond_merge;
+  Library_old.merge1 = merge_s;
+  Library_old.merge = merge;
+  Library_old.prop_merge = prop_merge;
+  Library_old.convergence = convergence
 }
 
 
