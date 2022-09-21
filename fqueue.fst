@@ -2998,9 +2998,9 @@ val prop_spec : tr:ae op
               -> op:(nat * op)
               -> Lemma (requires (sim tr st) /\ (not (member (get_id op) tr.l)) /\
                                 (forall e. mem e tr.l ==> get_id e < get_id op) /\ get_id op > 0)
-                      (ensures ((Rd? (get_op op)) ==> (forall e. memq e (get_st (app_op st op)) <==> memq e (extract (spec op tr))) /\
-                                 (forall e e1. memq e (get_st (app_op st op)) /\ memq e1 (get_st (app_op st op)) /\ fst e <> fst e1 /\ order e e1 (tolist (get_st (app_op st op))) <==>
-                                      memq e (extract (spec op tr)) /\ memq e1 (extract (spec op tr)) /\ fst e <> fst e1 /\ order e e1 (tolist (extract (spec op tr))))) /\ 
+                      (ensures ((Rd? (get_op op)) ==> (forall e. memq e (extract (get_rval (app_op st op))) <==> memq e (extract (spec op tr))) /\
+                               (forall e e1. memq e (extract (get_rval (app_op st op))) /\ memq e1 (extract (get_rval (app_op st op))) /\ fst e <> fst e1 /\ order e e1 (tolist (extract (get_rval (app_op st op)))) <==>
+                                        memq e (extract (spec op tr)) /\ memq e1 (extract (spec op tr)) /\ fst e <> fst e1 /\ order e e1 (tolist (extract (spec op tr))))) /\ 
                                ((Enqueue? (get_op op) \/ Dequeue? (get_op op)) ==> (get_rval (app_op st op) = (spec op tr))))
 let prop_spec tr st op = ()
 
