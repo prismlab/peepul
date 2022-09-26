@@ -37,24 +37,6 @@ let rec get_eve id l =
 (* Abstract state *)
 noeq type ae (op:eqtype) = 
   |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
-     -> l:list (nat * op) {unique_id l} 
-     -> ae op
-
-assume val axiom_ae : #op:eqtype
-                 -> l:ae op
-                 -> Lemma (ensures (forall e e' e''. (mem e l.l /\ mem e' l.l /\ mem e'' l.l /\ get_id e <> get_id e' /\ 
-                                               get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ l.vis e e' /\ l.vis e' e'')
-                                               ==> l.vis e e'') (*transitive*)/\ 
-                                  (forall e e'. (mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e') 
-                                           ==> not (l.vis e' e)) (*asymmetric*) /\
-                                  (forall e. mem e l.l ==> not (l.vis e e) (*irreflexive*)) /\
-                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e <> get_id e' /\ l.vis e e' ==> get_id e < get_id e') /\
-                                  (forall e e'. mem e l.l /\ mem e' l.l /\ get_id e = get_id e' ==> e = e') /\
-                                  (forall e. mem e l.l ==> get_id e > 0))
-                                  [SMTPat (unique_id l.l)]
-
-(*)noeq type ae (op:eqtype) = 
-  |A : vis:((nat * op) -> (nat * op) -> Tot bool) 
      -> l:list (nat * op) {unique_id l /\ (forall e e' e''. (mem e l /\ mem e' l /\ mem e'' l /\ get_id e <> get_id e' /\ 
                                                     get_id e' <> get_id e'' /\ get_id e <> get_id e'' /\ vis e e' /\ vis e' e'') 
                                                     ==> vis e e'') (*transitive*) /\ 
@@ -63,7 +45,7 @@ assume val axiom_ae : #op:eqtype
                                       (forall e. mem e l ==> not (vis e e) (*irreflexive*)) /\
                                       (forall e e'. mem e l /\ mem e' l /\ get_id e <> get_id e' /\ vis e e' ==> get_id e < get_id e') /\
                                       (forall e e'. mem e l /\ mem e' l /\ get_id e = get_id e' ==> e = e') /\
-                                      (forall e. mem e l ==> get_id e > 0)} -> ae op*)
+                                      (forall e. mem e l ==> get_id e > 0)} -> ae op
 
 val append : #op:eqtype 
            -> tr:ae op
@@ -76,7 +58,7 @@ val append : #op:eqtype
                                       (mem e tr.l /\ mem e1 tr.l /\ get_id e <> get_id e1 /\ tr.vis e e1) \/
                                       (mem e tr.l /\ e1 = op1 /\ get_id e <> get_id op1))))
 
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 1000"
 let append tr op = 
   (A (fun o o1 -> ((mem o tr.l && mem o1 tr.l && get_id o <> get_id o1 && tr.vis o o1) ||
                 (mem o tr.l && o1 = op && get_id o <> get_id op))) (op::tr.l))
@@ -154,7 +136,7 @@ val absmerge1 : #op:eqtype
                           (forall e. mem e l.l ==> not (mem_id (get_id e) b.l)))
                 (ensures (fun u -> (forall e. mem e u <==> mem e a.l \/ mem e b.l \/ mem e l.l) /\ (unique_id u))) 
                 (decreases %[l.l;a.l;b.l])
-#set-options "--z3rlimit 100000000"
+#set-options "--z3rlimit 1000"
 let rec absmerge1 #op l a b =
   match l,a,b with
   |(A _ []), (A _ []), (A _ []) -> []
@@ -175,7 +157,7 @@ val absmerge : #op:eqtype
                                          (mem e1 a.l /\ mem e2 a.l /\ get_id e1 <> get_id e2 /\ a.vis e1 e2) \/ 
                                          (mem e1 b.l /\ mem e2 b.l /\ get_id e1 <> get_id e2 /\ b.vis e1 e2) ==>
                                          (mem e1 u.l /\ mem e2 u.l /\ get_id e1 <> get_id e2 /\ u.vis e1 e2))))
-#set-options "--z3rlimit 10000"
+#set-options "--z3rlimit 1000"
 let absmerge l a b = 
   (A (fun o o1 -> (mem o l.l && mem o1 l.l && get_id o <> get_id o1 && l.vis o o1) || 
                (mem o a.l && mem o1 a.l && get_id o <> get_id o1 && a.vis o o1) || 
@@ -218,7 +200,7 @@ let rec filter_uni f l =
   |[] -> ()
   |x::xs -> filter_uni f xs
 
-class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
+(*)class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
 
   init : s;
 
@@ -299,3 +281,4 @@ class mrdt (s:eqtype (*state*)) (op:eqtype (*operations*)) = {
                       (ensures true)
   }
  
+*)
